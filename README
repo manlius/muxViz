@@ -1,5 +1,5 @@
-muxViz
-======
+muxViz v0.1
+=========
 
 Visualization of interconnected multilayer networks
 
