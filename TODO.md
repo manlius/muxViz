@@ -7,6 +7,8 @@ The following list reflects the possible improvements of muxNet. I am in debt wi
 
 - Assign labels to nodes from external file
 
+- The package would benefit from some documentation and worked examples
+
 - Specify more flags for the choice of the community detection algorithm, as for the layouts
 
 - The number of parameters can be so large that could be good to have an external file where to store all of them
