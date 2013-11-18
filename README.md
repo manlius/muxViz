@@ -21,10 +21,13 @@ If used with the default options for the first time, muxViz will plot a multiple
 
 Please, explicitly cite muxViz if you find it useful for your visualizations.
 
-(C) Copyright 2013, Manlio De Domenico
-This code has no warranty whatsoever and any kind of support is provided.
-You are free to do what you like with this code as long as you leave this copyright in place.
+
+(C) Copyright 2013, Manlio De Domenico.
+
+This code has no warranty whatsoever and any kind of support is provided
+You are free to do what you like with this code as long as you leave this copyright in place
 Please, explicitly cite muxViz if you find it useful for your visualizations.
+
 (C) Copyright 2013, Manlio De Domenico (manlio.dedomenico at urv.cat) 
 
 Each file in this folder is part of the muxViz package. 
