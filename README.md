@@ -8,6 +8,18 @@ muxViz is a script for the visualization of interconnected multi-layer networks.
 - igraph v0.6.5 (or above)
 - RGL 0.93.963 (or above)
 
+Usage within R environment:
+
+	source('muxViz.R')
+	
+Usage from shell command line:
+
+	R CMD BATCH muxViz.R
+	
+	
+If used with the default options for the first time, muxViz will plot a multiplex with 100 nodes and 4 layers with community-like topology. The output should be a file 'muxViz.png' in the same folder, similar to 'muxViz_example.png' provided with the package.
+
+
 (C) Copyright 2013, Manlio De Domenico
 This code has no warranty whatsoever and any kind of support is provided.
 You are free to do what you like with this code as long as you leave this copyright in place.
