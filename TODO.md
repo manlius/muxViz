@@ -5,6 +5,8 @@ The following list reflects the possible improvements of muxNet. I am in debt wi
 
 - Input one single file listing the edges list corresponding to each layer
 
+- More complicated interconnections, as for instance between different nodes in different layers, should be available at some point. Currently, only multiplexes/time-varying networks are considered, where each node is interconnected only to its replicas in other layers
+
 - Assign labels to nodes from external file
 
 - The package would benefit from some documentation and worked examples

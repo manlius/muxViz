@@ -19,10 +19,12 @@ Usage from shell command line:
 	
 If used with the default options for the first time, muxViz will plot a multiplex with 100 nodes and 4 layers with community-like topology. The output should be a file 'muxViz.png' in the same folder, similar to 'muxViz_example.png' provided with the package.
 
+Please, explicitly cite muxViz if you find it useful for your visualizations.
 
 (C) Copyright 2013, Manlio De Domenico
 This code has no warranty whatsoever and any kind of support is provided.
 You are free to do what you like with this code as long as you leave this copyright in place.
+Please, explicitly cite muxViz if you find it useful for your visualizations.
 (C) Copyright 2013, Manlio De Domenico (manlio.dedomenico at urv.cat) 
 
 Each file in this folder is part of the muxViz package. 
