@@ -44,7 +44,7 @@ LAYOUT_KAMADA_KAWAI <- F                        #for networks with < 100 nodes
 LAYOUT_REINGOLD_TILFORD <- F                #for networks with < 1000 nodes
 LAYOUT_COMBINED <- F                                 #for complicated networks...
 LAYOUT_MAXITER <- 1000
-LAYOUT_BY_FIRST_LAYER <- F                      #otherwise default use the aggregated
+LAYOUT_BY_LAYER_ID <- 0                            #0: use the aggregated, >0 use that layer ID
 LAYOUT_INDEPENDENT <- F                           #if each layer can be layouted separately
 
 #Output options
@@ -55,8 +55,8 @@ EXPORT_MOVIE <- F
 #Graphic options
 LAYER_SHOW <- T
 NODE_LABELS_SHOW <- F
-INTERLINK_SHOW <- F
-INTERLINK_SHOW_FRACTION <- 0.01 #this allows to show only a few (randomly chosen) interlinks
+INTERLINK_SHOW <- T
+INTERLINK_SHOW_FRACTION <- 0.2 #this allows to show only a few (randomly chosen) interlinks
                                                                 #0: no interlinks 1: show all
 RESCALE_WEIGHT <- T
 
@@ -83,11 +83,11 @@ NODE_SIZE_PROPORTIONAL_TO_STRENGTH <- F
 NODE_SIZE_PROPORTIONAL_TO_LOGSTRENGTH <- T
 NODE_SIZE_PROPORTIONAL_TO_LOGLOGSTRENGTH <- F
 NODE_COLOR_BY_COMMUNITY <- T
-COMMUNITY_MIN_SIZE <- 0     
-EDGE_DEFAULT_SIZE <- 2
+COMMUNITY_MIN_SIZE <- 0     #will color with same RGB all nodes in communities smaller than this size
+EDGE_DEFAULT_SIZE <- 1
 EDGE_SIZE_PROPORTIONAL_TO_WEIGHT <- F
-EDGE_SIZE_PROPORTIONAL_TO_LOGWEIGHT <- T
-EDGE_SIZE_PROPORTIONAL_TO_LOGLOGWEIGHT <- F
+EDGE_SIZE_PROPORTIONAL_TO_LOGWEIGHT <- F
+EDGE_SIZE_PROPORTIONAL_TO_LOGLOGWEIGHT <- T
 EDGE_BENDING <- 0.2
 
 INTERLINK_COLOR <- "black"
@@ -173,10 +173,12 @@ for(l in 1:LAYERS){
         g[[l]] <- graph.adjacency(A_layer,weighted=NULL)   
     }
 
-    if(l==1){
-        A_layer1 <- A_layer
+    if(LAYOUT_BY_LAYER_ID>0){
+        if(l==LAYOUT_BY_LAYER_ID){
+            A_layer1 <- A_layer
+        }
     }
-
+    
     Adj_aggr <- Adj_aggr + A_layer
     
     print(paste("Layer ",l," D: ",DIRECTED))
@@ -189,7 +191,7 @@ layouts <- vector("list",LAYERS)
 
 if(!LAYOUT_INDEPENDENT){    
     print("Constrained layout option.")
-    if(LAYOUT_BY_FIRST_LAYER){
+    if(LAYOUT_BY_LAYER_ID){
         #It will use the first layer to layout the others
         if(WEIGHTED){
             gAggr <- graph.adjacency(A_layer1, weighted=T)
@@ -338,6 +340,7 @@ rgl.clear()
         wt <- walktrap.community(g[[l]],modularity=TRUE)
         print(paste("  Modularity: ",modularity(wt)))
         wmemb <- community.to.membership(g[[l]], wt$merges,steps=which.max(wt$modularity)-1)
+        maxCom <- max(wmemb$membership) + 1
         
         if(COMMUNITY_MIN_SIZE>0){
             #Merge community smaller than chosen resolution to a unique community
