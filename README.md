@@ -7,6 +7,7 @@ muxViz is a script for the visualization of interconnected multi-layer networks.
 
 - igraph v0.6.5 (or above)
 - RGL 0.93.963 (or above)
+- mapproject v1.2-1 (or above)
 
 Usage within R environment:
 

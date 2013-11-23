@@ -1,4 +1,14 @@
 ################
+23 November 2013
+################
+
+- Added support for external layout 
+- Added support for geographic layout (automatic conversion from input)
+- Added support for node labeling from external layout file
+- Added support for community detection based on edge-betweenness
+- Minor bugs solved
+
+################
 22 November 2013
 ################
 

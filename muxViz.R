@@ -20,16 +20,8 @@ library(rgl)
 #Input Parameters
 ###############
 
-LAYERS <- 4
-
-edges <- vector("list",LAYERS)
-
 #Insert here the file list with input networks
-fileName <- readLines("layers_list.txt")
-
-for(l in 1:LAYERS){
-    edges[[l]] <-  read.table(fileName[l], header=F)
-}
+inputList <- "layers_list.txt"
 
 #Network type
 DIRECTED <- F
@@ -46,11 +38,17 @@ LAYOUT_COMBINED <- F                                 #for complicated networks..
 LAYOUT_MAXITER <- 1000
 LAYOUT_BY_LAYER_ID <- 0                            #0: use the aggregated, >0 use that layer ID
 LAYOUT_INDEPENDENT <- F                           #if each layer can be layouted separately
+                                                                            #If external layout is provided for each layer, it will overwrite
+                                                                            #the above alternatives
 
 #Output options
 FILE_RGL_SNAPSHOT <- "muxViz.png"
 FILE_RGL_MOVIE <- "muxViz_movie.png"
 EXPORT_MOVIE <- F
+
+#Choose the community detection algorithm
+COMMUNITY_EDGE_BETWEENNESS <- T
+COMMUNITY_RANDOM_WALK_TRAP <- F
 
 #Graphic options
 LAYER_SHOW <- T
@@ -100,6 +98,29 @@ BACKGROUND_COLOR <- "#FFFFFF"
 #End Parameters
 ###############
 
+LAYERS <- 1
+
+#Read the input
+fileInput <- readLines(inputList)
+LAYERS <- length(fileInput)
+layerEdges <- vector("list",LAYERS)
+fileName <- vector("list",LAYERS)
+layerLabel <- vector("list",LAYERS)
+layerLayoutFile <- vector("list",LAYERS)
+layerLayout <- vector("list",LAYERS)
+nodesLabel <- vector("list",LAYERS)
+
+for(l in 1:LAYERS){
+    fileName[l] <- strsplit(fileInput[l],';')[[1]][1]
+    layerLabel[l] <- strsplit(fileInput[l],';')[[1]][2]
+    layerLayoutFile[l] <- strsplit(fileInput[l],';')[[1]][3]
+    
+    layerEdges[[l]] <-  read.table(fileName[[l]][1], header=F)
+    
+    if(layerLabel[[l]][1]=="" || is.na(layerLabel[[l]][1])){
+        layerLabel[[l]][1] <- paste(LAYER_LABEL_PREFIX, l)
+    }
+}
 
 #Find the minimum and maximum node ID in the multiplex
 idmin <- 1e100
@@ -107,16 +128,63 @@ idmax <- 0
 offset = 0;
 
 for(l in 1:LAYERS){
-    if( min(edges[[l]]) < idmin) idmin <- min(edges[[l]])
-    if( max(edges[[l]]) > idmax) idmax <- max(edges[[l]])
+    if( min(layerEdges[[l]][,1:2]) < idmin) idmin <- min(layerEdges[[l]][,1:2])
+    if( max(layerEdges[[l]][,1:2]) > idmax) idmax <- max(layerEdges[[l]][,1:2])
 }
 
 if(idmin == 0) offset = 1;
 Nodes = idmax + offset
 
 print(paste("Minimum node ID: ",idmin))
-print(paste("Maximum node ID: ",idmax-offset))
+print(paste("Maximum node ID: ",idmax))
 print(paste("Using offset: ",offset))
+
+#If all external layouts have been provided:
+LAYOUT_EXTERNAL <- !is.na(all(layerLayoutFile != "")) 
+#If each layout is specified correctly
+for(l in 1:LAYERS){
+    if(layerLayoutFile[[l]][1]!="" && (!is.na(layerLayoutFile[[l]][1]))){
+        layerTable <- read.table(layerLayoutFile[[l]][1], header=T)
+        layerLayout[[l]] <- matrix(c(1),nrow=Nodes,ncol=2)
+        
+        if(length(layerTable$nodeLat)==Nodes && length(layerTable$nodeLong)==Nodes){
+            print(paste("Layout for layer",l,"is geographic. Converting."))
+            #The input layout is geographic, we must convert it to cartesian
+            sphCoordinates <- list()
+            sphCoordinates$x <- layerTable$nodeLong
+            sphCoordinates$y <- layerTable$nodeLat
+            cartCoordinates <- mapproject(sphCoordinates,proj="mercator")
+            
+            layerTable$nodeX <- cartCoordinates$x
+            layerTable$nodeY <- cartCoordinates$y
+        }
+        
+        if(length(layerTable$nodeX)==Nodes && length(layerTable$nodeY)==Nodes){
+            layerLayout[[l]][layerTable$nodeID + offset,1:2] <- cbind(layerTable$nodeX,layerTable$nodeY)
+            print(paste("Layout for layer",l,"specified correctly from external file",layerLayoutFile[[l]][1]))
+        }else{
+            print(paste("Layout for layer",l,"not specified correctly. Proceeding with automatic layouting."))
+            LAYOUT_EXTERNAL <- F
+        }
+
+        if(length(layerTable$nodeLabel)==Nodes){
+            print(paste("Nodes' labels for layer",l,"specified correctly from external file",layerLayoutFile[[l]][1]))            
+            #Assign labels to nodes
+            nodesLabel[[l]][layerTable$nodeID + offset] <- as.character(layerTable$nodeLabel)
+            print("Assigned labels.")
+        }else{
+            print(paste("Nodes' labels for layer",l,"not specified correctly. Proceeding with automatic labeling."))
+            nodesLabel[[l]] <- 1:Nodes
+        }
+    }else{
+        print(paste("Layout for layer",l,"not specified correctly. Proceeding with automatic layouting."))
+        LAYOUT_EXTERNAL <- F
+
+        print(paste("Nodes' labels for layer",l,"not specified correctly. Proceeding with automatic labeling."))
+        #Assign labels to nodes
+        nodesLabel[[l]] <- 1:Nodes
+    }
+}
 
 #Create the graph objects
 g <- vector("list",LAYERS)
@@ -126,33 +194,33 @@ Adj_aggr <- matrix(0,ncol=Nodes,nrow=Nodes)
 for(l in 1:LAYERS){    
     #create an undirected edges list (both directions specified) if requested
     if(!DIRECTED){
-        if(ncol(edges[[l]])==3){
+        if(ncol(layerEdges[[l]])==3){
             #swap columns
-            tmpedges <- edges[[l]][,c(2,1,3)]
+            tmpedges <- layerEdges[[l]][,c(2,1,3)]
             #change the name of the columns, or merge will not work
             colnames(tmpedges) <- c("V1","V2","V3")
             #merge
-            edges[[l]]<-merge(edges[[l]],tmpedges,all=T)
+            layerEdges[[l]]<-merge(layerEdges[[l]],tmpedges,all=T)
         }else{
             #swap columns
-            tmpedges <- edges[[l]][,c(2,1)]
+            tmpedges <- layerEdges[[l]][,c(2,1)]
             #change the name of the columns, or merge will not work
             colnames(tmpedges) <- c("V1","V2")
             #merge
-            edges[[l]]<-merge(edges[[l]],tmpedges,all=T)
+            layerEdges[[l]]<-merge(layerEdges[[l]],tmpedges,all=T)
         }
     }
     
     if(offset>0){
-        edges[[l]][,1] <- edges[[l]][,1] + offset
-        edges[[l]][,2] <- edges[[l]][,2] + offset
+        layerEdges[[l]][,1] <- layerEdges[[l]][,1] + offset
+        layerEdges[[l]][,2] <- layerEdges[[l]][,2] + offset
     }
 
     if(WEIGHTED){
         if(RESCALE_WEIGHT){
-            if(ncol(edges[[l]])==3){
+            if(ncol(layerEdges[[l]])==3){
                 print("Rescaling weights...")
-                edges[[l]][,3] <- edges[[l]][,3]/min(edges[[l]][,3])
+                layerEdges[[l]][,3] <- layerEdges[[l]][,3]/min(layerEdges[[l]][,3])
             }
         }
     }
@@ -161,10 +229,10 @@ for(l in 1:LAYERS){
     A_layer <- matrix(0,ncol=Nodes,nrow=Nodes)
 
     #For weighted network, and for our requirements this should be done
-    if(ncol(edges[[l]])==3){
-        for(i in 1:nrow(edges[[l]])) A_layer[ edges[[l]][i,1], edges[[l]][i,2] ] <- edges[[l]][i,3]
+    if(ncol(layerEdges[[l]])==3){
+        for(i in 1:nrow(layerEdges[[l]])) A_layer[ layerEdges[[l]][i,1], layerEdges[[l]][i,2] ] <- layerEdges[[l]][i,3]
     }else{
-        for(i in 1:nrow(edges[[l]])) A_layer[ edges[[l]][i,1], edges[[l]][i,2] ] <- 1
+        for(i in 1:nrow(layerEdges[[l]])) A_layer[ layerEdges[[l]][i,1], layerEdges[[l]][i,2] ] <- 1
     }
         
     if(WEIGHTED){
@@ -178,102 +246,115 @@ for(l in 1:LAYERS){
             A_layer1 <- A_layer
         }
     }
-    
+
     Adj_aggr <- Adj_aggr + A_layer
     
-    print(paste("Layer ",l," D: ",DIRECTED))
-    print(paste("Layer ",l," W: ",WEIGHTED))
-    print(paste(nrow(edges[[l]]),"Edges in layer: ",l))
+    print(paste("Layer ",l,": ",fileName[[l]][1],"   Name:",layerLabel[[l]][1]))
+    print(paste("Layer ",l," Directed: ",DIRECTED))
+    print(paste("Layer ",l," Weighted: ",WEIGHTED))
+    print(paste(nrow(layerEdges[[l]]),"Edges in layer: ",l))
 }
-
 
 layouts <- vector("list",LAYERS)
 
-if(!LAYOUT_INDEPENDENT){    
-    print("Constrained layout option.")
-    if(LAYOUT_BY_LAYER_ID){
-        #It will use the first layer to layout the others
-        if(WEIGHTED){
-            gAggr <- graph.adjacency(A_layer1, weighted=T)
+#Check if the layouts are specified by external files, otherwise proceed with the automatic ones
+if(!LAYOUT_EXTERNAL){
+    if(!LAYOUT_INDEPENDENT){    
+        print("Constrained layout option.")
+        if(LAYOUT_BY_LAYER_ID){
+            #It will use the first layer to layout the others
+            if(WEIGHTED){
+                gAggr <- graph.adjacency(A_layer1, weighted=T)
+            }else{
+                gAggr <- graph.adjacency(A_layer1, weighted=NULL)    
+            }
         }else{
-            gAggr <- graph.adjacency(A_layer1, weighted=NULL)    
+            #Aggregate graph from aggregate adjacency matrix
+            gAggr <- graph.adjacency(Adj_aggr, weighted=T)
+            print("Aggregate network created. Proceeding with layout to obtain coordinates for each layer.")
         }
-    }else{
-        #Aggregate graph from aggregate adjacency matrix
-        gAggr <- graph.adjacency(Adj_aggr, weighted=T)
-        print("Aggregate network created. Proceeding with layout to obtain coordinates for each layer.")
-    }
-    
-    #Choose a layout and apply it to the aggregate network
-    if(LAYOUT_FRUCHTERMAN_REINGOLD){
-        lAggr <- layout.fruchterman.reingold.grid(gAggr,weights=E(gAggr)$weight,niter=LAYOUT_MAXITER,area=vcount(gAggr)^1.,repulserad=vcount(gAggr)^1.3,dim=2)
-    }
-    if(LAYOUT_LGL){
-        lAggr <- layout.lgl(gAggr,maxiter=LAYOUT_MAXITER)
-    }
-    if(LAYOUT_DRL){
-        lAggr <- layout.drl(gAggr,options=list(simmer.attraction=0,simmer.iterations=floor(LAYOUT_MAXITER*0.15),crunch.iterations=floor(LAYOUT_MAXITER*0.1),cooldown.iterations=floor(LAYOUT_MAXITER*0.25),expansion.iterations=floor(LAYOUT_MAXITER*0.25),liquid.iterations=floor(LAYOUT_MAXITER*0.25)))
-    }
-    
-    if(LAYOUT_REINGOLD_TILFORD){
-        lAggr <- layout.reingold.tilford(gAggr)
-    }
-    
-    if(LAYOUT_KAMADA_KAWAI){
-        lAggr <- layout.kamada.kawai(gAggr, niter=LAYOUT_MAXITER)
-    }
-    if(LAYOUT_SPRING){
-        lAggr <- layout.spring(gAggr,repulse=T)
-    }
-    
-    if(LAYOUT_COMBINED){
-        #We try to use the DRL to scale and we use it as seed for a Kamada-Kawai with few iterations
-        ltmp <- layout.drl(gAggr,options=list(simmer.attraction=0,simmer.iterations=floor(LAYOUT_MAXITER*0.15),crunch.iterations=floor(LAYOUT_MAXITER*0.1),cooldown.iterations=floor(LAYOUT_MAXITER*0.25),expansion.iterations=floor(LAYOUT_MAXITER*0.25),liquid.iterations=floor(LAYOUT_MAXITER*0.25)))
         
-        lAggr <- layout.kamada.kawai(gAggr, niter=LAYOUT_MAXITER,start=ltmp)
-    }
-    
-    #For compatibility with the other option, we assign lAggr to each layout
-    for(l in 1:LAYERS){
-        layouts[[l]] <- lAggr
-    }
-}else{
-    print("Independent layout option.")
-    for(l in 1:LAYERS){
-        layouts[[l]] <- matrix(c(1),ncol=3,nrow=Nodes)
-        
-        print(paste("  Layout for layer",l,"..."))
-        #Each layout is calculated separately    
+        #Choose a layout and apply it to the aggregate network
         if(LAYOUT_FRUCHTERMAN_REINGOLD){
-            layouts[[l]] <- layout.fruchterman.reingold.grid(g[[l]],weights=E(g[[l]])$weight,niter=LAYOUT_MAXITER,area=vcount(g[[l]])^1.,repulserad=vcount(gAggr)^1.3,dim=2)
+            lAggr <- layout.fruchterman.reingold.grid(gAggr,weights=E(gAggr)$weight,niter=LAYOUT_MAXITER,area=vcount(gAggr)^1.,repulserad=vcount(gAggr)^1.3,dim=2)
         }
         if(LAYOUT_LGL){
-            layouts[[l]] <- layout.lgl(g[[l]],maxiter=LAYOUT_MAXITER)
+            lAggr <- layout.lgl(gAggr,maxiter=LAYOUT_MAXITER)
         }
         if(LAYOUT_DRL){
-            layouts[[l]] <- layout.drl(g[[l]],options=list(simmer.attraction=0,simmer.iterations=floor(LAYOUT_MAXITER*0.15),crunch.iterations=floor(LAYOUT_MAXITER*0.1),cooldown.iterations=floor(LAYOUT_MAXITER*0.25),expansion.iterations=floor(LAYOUT_MAXITER*0.25),liquid.iterations=floor(LAYOUT_MAXITER*0.25)))
+            lAggr <- layout.drl(gAggr,options=list(simmer.attraction=0,simmer.iterations=floor(LAYOUT_MAXITER*0.15),crunch.iterations=floor(LAYOUT_MAXITER*0.1),cooldown.iterations=floor(LAYOUT_MAXITER*0.25),expansion.iterations=floor(LAYOUT_MAXITER*0.25),liquid.iterations=floor(LAYOUT_MAXITER*0.25)))
         }
         
         if(LAYOUT_REINGOLD_TILFORD){
-            layouts[[l]] <- layout.reingold.tilford(g[[l]])
+            lAggr <- layout.reingold.tilford(gAggr)
         }
         
         if(LAYOUT_KAMADA_KAWAI){
-            layouts[[l]] <- layout.kamada.kawai(g[[l]], niter=LAYOUT_MAXITER)
+            lAggr <- layout.kamada.kawai(gAggr, niter=LAYOUT_MAXITER)
         }
         if(LAYOUT_SPRING){
-            layouts[[l]] <- layout.spring(g[[l]],repulse=T)
+            lAggr <- layout.spring(gAggr,repulse=T)
         }
         
         if(LAYOUT_COMBINED){
             #We try to use the DRL to scale and we use it as seed for a Kamada-Kawai with few iterations
-            ltmp <- layout.drl(g[[l]],options=list(simmer.attraction=0,simmer.iterations=floor(LAYOUT_MAXITER*0.15),crunch.iterations=floor(LAYOUT_MAXITER*0.1),cooldown.iterations=floor(LAYOUT_MAXITER*0.25),expansion.iterations=floor(LAYOUT_MAXITER*0.25),liquid.iterations=floor(LAYOUT_MAXITER*0.25)))
+            ltmp <- layout.drl(gAggr,options=list(simmer.attraction=0,simmer.iterations=floor(LAYOUT_MAXITER*0.15),crunch.iterations=floor(LAYOUT_MAXITER*0.1),cooldown.iterations=floor(LAYOUT_MAXITER*0.25),expansion.iterations=floor(LAYOUT_MAXITER*0.25),liquid.iterations=floor(LAYOUT_MAXITER*0.25)))
             
-            layouts[[l]] <- layout.kamada.kawai(g[[l]], niter=LAYOUT_MAXITER,start=ltmp)
+            lAggr <- layout.kamada.kawai(gAggr, niter=LAYOUT_MAXITER,start=ltmp)
         }
+        
+        #For compatibility with the other option, we assign lAggr to each layout
+        for(l in 1:LAYERS){
+            layouts[[l]] <- lAggr
+        }
+    }else{
+        print("Independent layout option.")
+        for(l in 1:LAYERS){
+            layouts[[l]] <- matrix(c(1),ncol=3,nrow=Nodes)
+            
+            print(paste("  Layout for layer",l,"..."))
+            #Each layout is calculated separately    
+            if(LAYOUT_FRUCHTERMAN_REINGOLD){
+                layouts[[l]] <- layout.fruchterman.reingold.grid(g[[l]],weights=E(g[[l]])$weight,niter=LAYOUT_MAXITER,area=vcount(g[[l]])^1.,repulserad=vcount(gAggr)^1.3,dim=2)
+            }
+            if(LAYOUT_LGL){
+                layouts[[l]] <- layout.lgl(g[[l]],maxiter=LAYOUT_MAXITER)
+            }
+            if(LAYOUT_DRL){
+                layouts[[l]] <- layout.drl(g[[l]],options=list(simmer.attraction=0,simmer.iterations=floor(LAYOUT_MAXITER*0.15),crunch.iterations=floor(LAYOUT_MAXITER*0.1),cooldown.iterations=floor(LAYOUT_MAXITER*0.25),expansion.iterations=floor(LAYOUT_MAXITER*0.25),liquid.iterations=floor(LAYOUT_MAXITER*0.25)))
+            }
+            
+            if(LAYOUT_REINGOLD_TILFORD){
+                layouts[[l]] <- layout.reingold.tilford(g[[l]])
+            }
+            
+            if(LAYOUT_KAMADA_KAWAI){
+                layouts[[l]] <- layout.kamada.kawai(g[[l]], niter=LAYOUT_MAXITER)
+            }
+            if(LAYOUT_SPRING){
+                layouts[[l]] <- layout.spring(g[[l]],repulse=T)
+            }
+            
+            if(LAYOUT_COMBINED){
+                #We try to use the DRL to scale and we use it as seed for a Kamada-Kawai with few iterations
+                ltmp <- layout.drl(g[[l]],options=list(simmer.attraction=0,simmer.iterations=floor(LAYOUT_MAXITER*0.15),crunch.iterations=floor(LAYOUT_MAXITER*0.1),cooldown.iterations=floor(LAYOUT_MAXITER*0.25),expansion.iterations=floor(LAYOUT_MAXITER*0.25),liquid.iterations=floor(LAYOUT_MAXITER*0.25)))
+                
+                layouts[[l]] <- layout.kamada.kawai(g[[l]], niter=LAYOUT_MAXITER,start=ltmp)
+            }
+        }
+    }
+}else{
+    print("Layouting: external files.")
+    for(l in 1:LAYERS){
+        layouts[[l]] <- matrix(c(1),nrow=Nodes,ncol=2)
+        layouts[[l]] <- layerLayout[[l]]
     }
 }
 
+#Make it a 3-columns object
+for(l in 1:LAYERS){
+    layouts[[l]] <- cbind(layouts[[l]][,1:2],1)
+}
 
 print("Layouting finished. Proceeding with openGL plot of each layer.")
 
@@ -309,7 +390,7 @@ rgl.clear()
     if(!NODE_LABELS_SHOW){
         V(g[[l]])$label <- ""
     }else{
-        V(g[[l]])$label <- V(g[[l]])
+        V(g[[l]])$label <- nodesLabel[[l]]
     }
 
     V(g[[l]])$size <- NODE_DEFAULT_SIZE
@@ -327,21 +408,30 @@ rgl.clear()
         
     #rescale the layout to allow superposition with shift along z-axis
 
-    print("  Normalizing coordinates...")
-    #Make the 3-columns object
-    layouts[[l]] <- cbind(layouts[[l]],1)
-    
+    print("  Normalizing coordinates...")    
     layouts[[l]][,1] <- 2*(layouts[[l]][,1] - min(layouts[[l]][,1]))/(max(layouts[[l]][,1]) - min(layouts[[l]][,1])) - 1
     layouts[[l]][,2] <- 2*(layouts[[l]][,2] - min(layouts[[l]][,2]))/(max(layouts[[l]][,2]) - min(layouts[[l]][,2])) - 1
     layouts[[l]][,3] <- -1 + 2*l/LAYERS
 
     if(NODE_COLOR_BY_COMMUNITY){
         print("  Detecting communities for node coloring")    
-        wt <- walktrap.community(g[[l]],modularity=TRUE)
+
+        if(COMMUNITY_EDGE_BETWEENNESS){
+            wt <- edge.betweenness.community(g[[l]],modularity=TRUE)
+            wmemb <- community.to.membership(g[[l]], wt$merges,steps=which.max(wt$modularity)-1)
+        }
+        if(COMMUNITY_RANDOM_WALK_TRAP){
+            wt <- walktrap.community(g[[l]],modularity=TRUE)
+            wmemb <- community.to.membership(g[[l]], wt$merges,steps=which.max(wt$modularity)-1)
+        }
+        #if(COMMUNITY_INFOMAP){
+        #    wt <- infomap.community(g[[l]],modularity=TRUE)
+        #    wmemb$membership <- membership(wt)
+        #    wmemb$csize <- communities(wt)
+        #}
         print(paste("  Modularity: ",modularity(wt)))
-        wmemb <- community.to.membership(g[[l]], wt$merges,steps=which.max(wt$modularity)-1)
+
         maxCom <- max(wmemb$membership) + 1
-        
         if(COMMUNITY_MIN_SIZE>0){
             #Merge community smaller than chosen resolution to a unique community
             #This will improve the coloring scheme when there are many isoloted nodes/components
@@ -398,16 +488,16 @@ if(LAYER_SHOW){
         planes3d(0,0,1, -d , alpha=LAYER_TRANSP, col=LAYER_COLOR)
 
         if(LAYER_ID_SHOW_BOTTOMLEFT){
-            text3d(-1, -1, d+0.1,text=paste(LAYER_LABEL_PREFIX, l),adj = 0.2, color="black", family="sans", cex=LAYER_ID_FONTSIZE)
+            text3d(-1, -1, d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=LAYER_ID_FONTSIZE)
         }
         if(LAYER_ID_SHOW_TOPLEFT){
-            text3d(-1, 1, d+0.1,text=paste(LAYER_LABEL_PREFIX, l),adj = 0.2, color="black", family="sans", cex=LAYER_ID_FONTSIZE)
+            text3d(-1, 1, d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=LAYER_ID_FONTSIZE)
         }
         if(LAYER_ID_SHOW_BOTTOMRIGHT){
-            text3d(1, -1, d+0.1,text=paste(LAYER_LABEL_PREFIX, l),adj = 0.2, color="black", family="sans", cex=LAYER_ID_FONTSIZE)
+            text3d(1, -1, d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=LAYER_ID_FONTSIZE)
         }
         if(LAYER_ID_SHOW_TOPRIGHT){
-            text3d(1, 1, d+0.1,text=paste(LAYER_LABEL_PREFIX, l),adj = 0.2, color="black", family="sans", cex=LAYER_ID_FONTSIZE)
+            text3d(1, 1, d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=LAYER_ID_FONTSIZE)
         }
     }
 }
