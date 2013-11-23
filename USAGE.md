@@ -1,17 +1,11 @@
 muxViz v0.1
 =========
 
-muxViz can be customized from the many parameters inside the code, at the beginning of the file, between
+muxViz can be customized from the many parameters inside the code, at the beginning of the file, between the delimiters
 
-###############
-#Input Parameters
-###############
+    - Input Parameters
+    - End Parameters
 
-and 
-
-###############
-#End Parameters
-###############
 
 Format of an input file
 -----------------------------
