@@ -15,19 +15,22 @@
 
 library(igraph)
 library(rgl)
+library(mapproj)
+library(maps)
 
 ###############
 #Input Parameters
 ###############
 
-#Insert here the file list with input networks
+#==== File list with input networks
+#Format: path/edgelist_file;layerLabel;path/layout_file
 inputList <- "layers_list.txt"
 
-#Network type
+#==== Network type
 DIRECTED <- F
 WEIGHTED <- F
 
-#Choose the layout
+#==== Choose the layout
 LAYOUT_FRUCHTERMAN_REINGOLD <- T    #for networks with < 1000 nodes
 LAYOUT_LGL <- F                                              #for networks with > 1000 nodes
 LAYOUT_DRL <- F                                              #for networks with > 1000 nodes
@@ -41,16 +44,17 @@ LAYOUT_INDEPENDENT <- F                           #if each layer can be layouted
                                                                             #If external layout is provided for each layer, it will overwrite
                                                                             #the above alternatives
 
-#Output options
+#==== Output/Export options
 FILE_RGL_SNAPSHOT <- "muxViz.png"
 FILE_RGL_MOVIE <- "muxViz_movie.png"
 EXPORT_MOVIE <- F
 
-#Choose the community detection algorithm
-COMMUNITY_EDGE_BETWEENNESS <- T
+#==== Community detection algorithm
+COMMUNITY_EDGE_BETWEENNESS <- F
 COMMUNITY_RANDOM_WALK_TRAP <- F
+COMMUNITY_INFOMAP <- T
 
-#Graphic options
+#==== Graphic options
 LAYER_SHOW <- T
 NODE_LABELS_SHOW <- F
 INTERLINK_SHOW <- T
@@ -61,6 +65,7 @@ RESCALE_WEIGHT <- T
 NODE_TRANSP <- 0.2
 EDGE_TRANSP <- 0.2
 INTERLINK_TRANSP <- 0.2
+GEOGRAPHIC_TRANSP <- 1
 
 PLOT_TITLE <- ""
 PLOT_SUBTITLE <- ""
@@ -94,6 +99,11 @@ INTERLINK_WIDTH <- 1
 
 BACKGROUND_COLOR <- "#FFFFFF"
 
+#==== Geographic layouts, when available
+GEOGRAPHIC_COLOR <- "#B9B9B9"
+GEOGRAPHIC_TYPE <- "solid"
+GEOGRAPHIC_WIDTH <- 0.1
+
 ###############
 #End Parameters
 ###############
@@ -109,6 +119,7 @@ layerLabel <- vector("list",LAYERS)
 layerLayoutFile <- vector("list",LAYERS)
 layerLayout <- vector("list",LAYERS)
 nodesLabel <- vector("list",LAYERS)
+layerGeoMap <- vector("list",LAYERS)
 
 for(l in 1:LAYERS){
     fileName[l] <- strsplit(fileInput[l],';')[[1]][1]
@@ -141,6 +152,16 @@ print(paste("Using offset: ",offset))
 
 #If all external layouts have been provided:
 LAYOUT_EXTERNAL <- !is.na(all(layerLayoutFile != "")) 
+GEOGRAPHIC_LAYOUT <- LAYOUT_EXTERNAL
+XMAX <- -1e10
+YMAX <- -1e10
+XMIN <- 1e10
+YMIN <- 1e10
+LONGMAX <- -1e10
+LATMAX <- -1e10
+LONGMIN <- 1e10
+LATMIN <- 1e10
+
 #If each layout is specified correctly
 for(l in 1:LAYERS){
     if(layerLayoutFile[[l]][1]!="" && (!is.na(layerLayoutFile[[l]][1]))){
@@ -149,6 +170,26 @@ for(l in 1:LAYERS){
         
         if(length(layerTable$nodeLat)==Nodes && length(layerTable$nodeLong)==Nodes){
             print(paste("Layout for layer",l,"is geographic. Converting."))
+            #Get boundaries
+            longBounds = c(min(layerTable$nodeLong),max(layerTable$nodeLong))
+            latBounds = c(min(layerTable$nodeLat),max(layerTable$nodeLat))
+
+            if(min(layerTable$nodeLong,na.rm=T) < LONGMIN) LONGMIN = min(layerTable$nodeLong,na.rm=T)
+            if(min(layerTable$nodeLat,na.rm=T) < LATMIN) LATMIN = min(layerTable$nodeLat,na.rm=T)
+            if(max(layerTable$nodeLong,na.rm=T) > LONGMAX) LONGMAX = max(layerTable$nodeLong,na.rm=T)
+            if(max(layerTable$nodeLat,na.rm=T) > LATMAX) LATMAX = max(layerTable$nodeLat,na.rm=T)
+
+            print(paste("  Latitude boundaries: ",min(layerTable$nodeLat),max(layerTable$nodeLat)))
+            print(paste("  Longitude boundaries: ",min(layerTable$nodeLong),max(layerTable$nodeLong)))
+            
+            #set up a geographic map
+            layerGeoMap[[l]] = map("world", xlim=longBounds, ylim=latBounds, projection="mercator", fill = F, plot = F)                        
+
+            XMIN <- layerGeoMap[[l]]$range[1]
+            XMAX <- layerGeoMap[[l]]$range[2]
+            YMIN <- layerGeoMap[[l]]$range[3]
+            YMAX <- layerGeoMap[[l]]$range[4]
+
             #The input layout is geographic, we must convert it to cartesian
             sphCoordinates <- list()
             sphCoordinates$x <- layerTable$nodeLong
@@ -161,10 +202,18 @@ for(l in 1:LAYERS){
         
         if(length(layerTable$nodeX)==Nodes && length(layerTable$nodeY)==Nodes){
             layerLayout[[l]][layerTable$nodeID + offset,1:2] <- cbind(layerTable$nodeX,layerTable$nodeY)
+
+            if(min(layerTable$nodeX,na.rm=T) < XMIN) XMIN = min(layerTable$nodeX,na.rm=T)
+            if(min(layerTable$nodeY,na.rm=T) < YMIN) YMIN = min(layerTable$nodeY,na.rm=T)
+            if(max(layerTable$nodeX,na.rm=T) > XMAX) XMAX = max(layerTable$nodeX,na.rm=T)
+            if(max(layerTable$nodeY,na.rm=T) > YMAX) YMAX = max(layerTable$nodeY,na.rm=T)
+            
+            GEOGRAPHIC_LAYOUT <- GEOGRAPHIC_LAYOUT && T
             print(paste("Layout for layer",l,"specified correctly from external file",layerLayoutFile[[l]][1]))
         }else{
             print(paste("Layout for layer",l,"not specified correctly. Proceeding with automatic layouting."))
             LAYOUT_EXTERNAL <- F
+            GEOGRAPHIC_LAYOUT <- F
         }
 
         if(length(layerTable$nodeLabel)==Nodes){
@@ -179,6 +228,7 @@ for(l in 1:LAYERS){
     }else{
         print(paste("Layout for layer",l,"not specified correctly. Proceeding with automatic layouting."))
         LAYOUT_EXTERNAL <- F
+        GEOGRAPHIC_LAYOUT <- F
 
         print(paste("Nodes' labels for layer",l,"not specified correctly. Proceeding with automatic labeling."))
         #Assign labels to nodes
@@ -356,6 +406,15 @@ for(l in 1:LAYERS){
     layouts[[l]] <- cbind(layouts[[l]][,1:2],1)
 }
 
+if(!LAYOUT_EXTERNAL && !GEOGRAPHIC_LAYOUT){
+    for(l in 1:LAYERS){
+        if(min(layouts[[l]][,1],na.rm=T) < XMIN) XMIN = min(layouts[[l]][,1],na.rm=T)
+        if(min(layouts[[l]][,2],na.rm=T) < YMIN) YMIN = min(layouts[[l]][,2],na.rm=T)
+        if(max(layouts[[l]][,1],na.rm=T) > XMAX) XMAX = max(layouts[[l]][,1],na.rm=T)
+        if(max(layouts[[l]][,2],na.rm=T) > YMAX) YMAX = max(layouts[[l]][,2],na.rm=T)
+    }
+}
+
 print("Layouting finished. Proceeding with openGL plot of each layer.")
 
 rgl.clear()
@@ -407,11 +466,16 @@ rgl.clear()
     }
         
     #rescale the layout to allow superposition with shift along z-axis
-
     print("  Normalizing coordinates...")    
-    layouts[[l]][,1] <- 2*(layouts[[l]][,1] - min(layouts[[l]][,1]))/(max(layouts[[l]][,1]) - min(layouts[[l]][,1])) - 1
-    layouts[[l]][,2] <- 2*(layouts[[l]][,2] - min(layouts[[l]][,2]))/(max(layouts[[l]][,2]) - min(layouts[[l]][,2])) - 1
+    layouts[[l]][,1] <- 2*(layouts[[l]][,1] - XMIN)/(XMAX-XMIN) - 1
+    layouts[[l]][,2] <- 2*(layouts[[l]][,2] - YMIN)/(YMAX-YMIN) - 1
     layouts[[l]][,3] <- -1 + 2*l/LAYERS
+
+    if(GEOGRAPHIC_LAYOUT){
+        #the fields $x and $y of this map contains the coordinates of the boundaries we are interested into
+        layerGeoMap[[l]]$x <- 2*(layerGeoMap[[l]]$x - XMIN)/(XMAX-XMIN) - 1
+        layerGeoMap[[l]]$y <- 2*(layerGeoMap[[l]]$y - YMIN)/(YMAX-YMIN) - 1
+    }
 
     if(NODE_COLOR_BY_COMMUNITY){
         print("  Detecting communities for node coloring")    
@@ -424,14 +488,23 @@ rgl.clear()
             wt <- walktrap.community(g[[l]],modularity=TRUE)
             wmemb <- community.to.membership(g[[l]], wt$merges,steps=which.max(wt$modularity)-1)
         }
-        #if(COMMUNITY_INFOMAP){
-        #    wt <- infomap.community(g[[l]],modularity=TRUE)
-        #    wmemb$membership <- membership(wt)
-        #    wmemb$csize <- communities(wt)
-        #}
+        if(COMMUNITY_INFOMAP){
+            wt <- walktrap.community(g[[l]],modularity=TRUE)
+            wmemb <- community.to.membership(g[[l]], wt$merges,steps=which.max(wt$modularity)-1)
+            
+            wt <- infomap.community(g[[l]],modularity=TRUE)
+            wmemb$membership <- membership(wt) - 1
+            comList <- communities(wt)
+            wmemb$csize <- numeric(length(comList))
+            for(com in 1:length(wmemb$csize)){
+                wmemb$csize[com] <- length(comList[[com]])
+            }
+        }        
+        
         print(paste("  Modularity: ",modularity(wt)))
 
         maxCom <- max(wmemb$membership) + 1
+                
         if(COMMUNITY_MIN_SIZE>0){
             #Merge community smaller than chosen resolution to a unique community
             #This will improve the coloring scheme when there are many isoloted nodes/components
@@ -477,7 +550,7 @@ rgl.clear()
                       edge.arrow.width=LAYER_ARROW_WIDTH, 
                       edge.curved=E(g[[l]])$curve,
                       rescale=F)
-                      
+                                            
     print(paste("  Layout of layer ",l,"finished."))
 }
 
@@ -507,19 +580,50 @@ if(!LAYOUT_INDEPENDENT){
         print("Adding interlayer links.")
         #to be generalized to allow cross-interlink and absence of interlinks for some nodes
         for( l in 1:(LAYERS-1) ){
-            for( i in 1:Nodes ){
-               if(runif(1)>1-INTERLINK_SHOW_FRACTION){ 
+            layerLinesX <- matrix(c(0),nrow=Nodes,ncol=2)
+            layerLinesY <- matrix(c(0),nrow=Nodes,ncol=2)
+            layerLinesZ <- matrix(c(0),nrow=Nodes,ncol=2)
+
+            layerLinesX <- cbind(layouts[[l]][,1],layouts[[l+1]][,1])
+            layerLinesY <- cbind(layouts[[l]][,2],layouts[[l+1]][,2])
+            layerLinesZ <- cbind(layouts[[l]][,3],layouts[[l+1]][,3])
+
+            for(i in 1:Nodes){
+                if(runif(1)>1-INTERLINK_SHOW_FRACTION){ 
                     segments3d(
-                    c(layouts[[l]][i,1],layouts[[l+1]][i,1]),
-                    c(layouts[[l]][i,2],layouts[[l+1]][i,2]),
-                    c(layouts[[l]][i,3],layouts[[l+1]][i,3]),
-                    lwd=INTERLINK_WIDTH, 
-                    col=INTERLINK_COLOR, 
-                    lty=INTERLINK_TYPE,
-                    alpha=INTERLINK_TRANSP)
-               }
+                        layerLinesX[i,],
+                        layerLinesY[i,],
+                        layerLinesZ[i,],
+                        lwd=INTERLINK_WIDTH, 
+                        col=INTERLINK_COLOR, 
+                        lty=INTERLINK_TYPE,
+                        alpha=INTERLINK_TRANSP)
+                }
             }
         }
+    }
+}
+
+if(GEOGRAPHIC_LAYOUT && GEOGRAPHIC_BOUNDARIES_SHOW){
+    for( l in 1:LAYERS ){
+        layerBordersX <- matrix(c(0),nrow=length(layerGeoMap[[l]]$x)-1,ncol=2)
+        layerBordersY <- matrix(c(0),nrow=length(layerGeoMap[[l]]$x)-1,ncol=2)
+        layerBordersZ <- matrix(c(0),nrow=length(layerGeoMap[[l]]$x)-1,ncol=2)
+            
+        for(i in 1:length(layerGeoMap[[l]]$x)-1){
+            layerBordersX[i,] <- c(layerGeoMap[[l]]$x[i],layerGeoMap[[l]]$x[i+1])
+            layerBordersY[i,] <- c(layerGeoMap[[l]]$y[i],layerGeoMap[[l]]$y[i+1])
+            layerBordersZ[i,] <- c(-1 + 2*l/LAYERS,-1 + 2*l/LAYERS)
+        }
+    
+        segments3d(
+            layerBordersX,
+            layerBordersY,
+            layerBordersZ,
+            lwd=GEOGRAPHIC_WIDTH, 
+            col=GEOGRAPHIC_COLOR, 
+            lty=GEOGRAPHIC_TYPE,
+            alpha=GEOGRAPHIC_TRANSP)
     }
 }
 

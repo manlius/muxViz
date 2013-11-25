@@ -1,6 +1,17 @@
 ################
+25 November 2013
+################
+
+Manlio De Domenico:
+
+- Added support for InfoMap community detection algorithm
+- Added support for showing regional borders in geographic layouts
+
+################
 23 November 2013
 ################
+
+Manlio De Domenico:
 
 - Added support for external layout 
 - Added support for geographic layout (automatic conversion from input)
@@ -12,6 +23,8 @@
 22 November 2013
 ################
 
+Manlio De Domenico:
+
 - Added support to read list of edgeslist from an external file (to keep the code less messy)
 - Added support to layout each layer separately (for non-multiplex networks)
 - Added support to layout each layer as a given layer of the list
@@ -22,5 +35,7 @@
 ################
 18 November 2013
 ################
+
+Manlio De Domenico:
 
 - First release of beta v0.1
