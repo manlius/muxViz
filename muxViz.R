@@ -37,7 +37,7 @@ LAYOUT_DRL <- F                                              #for networks with 
 LAYOUT_SPRING <- F                                       #for networks with < 100 nodes
 LAYOUT_KAMADA_KAWAI <- F                        #for networks with < 100 nodes
 LAYOUT_REINGOLD_TILFORD <- F                #for networks with < 1000 nodes
-LAYOUT_COMBINED <- F                                 #for complicated networks...
+LAYOUT_COMBINED <- F                                 #for large and complicated networks...
 LAYOUT_MAXITER <- 1000
 LAYOUT_BY_LAYER_ID <- 0                            #0: use the aggregated, >0 use that layer ID
 LAYOUT_INDEPENDENT <- F                           #if each layer can be layouted separately
@@ -56,7 +56,10 @@ COMMUNITY_INFOMAP <- T
 
 #==== Graphic options
 LAYER_SHOW <- T
+AGGREGATE_SHOW <- T
 NODE_LABELS_SHOW <- F
+GEOGRAPHIC_BOUNDARIES_SHOW <- T
+GEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW <- T
 INTERLINK_SHOW <- T
 INTERLINK_SHOW_FRACTION <- 0.2 #this allows to show only a few (randomly chosen) interlinks
                                                                 #0: no interlinks 1: show all
@@ -66,12 +69,16 @@ NODE_TRANSP <- 0.2
 EDGE_TRANSP <- 0.2
 INTERLINK_TRANSP <- 0.2
 GEOGRAPHIC_TRANSP <- 1
+GEOGRAPHIC_AGGREGATE_TRANSP <- 1
 
 PLOT_TITLE <- ""
 PLOT_SUBTITLE <- ""
 PLOT_FOV <- 20  #deg, can be changed with mouse
 LAYER_COLOR <- "gray"
 LAYER_LABEL_PREFIX <- "L"
+LAYER_AGGREGATE_COLOR <- "blue"
+LAYER_AGGREGATE_LABEL_PREFIX <- "Aggregate"
+LAYER_AGGREGATE_TRANSP <- 0.1
 LAYER_TRANSP <- 0.1
 LAYER_ARROW_SIZE <- 1
 LAYER_ARROW_WIDTH <- 1
@@ -100,9 +107,12 @@ INTERLINK_WIDTH <- 1
 BACKGROUND_COLOR <- "#FFFFFF"
 
 #==== Geographic layouts, when available
-GEOGRAPHIC_COLOR <- "#B9B9B9"
+GEOGRAPHIC_COLOR <- "#A9A9A9"   #"#B9B9B9"
 GEOGRAPHIC_TYPE <- "solid"
-GEOGRAPHIC_WIDTH <- 0.1
+GEOGRAPHIC_WIDTH <- 0.3
+GEOGRAPHIC_AGGREGATE_COLOR <- "#A9A9A9"   #"#B9B9B9"
+GEOGRAPHIC_AGGREGATE_TYPE <- "solid"
+GEOGRAPHIC_AGGREGATE_WIDTH <- 0.3
 
 ###############
 #End Parameters
@@ -113,13 +123,13 @@ LAYERS <- 1
 #Read the input
 fileInput <- readLines(inputList)
 LAYERS <- length(fileInput)
-layerEdges <- vector("list",LAYERS)
+layerEdges <- vector("list",LAYERS+1)
 fileName <- vector("list",LAYERS)
-layerLabel <- vector("list",LAYERS)
+layerLabel <- vector("list",LAYERS+1)
 layerLayoutFile <- vector("list",LAYERS)
-layerLayout <- vector("list",LAYERS)
-nodesLabel <- vector("list",LAYERS)
-layerGeoMap <- vector("list",LAYERS)
+layerLayout <- vector("list",LAYERS+1)
+nodesLabel <- vector("list",LAYERS+1)
+layerGeoMap <- vector("list",LAYERS+1)
 
 for(l in 1:LAYERS){
     fileName[l] <- strsplit(fileInput[l],';')[[1]][1]
@@ -132,6 +142,8 @@ for(l in 1:LAYERS){
         layerLabel[[l]][1] <- paste(LAYER_LABEL_PREFIX, l)
     }
 }
+
+layerLabel[[LAYERS+1]][1] <- LAYER_AGGREGATE_LABEL_PREFIX
 
 #Find the minimum and maximum node ID in the multiplex
 idmin <- 1e100
@@ -236,8 +248,17 @@ for(l in 1:LAYERS){
     }
 }
 
+#giving the layout of the aggregate from external file makes no sense if it is different from the other layers
+#and it is also annoying to be constrained to specify the aggregate, if one does not want to show it.
+#Therefore, here I prefer to assign manually the layout of the first layer to the aggregate.
+#So far, I accept this possibility just for sake of completeness, but a correct use of muxViz should avoid
+#situations like this..
+layerGeoMap[[LAYERS+1]] <- layerGeoMap[[1]]
+layerLayout[[LAYERS+1]] <- layerLayout[[1]]
+nodesLabel[[LAYERS+1]] <- nodesLabel[[1]]
+
 #Create the graph objects
-g <- vector("list",LAYERS)
+g <- vector("list",LAYERS+1)
 
 Adj_aggr <- matrix(0,ncol=Nodes,nrow=Nodes)
 
@@ -305,7 +326,10 @@ for(l in 1:LAYERS){
     print(paste(nrow(layerEdges[[l]]),"Edges in layer: ",l))
 }
 
-layouts <- vector("list",LAYERS)
+#the aggregate
+g[[LAYERS+1]] <- graph.adjacency(Adj_aggr,weighted=T)
+
+layouts <- vector("list",LAYERS+1)
 
 #Check if the layouts are specified by external files, otherwise proceed with the automatic ones
 if(!LAYOUT_EXTERNAL){
@@ -323,6 +347,10 @@ if(!LAYOUT_EXTERNAL){
             gAggr <- graph.adjacency(Adj_aggr, weighted=T)
             print("Aggregate network created. Proceeding with layout to obtain coordinates for each layer.")
         }
+        
+        #Note that here, gAggr does not correspond to the aggregate when LAYOUT_BY_LAYER_ID is T 
+        #But this is only confusing in this piece of code. I am too lazy now to change the name of this
+        #variable, I keep this note for the future. The aggregate is in g[[LAYERS+1]]
         
         #Choose a layout and apply it to the aggregate network
         if(LAYOUT_FRUCHTERMAN_REINGOLD){
@@ -353,13 +381,13 @@ if(!LAYOUT_EXTERNAL){
             lAggr <- layout.kamada.kawai(gAggr, niter=LAYOUT_MAXITER,start=ltmp)
         }
         
-        #For compatibility with the other option, we assign lAggr to each layout
-        for(l in 1:LAYERS){
+        #For compatibility with the other option, we assign lAggr to each layout, aggregate included
+        for(l in 1:(LAYERS+1)){
             layouts[[l]] <- lAggr
         }
     }else{
         print("Independent layout option.")
-        for(l in 1:LAYERS){
+        for(l in 1:(LAYERS+1)){
             layouts[[l]] <- matrix(c(1),ncol=3,nrow=Nodes)
             
             print(paste("  Layout for layer",l,"..."))
@@ -399,15 +427,23 @@ if(!LAYOUT_EXTERNAL){
         layouts[[l]] <- matrix(c(1),nrow=Nodes,ncol=2)
         layouts[[l]] <- layerLayout[[l]]
     }
+    
+    #giving the layout of the aggregate from external file makes no sense if it is different from the other layers
+    #and it is also annoying to be constrained to specify the aggregate, if one does not want to show it.
+    #Therefore, here I prefer to assign manually the layout of the first layer to the aggregate.
+    #So far, I accept this possibility just for sake of completeness, but a correct use of muxViz should avoid
+    #situations like this..
+
+    layouts[[LAYERS+1]] <- layouts[[1]]
 }
 
 #Make it a 3-columns object
-for(l in 1:LAYERS){
+for(l in 1:(LAYERS+1)){
     layouts[[l]] <- cbind(layouts[[l]][,1:2],1)
 }
 
 if(!LAYOUT_EXTERNAL && !GEOGRAPHIC_LAYOUT){
-    for(l in 1:LAYERS){
+    for(l in 1:(LAYERS+1)){
         if(min(layouts[[l]][,1],na.rm=T) < XMIN) XMIN = min(layouts[[l]][,1],na.rm=T)
         if(min(layouts[[l]][,2],na.rm=T) < YMIN) YMIN = min(layouts[[l]][,2],na.rm=T)
         if(max(layouts[[l]][,1],na.rm=T) > XMAX) XMAX = max(layouts[[l]][,1],na.rm=T)
@@ -419,8 +455,18 @@ print("Layouting finished. Proceeding with openGL plot of each layer.")
 
 rgl.clear()
 
- for(l in 1:LAYERS){
-    print(paste("Layer: ",l))
+ for(l in 1:(LAYERS+1)){
+    if(l==LAYERS+1){
+        if(!AGGREGATE_SHOW){
+            #if we don't want to show the aggregate, we must skip the rest
+            next
+        }
+    }
+    if(l<LAYERS+1){
+        print(paste("Layer: ",l))
+    }else{
+        print(paste("Layer: Aggregate"))    
+    }
     V(g[[l]])$vertex.label.color <- rgb(47,47,47,0,maxColorValue = 255)
     
     #this set the transparency level of edges and nodes.. it can be customized
@@ -469,7 +515,12 @@ rgl.clear()
     print("  Normalizing coordinates...")    
     layouts[[l]][,1] <- 2*(layouts[[l]][,1] - XMIN)/(XMAX-XMIN) - 1
     layouts[[l]][,2] <- 2*(layouts[[l]][,2] - YMIN)/(YMAX-YMIN) - 1
-    layouts[[l]][,3] <- -1 + 2*l/LAYERS
+    
+    if(AGGREGATE_SHOW){
+        layouts[[l]][,3] <- -1 + 2*l/(LAYERS+1)
+    }else{
+        layouts[[l]][,3] <- -1 + 2*l/LAYERS
+    }
 
     if(GEOGRAPHIC_LAYOUT){
         #the fields $x and $y of this map contains the coordinates of the boundaries we are interested into
@@ -499,12 +550,10 @@ rgl.clear()
             for(com in 1:length(wmemb$csize)){
                 wmemb$csize[com] <- length(comList[[com]])
             }
-        }        
-        
+        }
         print(paste("  Modularity: ",modularity(wt)))
-
         maxCom <- max(wmemb$membership) + 1
-                
+                            
         if(COMMUNITY_MIN_SIZE>0){
             #Merge community smaller than chosen resolution to a unique community
             #This will improve the coloring scheme when there are many isoloted nodes/components
@@ -551,15 +600,28 @@ rgl.clear()
                       edge.curved=E(g[[l]])$curve,
                       rescale=F)
                                             
-    print(paste("  Layout of layer ",l,"finished."))
+    print(paste("  Layout of layer: finished."))
 }
 
 if(LAYER_SHOW){
-    for( l in 1:LAYERS ){
+    for( l in 1:(LAYERS+1)){
         #This draws a plan to be used as layer
-        d <- -1 + 2*l/LAYERS
-        planes3d(0,0,1, -d , alpha=LAYER_TRANSP, col=LAYER_COLOR)
-
+        if(AGGREGATE_SHOW){
+            d <- -1 + 2*l/(LAYERS+1)
+        }else{
+            d <- -1 + 2*l/LAYERS
+        }
+        
+        if(l<LAYERS+1){
+            planes3d(0,0,1, -d , alpha=LAYER_TRANSP, col=LAYER_COLOR)
+        }else{
+            if(AGGREGATE_SHOW){
+                planes3d(0,0,1, -d , alpha=LAYER_AGGREGATE_TRANSP, col=LAYER_AGGREGATE_COLOR)
+            }else{
+                next
+            }
+        }
+        
         if(LAYER_ID_SHOW_BOTTOMLEFT){
             text3d(-1, -1, d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=LAYER_ID_FONTSIZE)
         }
@@ -573,6 +635,7 @@ if(LAYER_SHOW){
             text3d(1, 1, d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=LAYER_ID_FONTSIZE)
         }
     }
+
 }
 
 if(!LAYOUT_INDEPENDENT){
@@ -604,26 +667,53 @@ if(!LAYOUT_INDEPENDENT){
     }
 }
 
-if(GEOGRAPHIC_LAYOUT && GEOGRAPHIC_BOUNDARIES_SHOW){
-    for( l in 1:LAYERS ){
+if(GEOGRAPHIC_LAYOUT){
+    for( l in 1:(LAYERS+1) ){
+        if(!AGGREGATE_SHOW){
+            if(l==LAYERS+1){
+                next
+            }
+        }
+        
         layerBordersX <- matrix(c(0),nrow=length(layerGeoMap[[l]]$x)-1,ncol=2)
         layerBordersY <- matrix(c(0),nrow=length(layerGeoMap[[l]]$x)-1,ncol=2)
         layerBordersZ <- matrix(c(0),nrow=length(layerGeoMap[[l]]$x)-1,ncol=2)
-            
+
+
         for(i in 1:length(layerGeoMap[[l]]$x)-1){
             layerBordersX[i,] <- c(layerGeoMap[[l]]$x[i],layerGeoMap[[l]]$x[i+1])
             layerBordersY[i,] <- c(layerGeoMap[[l]]$y[i],layerGeoMap[[l]]$y[i+1])
-            layerBordersZ[i,] <- c(-1 + 2*l/LAYERS,-1 + 2*l/LAYERS)
+
+            if(AGGREGATE_SHOW){
+                layerBordersZ[i,] <- c(-1 + 2*l/(LAYERS+1),-1 + 2*l/(LAYERS+1))
+            }else{
+                layerBordersZ[i,] <- c(-1 + 2*l/LAYERS,-1 + 2*l/LAYERS)
+            }
         }
     
-        segments3d(
-            layerBordersX,
-            layerBordersY,
-            layerBordersZ,
-            lwd=GEOGRAPHIC_WIDTH, 
-            col=GEOGRAPHIC_COLOR, 
-            lty=GEOGRAPHIC_TYPE,
-            alpha=GEOGRAPHIC_TRANSP)
+        if(l<LAYERS+1){
+            if(GEOGRAPHIC_BOUNDARIES_SHOW){
+                segments3d(
+                    layerBordersX,
+                    layerBordersY,
+                    layerBordersZ,
+                    lwd=GEOGRAPHIC_WIDTH, 
+                    col=GEOGRAPHIC_COLOR, 
+                    lty=GEOGRAPHIC_TYPE,
+                    alpha=GEOGRAPHIC_TRANSP)
+            }
+        }else{
+            if(GEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW){
+                segments3d(
+                    layerBordersX,
+                    layerBordersY,
+                    layerBordersZ,
+                    lwd=GEOGRAPHIC_AGGREGATE_WIDTH, 
+                    col=GEOGRAPHIC_AGGREGATE_COLOR, 
+                    lty=GEOGRAPHIC_AGGREGATE_TYPE,
+                    alpha=GEOGRAPHIC_AGGREGATE_TRANSP)
+            }            
+        }
     }
 }
 
