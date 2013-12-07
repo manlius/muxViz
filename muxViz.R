@@ -60,7 +60,7 @@ AGGREGATE_SHOW <- T
 NODE_LABELS_SHOW <- F
 GEOGRAPHIC_BOUNDARIES_SHOW <- T
 GEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW <- T
-INTERLINK_SHOW <- T
+INTERLINK_SHOW <- F
 INTERLINK_SHOW_FRACTION <- 0.2 #this allows to show only a few (randomly chosen) interlinks
                                                                 #0: no interlinks 1: show all
 RESCALE_WEIGHT <- T
