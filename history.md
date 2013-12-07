@@ -1,4 +1,13 @@
 ################
+7 December 2013
+################
+
+Manlio De Domenico:
+
+- Added support to show aggregate network as additional layer
+- Added support for custom graphic options for the aggregate network (independent from other layers)
+
+################
 25 November 2013
 ################
 
