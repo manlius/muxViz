@@ -18,19 +18,26 @@ Usage from shell command line:
 
 	R CMD BATCH muxViz.R
 	
-	
+
+![Network with community structure](/gallery/muxViz_community3.png "Network with community structure")
+![Air transportation network](/gallery/muxViz_airports_osm6e.png "Air transportation network")
+![Real collaboration network](/gallery/muxViz_16Layers_Real2.png "Collaboration network")
+
 If used with the default options for the first time, muxViz will plot a multiplex with 100 nodes and 4 layers with community-like topology. The output should be a file 'muxViz.png' in the same folder, similar to 'muxViz_example.png' provided with the package.
 
 Please, explicitly cite muxViz if you find it useful for your visualizations.
 
 
 monoxViz v0.1
-=========
+===========
 
 Visualization of classical single-layer networks
 
 The muxViz package now includes a script for the visualization of standard networks. It supports both 2D and 3D layouting with openGL, it is fully integrated with OpenStreetMap and preserves all the features developed to customize visualizations with muxViz.
 
+
+Copyright
+=======
 
 (C) Copyright 2013, Manlio De Domenico.
 
