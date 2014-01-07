@@ -50,3 +50,8 @@ Usage from shell command line:
 
         R CMD BATCH muxViz.R
 
+
+monoxViz v0.1
+===========
+
+It is now available the muxViz counterpart for visualization of classical single-layer networks. Usage is the same, except that the input network, the layout file, etc, are provided within the R script and no more from an external file.

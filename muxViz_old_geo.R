@@ -2,7 +2,7 @@
 # MuxVisual: Visualization of Multiplex Networks with R & openGL
 #
 # Version: 0.1
-# Last update: Dec 2013
+# Last update: Nov 2013
 # Authors: Manlio De Domenico
 #               Universitat Rovira i Virgili, Tarragona (Spain)
 #
@@ -17,7 +17,6 @@ library(igraph)
 library(rgl)
 library(mapproj)
 library(maps)
-library(OpenStreetMap)
 
 ###############
 #Input Parameters
@@ -61,9 +60,6 @@ AGGREGATE_SHOW <- T
 NODE_LABELS_SHOW <- F
 GEOGRAPHIC_BOUNDARIES_SHOW <- T
 GEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW <- T
-OSMType <- "mapquest-aerial"               #this fix the type of map to be used in the background
-                                                                #osm-bbike-german
-                                                                #bing
 INTERLINK_SHOW <- F
 INTERLINK_SHOW_FRACTION <- 0.2 #this allows to show only a few (randomly chosen) interlinks
                                                                 #0: no interlinks 1: show all
@@ -72,6 +68,8 @@ RESCALE_WEIGHT <- T
 NODE_TRANSP <- 0.2
 EDGE_TRANSP <- 0.2
 INTERLINK_TRANSP <- 0.2
+GEOGRAPHIC_TRANSP <- 1
+GEOGRAPHIC_AGGREGATE_TRANSP <- 1
 
 PLOT_TITLE <- ""
 PLOT_SUBTITLE <- ""
@@ -109,6 +107,14 @@ INTERLINK_WIDTH <- 1
 
 BACKGROUND_COLOR <- "#FFFFFF"
 
+#==== Geographic layouts, when available
+GEOGRAPHIC_COLOR <- "#A9A9A9"   #"#B9B9B9"
+GEOGRAPHIC_TYPE <- "solid"
+GEOGRAPHIC_WIDTH <- 0.3
+GEOGRAPHIC_AGGREGATE_COLOR <- "#A9A9A9"   #"#B9B9B9"
+GEOGRAPHIC_AGGREGATE_TYPE <- "solid"
+GEOGRAPHIC_AGGREGATE_WIDTH <- 0.3
+
 ###############
 #End Parameters
 ###############
@@ -124,6 +130,7 @@ layerLabel <- vector("list",LAYERS+1)
 layerLayoutFile <- vector("list",LAYERS)
 layerLayout <- vector("list",LAYERS+1)
 nodesLabel <- vector("list",LAYERS+1)
+layerGeoMap <- vector("list",LAYERS+1)
 
 for(l in 1:LAYERS){
     fileName[l] <- strsplit(fileInput[l],';')[[1]][1]
@@ -188,6 +195,14 @@ for(l in 1:LAYERS){
             print(paste("  Latitude boundaries: ",min(layerTable$nodeLat),max(layerTable$nodeLat)))
             print(paste("  Longitude boundaries: ",min(layerTable$nodeLong),max(layerTable$nodeLong)))
             
+            #set up a geographic map
+            layerGeoMap[[l]] = map("world", xlim=longBounds, ylim=latBounds, projection="mercator", fill = F, plot = F)                        
+
+            XMIN <- layerGeoMap[[l]]$range[1]
+            XMAX <- layerGeoMap[[l]]$range[2]
+            YMIN <- layerGeoMap[[l]]$range[3]
+            YMAX <- layerGeoMap[[l]]$range[4]
+
             #The input layout is geographic, we must convert it to cartesian
             sphCoordinates <- list()
             sphCoordinates$x <- layerTable$nodeLong
@@ -239,6 +254,7 @@ for(l in 1:LAYERS){
 #Therefore, here I prefer to assign manually the layout of the first layer to the aggregate.
 #So far, I accept this possibility just for sake of completeness, but a correct use of muxViz should avoid
 #situations like this..
+layerGeoMap[[LAYERS+1]] <- layerGeoMap[[1]]
 layerLayout[[LAYERS+1]] <- layerLayout[[1]]
 nodesLabel[[LAYERS+1]] <- nodesLabel[[1]]
 
@@ -507,6 +523,12 @@ rgl.clear()
         layouts[[l]][,3] <- -1 + 2*l/LAYERS
     }
 
+    if(GEOGRAPHIC_LAYOUT){
+        #the fields $x and $y of this map contains the coordinates of the boundaries we are interested into
+        layerGeoMap[[l]]$x <- 2*(layerGeoMap[[l]]$x - XMIN)/(XMAX-XMIN) - 1
+        layerGeoMap[[l]]$y <- 2*(layerGeoMap[[l]]$y - YMIN)/(YMAX-YMIN) - 1
+    }
+
     if(NODE_COLOR_BY_COMMUNITY){
         print("  Detecting communities for node coloring")    
 
@@ -582,21 +604,6 @@ rgl.clear()
     print(paste("  Layout of layer: finished."))
 }
 
-fileNamePNG <- paste(inputList,"_",OSMType,".png",sep="")
-if(GEOGRAPHIC_LAYOUT && (GEOGRAPHIC_BOUNDARIES_SHOW || GEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW)){
-    print(paste("  Downloading geographic area..."))
-    #create a map with openstreetmap and save to a file for later use
-    rescaleFactor <- (YMAX-YMIN)/(XMAX-XMIN)
-    #H0/W0 = H/W  --> H = W/W0 * H0 = W*rescaleFactor in terms of Cartesian coords
-    pngWidth = 720
-    pngHeight = pngWidth*rescaleFactor
-    png(filename=fileNamePNG,width=pngWidth,height=pngHeight)
-    map = openmap(c(lat=LATMAX,   lon=LONGMIN), c(lat= LATMIN,   lon=LONGMAX), minNumTiles=18,type=OSMType)
-    plot(map)
-    dev.off()
-}
-
-
 if(LAYER_SHOW){
     for( l in 1:(LAYERS+1)){
         #This draws a plan to be used as layer
@@ -609,22 +616,14 @@ if(LAYER_SHOW){
         x <- c(-1,-1,1,1) + (l-1)*LAYER_SHIFT
         y <- c(1,-1,-1,1)
         z <- c(d,d,d,d)
-        
+
         if(l<LAYERS+1){
             #planes3d(0,0,1, -d , alpha=LAYER_TRANSP, col=LAYER_COLOR)
-            if(GEOGRAPHIC_LAYOUT && GEOGRAPHIC_BOUNDARIES_SHOW){
-                quads3d(x,y,z, alpha=LAYER_TRANSP, col=LAYER_COLOR,texcoords=cbind(c(0,0,1,1), -c(0,1,1,0)), texture=fileNamePNG)
-            }else{
-                quads3d(x,y,z, alpha=LAYER_TRANSP, col=LAYER_COLOR)
-            }
+            quads3d(x,y,z, alpha=LAYER_TRANSP, col=LAYER_COLOR)
         }else{
             if(AGGREGATE_SHOW){
                 #planes3d(0,0,1, -d , alpha=LAYER_AGGREGATE_TRANSP, col=LAYER_AGGREGATE_COLOR)
-                if(GEOGRAPHIC_LAYOUT && GEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW){
-                    quads3d(x,y,z, alpha=LAYER_AGGREGATE_TRANSP, col=LAYER_AGGREGATE_COLOR,texcoords=cbind(c(0,0,1,1), -c(0,1,1,0)), texture=fileNamePNG)
-                }else{
-                    quads3d(x,y,z, alpha=LAYER_AGGREGATE_TRANSP, col=LAYER_AGGREGATE_COLOR)                    
-                }
+                quads3d(x,y,z, alpha=LAYER_AGGREGATE_TRANSP, col=LAYER_AGGREGATE_COLOR)
             }else{
                 next
             }
@@ -671,6 +670,56 @@ if(!LAYOUT_INDEPENDENT){
                         alpha=INTERLINK_TRANSP)
                 }
             }
+        }
+    }
+}
+
+if(GEOGRAPHIC_LAYOUT){
+    for( l in 1:(LAYERS+1) ){
+        if(!AGGREGATE_SHOW){
+            if(l==LAYERS+1){
+                next
+            }
+        }
+        
+        layerBordersX <- matrix(c(0),nrow=length(layerGeoMap[[l]]$x)-1,ncol=2)
+        layerBordersY <- matrix(c(0),nrow=length(layerGeoMap[[l]]$x)-1,ncol=2)
+        layerBordersZ <- matrix(c(0),nrow=length(layerGeoMap[[l]]$x)-1,ncol=2)
+
+
+        for(i in 1:length(layerGeoMap[[l]]$x)-1){
+            layerBordersX[i,] <- c(layerGeoMap[[l]]$x[i],layerGeoMap[[l]]$x[i+1])
+            layerBordersY[i,] <- c(layerGeoMap[[l]]$y[i],layerGeoMap[[l]]$y[i+1])
+
+            if(AGGREGATE_SHOW){
+                layerBordersZ[i,] <- c(-1 + 2*l/(LAYERS+1),-1 + 2*l/(LAYERS+1))
+            }else{
+                layerBordersZ[i,] <- c(-1 + 2*l/LAYERS,-1 + 2*l/LAYERS)
+            }
+        }
+    
+        if(l<LAYERS+1){
+            if(GEOGRAPHIC_BOUNDARIES_SHOW){
+                segments3d(
+                    layerBordersX,
+                    layerBordersY,
+                    layerBordersZ,
+                    lwd=GEOGRAPHIC_WIDTH, 
+                    col=GEOGRAPHIC_COLOR, 
+                    lty=GEOGRAPHIC_TYPE,
+                    alpha=GEOGRAPHIC_TRANSP)
+            }
+        }else{
+            if(GEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW){
+                segments3d(
+                    layerBordersX,
+                    layerBordersY,
+                    layerBordersZ,
+                    lwd=GEOGRAPHIC_AGGREGATE_WIDTH, 
+                    col=GEOGRAPHIC_AGGREGATE_COLOR, 
+                    lty=GEOGRAPHIC_AGGREGATE_TYPE,
+                    alpha=GEOGRAPHIC_AGGREGATE_TRANSP)
+            }            
         }
     }
 }

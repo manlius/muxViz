@@ -1,4 +1,22 @@
 ################
+15 December 2013
+################
+
+Manlio De Domenico:
+
+- Added support to OpenStreetMap grographic layouts
+- Note: the old code is kept because someone could like to draw very simple boundaries .. the name is muxViz_old_geo.R
+  and will be no longer developed
+
+################
+10 December 2013
+################
+
+Manlio De Domenico:
+
+- Added support to shift the layers along x-axis to improve the perspective
+
+################
 7 December 2013
 ################
 

@@ -8,6 +8,7 @@ muxViz is a script for the visualization of interconnected multi-layer networks.
 - igraph v0.6.5 (or above)
 - RGL 0.93.963 (or above)
 - mapproject v1.2-1 (or above)
+- openstreetmap v0.3.1 (or above)
 
 Usage within R environment:
 
@@ -21,6 +22,14 @@ Usage from shell command line:
 If used with the default options for the first time, muxViz will plot a multiplex with 100 nodes and 4 layers with community-like topology. The output should be a file 'muxViz.png' in the same folder, similar to 'muxViz_example.png' provided with the package.
 
 Please, explicitly cite muxViz if you find it useful for your visualizations.
+
+
+monoxViz v0.1
+=========
+
+Visualization of classical single-layer networks
+
+The muxViz package now includes a script for the visualization of standard networks. It supports both 2D and 3D layouting with openGL, it is fully integrated with OpenStreetMap and preserves all the features developed to customize visualizations with muxViz.
 
 
 (C) Copyright 2013, Manlio De Domenico.
