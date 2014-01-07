@@ -2,7 +2,7 @@
 # MonoxVisual: Visualization of Monoplex Networks with R & openGL
 #
 # Version: 0.1
-# Last update: Nov 2013
+# Last update: Jan 2014
 # Authors: Manlio De Domenico and Serafina Agnello
 #               Universitat Rovira i Virgili, Tarragona (Spain)
 #

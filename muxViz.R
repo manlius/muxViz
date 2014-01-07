@@ -2,7 +2,7 @@
 # MuxVisual: Visualization of Multiplex Networks with R & openGL
 #
 # Version: 0.1
-# Last update: Dec 2013
+# Last update: Jan 2014
 # Authors: Manlio De Domenico
 #               Universitat Rovira i Virgili, Tarragona (Spain)
 #
