@@ -18,7 +18,6 @@ Usage from shell command line:
 
 	R CMD BATCH muxViz.R
 	
-
 ![Network with community structure](/gallery/muxViz_community3.png "Network with community structure")
 ![Air transportation network](/gallery/muxViz_airports_osm6e.png "Air transportation network")
 ![Real collaboration network](/gallery/muxViz_16Layers_Real2.png "Collaboration network")
@@ -34,6 +33,10 @@ monoxViz v0.1
 Visualization of classical single-layer networks
 
 The muxViz package now includes a script for the visualization of standard networks. It supports both 2D and 3D layouting with openGL, it is fully integrated with OpenStreetMap and preserves all the features developed to customize visualizations with muxViz.
+
+![Network with community structure](/gallery/monoxViz_community_example2.png "Network with community structure")
+![London Tube + OpenStreetMap](/gallery/monoxViz_london_tube.png "London Tube + OpenStreetMap")
+![Yeast genetic interaction network (GCC)](/gallery/monoxViz_yeast_interaction_lcc.png "Yeast genetic interaction network (GCC)")
 
 
 Copyright
