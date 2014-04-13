@@ -1,72 +1,103 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
+
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>muxViz by manlius</title>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="muxViz : Multilayer Analysis and Visualization of interconnected networks" />
 
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <script src="javascripts/scale.fix.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>muxViz</title>
   </head>
+
   <body>
-    <div class="wrapper">
-      <header>
-        <h1 class="header">muxViz</h1>
-        <p class="header">Multilayer Analysis and Visualization of interconnected networks</p>
 
-        <ul>
-          <li class="download"><a class="buttons" href="https://github.com/manlius/muxViz/zipball/master">Download ZIP</a></li>
-          <li class="download"><a class="buttons" href="https://github.com/manlius/muxViz/tarball/master">Download TAR</a></li>
-          <li><a class="buttons github" href="https://github.com/manlius/muxViz">View On GitHub</a></li>
-        </ul>
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/manlius/muxViz">View on GitHub</a>
 
-        <p class="header">This project is maintained by <a class="header name" href="https://github.com/manlius">manlius</a></p>
+          <h1 id="project_title">muxViz</h1>
+          <h2 id="project_tagline">Multilayer Analysis and Visualization of interconnected networks</h2>
 
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/manlius/muxViz/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/manlius/muxViz/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
 
-      </header>
-      <section>
-        <h3>
-<a name="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages"><span class="octicon octicon-link"></span></a>Welcome to GitHub Pages.</h3>
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="muxviz-v01" class="anchor" href="#muxviz-v01"><span class="octicon octicon-link"></span></a>muxViz v0.1</h1>
 
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
+<p>Visualization of interconnected multilayer networks</p>
 
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
+<p>muxViz is a script for the visualization of interconnected multi-layer networks. It requires R v3.0.1 (or above) with the following packages installed:</p>
+
+<ul>
+<li>igraph v0.6.5 (or above)</li>
+<li>RGL 0.93.963 (or above)</li>
+<li>mapproject v1.2-1 (or above)</li>
+<li>openstreetmap v0.3.1 (or above)</li>
+</ul><p>Usage within R environment:</p>
+
+<pre><code>source('muxViz.R')
 </code></pre>
 
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
+<p>Usage from shell command line:</p>
 
-<h3>
-<a name="designer-templates" class="anchor" href="#designer-templates"><span class="octicon octicon-link"></span></a>Designer Templates</h3>
+<pre><code>R CMD BATCH muxViz.R
+</code></pre>
 
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
+<p><img src="/gallery/muxViz_community3.png" alt="Network with community structure" title="Network with community structure"><img src="/gallery/muxViz_airports_osm6e.png" alt="Air transportation network" title="Air transportation network"><img src="/gallery/muxViz_16Layers_Real2.png" alt="Real collaboration network" title="Collaboration network"></p>
 
-<h3>
-<a name="rather-drive-stick" class="anchor" href="#rather-drive-stick"><span class="octicon octicon-link"></span></a>Rather Drive Stick?</h3>
+<p>If used with the default options for the first time, muxViz will plot a multiplex with 100 nodes and 4 layers with community-like topology. The output should be a file 'muxViz.png' in the same folder, similar to 'muxViz_example.png' provided with the package.</p>
 
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
+<p>Please, explicitly cite muxViz if you find it useful for your visualizations.</p>
 
-<h3>
-<a name="authors-and-contributors" class="anchor" href="#authors-and-contributors"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
+<h1>
+<a name="monoxviz-v01" class="anchor" href="#monoxviz-v01"><span class="octicon octicon-link"></span></a>monoxViz v0.1</h1>
 
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
+<p>Visualization of classical single-layer networks</p>
 
-<h3>
-<a name="support-or-contact" class="anchor" href="#support-or-contact"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
+<p>The muxViz package now includes a script for the visualization of standard networks. It supports both 2D and 3D layouting with openGL, it is fully integrated with OpenStreetMap and preserves all the features developed to customize visualizations with muxViz.</p>
 
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
+<p><img src="/gallery/monoxViz_community_example2.png" alt="Network with community structure" title="Network with community structure"><img src="/gallery/monoxViz_london_tube.png" alt="London Tube + OpenStreetMap" title="London Tube + OpenStreetMap"><img src="/gallery/monoxViz_yeast_interaction_lcc.png" alt="Yeast genetic interaction network (GCC)" title="Yeast genetic interaction network (GCC)"></p>
+
+<h1>
+<a name="copyright" class="anchor" href="#copyright"><span class="octicon octicon-link"></span></a>Copyright</h1>
+
+<p>(C) Copyright 2013, Manlio De Domenico.</p>
+
+<p>This code has no warranty whatsoever and any kind of support is provided.
+You are free to do what you like with this code as long as you leave this copyright in place.
+Please, explicitly cite muxViz if you find it useful for your visualizations.</p>
+
+<p>(C) Copyright 2013, Manlio De Domenico (manlio.dedomenico at urv.cat) </p>
+
+<p>Each file in this folder is part of the muxViz package. </p>
+
+<p>muxViz is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. </p>
+
+<p>muxViz is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. </p>
+
+<p>You should have received a copy of the GNU General Public License along with the package. If not, see <a href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>. </p>
       </section>
-      <footer>
-        <p><small>Hosted on <a href="http://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">muxViz maintained by <a href="https://github.com/manlius">manlius</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
       </footer>
     </div>
-    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
-		
+
+    
+
   </body>
 </html>
