@@ -1,36 +1,35 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-
   <head>
-    <meta charset='utf-8' />
-    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
-    <meta name="description" content="muxViz : Multilayer Analysis and Visualization of interconnected networks" />
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>muxViz by manlius</title>
 
-    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
-
-    <title>muxViz</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
   </head>
-
   <body>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">muxViz</h1>
+        <p class="header">Multilayer Analysis and Visualization of interconnected networks</p>
 
-    <!-- HEADER -->
-    <div id="header_wrap" class="outer">
-        <header class="inner">
-          <a id="forkme_banner" href="https://github.com/manlius/muxViz">View on GitHub</a>
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/manlius/muxViz/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/manlius/muxViz/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/manlius/muxViz">View On GitHub</a></li>
+        </ul>
 
-          <h1 id="project_title">muxViz</h1>
-          <h2 id="project_tagline">Multilayer Analysis and Visualization of interconnected networks</h2>
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/manlius">manlius</a></p>
 
-            <section id="downloads">
-              <a class="zip_download_link" href="https://github.com/manlius/muxViz/zipball/master">Download this project as a .zip file</a>
-              <a class="tar_download_link" href="https://github.com/manlius/muxViz/tarball/master">Download this project as a tar.gz file</a>
-            </section>
-        </header>
-    </div>
 
-    <!-- MAIN CONTENT -->
-    <div id="main_content_wrap" class="outer">
-      <section id="main_content" class="inner">
+      </header>
+      <section>
         <h1>
 <a name="muxviz-v01" class="anchor" href="#muxviz-v01"><span class="octicon octicon-link"></span></a>muxViz v0.1</h1>
 
@@ -53,7 +52,7 @@
 <pre><code>R CMD BATCH muxViz.R
 </code></pre>
 
-<p><img src="/gallery/muxViz_community3.png" alt="Network with community structure" title="Network with community structure"><img src="/gallery/muxViz_airports_osm6e.png" alt="Air transportation network" title="Air transportation network"><img src="/gallery/muxViz_16Layers_Real2.png" alt="Real collaboration network" title="Collaboration network"></p>
+<p><img src="https://github.com/manlius/muxViz/blob/master/gallery/muxViz_community3.png" alt="Network with community structure" title="Network with community structure"><img src="https://github.com/manlius/muxViz/blob/master/gallery/muxViz_airports_osm6e.png" alt="Air transportation network" title="Air transportation network"><img src="https://github.com/manlius/muxViz/blob/master/gallery/muxViz_16Layers_Real2.png" alt="Real collaboration network" title="Collaboration network"></p>
 
 <p>If used with the default options for the first time, muxViz will plot a multiplex with 100 nodes and 4 layers with community-like topology. The output should be a file 'muxViz.png' in the same folder, similar to 'muxViz_example.png' provided with the package.</p>
 
@@ -66,7 +65,7 @@
 
 <p>The muxViz package now includes a script for the visualization of standard networks. It supports both 2D and 3D layouting with openGL, it is fully integrated with OpenStreetMap and preserves all the features developed to customize visualizations with muxViz.</p>
 
-<p><img src="/gallery/monoxViz_community_example2.png" alt="Network with community structure" title="Network with community structure"><img src="/gallery/monoxViz_london_tube.png" alt="London Tube + OpenStreetMap" title="London Tube + OpenStreetMap"><img src="/gallery/monoxViz_yeast_interaction_lcc.png" alt="Yeast genetic interaction network (GCC)" title="Yeast genetic interaction network (GCC)"></p>
+<p><img src="https://github.com/manlius/muxViz/blob/master/gallery/monoxViz_community_example2.png" alt="Network with community structure" title="Network with community structure"><img src="https://github.com/manlius/muxViz/blob/master/gallery/monoxViz_london_tube.png" alt="London Tube + OpenStreetMap" title="London Tube + OpenStreetMap"><img src="https://github.com/manlius/muxViz/blob/master/gallery/monoxViz_yeast_interaction_lcc.png" alt="Yeast genetic interaction network (GCC)" title="Yeast genetic interaction network (GCC)"></p>
 
 <h1>
 <a name="copyright" class="anchor" href="#copyright"><span class="octicon octicon-link"></span></a>Copyright</h1>
@@ -87,17 +86,11 @@ Please, explicitly cite muxViz if you find it useful for your visualizations.</p
 
 <p>You should have received a copy of the GNU General Public License along with the package. If not, see <a href="http://www.gnu.org/licenses/">http://www.gnu.org/licenses/</a>. </p>
       </section>
-    </div>
-
-    <!-- FOOTER  -->
-    <div id="footer_wrap" class="outer">
-      <footer class="inner">
-        <p class="copyright">muxViz maintained by <a href="https://github.com/manlius">manlius</a></p>
-        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      <footer>
+        <p><small>Hosted on <a href="http://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
       </footer>
     </div>
-
-    
-
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		
   </body>
 </html>
