@@ -61,7 +61,7 @@ AGGREGATE_SHOW <- T
 NODE_LABELS_SHOW <- F
 GEOGRAPHIC_BOUNDARIES_SHOW <- T
 GEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW <- T
-OSMType <- "mapquest-aerial"               #this fix the type of map to be used in the background
+OSMType <- "stamen-watercolor"               #this fix the type of map to be used in the background
                                                                 #osm-bbike-german
                                                                 #bing
 INTERLINK_SHOW <- F

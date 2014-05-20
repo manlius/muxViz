@@ -1,6 +1,25 @@
-################
-15 December 2013
-################
+### 5 May 2014
+
+Manlio De Domenico:
+
+- Optimized calculation of degree/strength centralities of nodes in undirected networks
+
+### 8 April 2014
+
+Manlio De Domenico:
+
+- Added Graphical User Interface (GUI) through RShiny
+- Added support to multiplex data analysis (correlation, centrality and community detection) with interface to Octave 3.4.0 (or above) for tensorial operations
+- Added support for dimensionality reduction
+- Added support for changing color palette according to color brewer standards
+- Added support to annular visualization
+- Added support to export rendering
+- Added a more detailed help
+- Note: the old muxViz.R is kept because someone could like to render visualizations without passing through a GUI-
+  However, this does not include an interface to tensorial analysis of multiplex data. 
+  Therefore this code will be no longer developed
+
+### 15 December 2013
 
 Manlio De Domenico:
 
@@ -8,35 +27,32 @@ Manlio De Domenico:
 - Note: the old code is kept because someone could like to draw very simple boundaries .. the name is muxViz_old_geo.R
   and will be no longer developed
 
-################
-10 December 2013
-################
+
+### 10 December 2013
 
 Manlio De Domenico:
 
 - Added support to shift the layers along x-axis to improve the perspective
 
-################
-7 December 2013
-################
+### 7 December 2013
 
 Manlio De Domenico:
 
 - Added support to show aggregate network as additional layer
 - Added support for custom graphic options for the aggregate network (independent from other layers)
 
-################
-25 November 2013
-################
+
+### 25 November 2013
+
 
 Manlio De Domenico:
 
 - Added support for InfoMap community detection algorithm
 - Added support for showing regional borders in geographic layouts
 
-################
-23 November 2013
-################
+
+### 23 November 2013
+
 
 Manlio De Domenico:
 
@@ -46,9 +62,9 @@ Manlio De Domenico:
 - Added support for community detection based on edge-betweenness
 - Minor bugs solved
 
-################
-22 November 2013
-################
+
+### 22 November 2013
+
 
 Manlio De Domenico:
 
@@ -59,9 +75,8 @@ Manlio De Domenico:
 - Added a new layout, for faster and better visualization of "complicated" networks
 - Added a few more graphic options
 
-################
-18 November 2013
-################
+
+### 18 November 2013
 
 Manlio De Domenico:
 

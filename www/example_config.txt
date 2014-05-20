@@ -1,0 +1,2 @@
+data/yeastCostanzo/yeast_interaction_lcc_t0.5_k1.edges;Interactions;data/yeastCostanzo/yeast_lcc_layout.txt
+data/yeastCostanzo/yeast_correlation_lcc_t0.3_k1.edges;Correlations;data/yeastCostanzo/yeast_lcc_layout.txt

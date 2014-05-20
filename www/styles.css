@@ -1,0 +1,53 @@
+body{
+  font-size: 14px;    
+}
+
+#projectSummaryHTML span {
+  color: #944;
+  font-weight: 400;
+  font-size: 16px;
+}
+
+#communitySummaryHTML span {
+  color: #944;
+  font-weight: 400;
+  font-size: 16px;
+}
+
+#globalDiagnosticsOverlapping span {
+  color: #944;
+  font-weight: 400;
+  font-size: 16px;
+}
+
+#tabCredits  span {
+  color: #944;
+  font-weight: 400;
+  font-size: 16px;
+}
+
+#projectLayoutType span {
+  color: #944;
+  font-weight: 400;
+  font-size: 16px;
+}
+
+#projectLayout span {
+  color: #944;
+  font-weight: 400;
+  font-size: 16px;
+}
+
+h3{
+    color: #1771C7;
+}
+
+h4 {
+    color: #165400;    
+}
+
+h5{
+    color: #E08400;
+}
+
+<!--tabReducibilityHelp and tabReducibilityHelp-->

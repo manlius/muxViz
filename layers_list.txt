@@ -1,4 +1,0 @@
-examples/co4_sample1_N100.edges;Layer1;
-examples/co4_sample2_N100.edges;Layer2;
-examples/co4_sample3_N100.edges;Layer3;
-examples/co4_sample4_N100.edges;Layer4;
