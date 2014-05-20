@@ -12,6 +12,22 @@ muxViz is a platform for the visualization and the analysis of interconnected mu
 
 Support for data analysis is not mandatory and requires a working installation of GNU Octave 3.4.0 or above. 
 
+#### Official website
+
+Please, visit the official website (<http://muxviz.net>) of muxViz for further information. 
+
+#### Citation
+
+If you use muxViz (or any part of muxViz, or images available in the gallery) for your multilayer analysis and visualization, you should cite the paper
+
+Manlio De Domenico, Mason A. Porter, Alex Arenas, Multilayer Analysis and Visualization of Networks, arXiv:1405.0843
+
+freely available here: <http://arxiv.org/abs/1405.0843>
+
+Please, note that muxViz is based on some algorithms developed in other studies. You should cite the original paper(s) every time that you use those algorithms. 
+
+#### The Graphical User Interface
+
 ![muxViz GUI](gallery/gui1.png "muxViz GUI")
 
 ##### Requirements and Installation
@@ -51,7 +67,7 @@ You can download muxViz from Github: <https://github.com/manlius/muxViz/archive/
 To work properly with geographical networks, the GDAL  (Geospatial Data Abstraction Library) is required. GDAL can be found here: <http://www.gdal.org/>
 Note that GDAL should be installed *before* running muxViz for the first time.
 
-###### Very quick installation on a Linux
+###### Very quick installation on Linux
 
 If you use a Linux (Ubuntu-like) distribution, you are very lucky, because the following BASH script will do the job for you:
 
@@ -193,7 +209,7 @@ Credits
 
 This work has been partially supported by European Commission FET-Proactive project PLEXMATH (Grant No. 317614) (<http://www.plexmath.eu/>), the European project devoted to the investigation of multi-level complex systems and has been developed at the Alephsys Lab (<http://deim.urv.cat/~alephsys/>),
 
-I am in debt with A. Arenas for proposing this project, with Mason A. Porter and A. Sole-Ribalta for invaluable suggestions and feedbacks. 
+I am in debt with Alex Arenas for proposing this project, with Mason A. Porter and Albert Sole'-Ribalta for invaluable suggestions and feedbacks. 
 
 I would like to thank Inderjit S. Jutla, Lucas G. S. Jeub, and Peter J. Mucha for making their code about multislice community detection available. 
 
