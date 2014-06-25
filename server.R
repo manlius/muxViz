@@ -158,8 +158,8 @@ shinyServer(function(input, output, session) {
                 cntEdges <- 0
                 
                 for(l in 1:LAYERS){
-                    if( min(layerEdges[[l]][,1:2]) < idmin) idmin <- min(layerEdges[[l]][,1:2])
-                    if( max(layerEdges[[l]][,1:2]) > idmax) idmax <- max(layerEdges[[l]][,1:2])
+                    if( min(layerEdges[[l]][,1:2],na.rm=T) < idmin) idmin <- min(layerEdges[[l]][,1:2],na.rm=T)
+                    if( max(layerEdges[[l]][,1:2],na.rm=T) > idmax) idmax <- max(layerEdges[[l]][,1:2],na.rm=T)
     
                     cntEdges <- cntEdges + nrow(layerEdges[[l]])
                 }
@@ -218,16 +218,16 @@ shinyServer(function(input, output, session) {
                         if(length(layerTable$nodeLat)==Nodes && length(layerTable$nodeLong)==Nodes){
                             print(paste("Layout for layer",l,"is geographic. Converting."))
                             #Get boundaries
-                            longBounds = c(min(layerTable$nodeLong),max(layerTable$nodeLong))
-                            latBounds = c(min(layerTable$nodeLat),max(layerTable$nodeLat))
+                            longBounds = c(min(layerTable$nodeLong,na.rm=T),max(layerTable$nodeLong,na.rm=T))
+                            latBounds = c(min(layerTable$nodeLat,na.rm=T),max(layerTable$nodeLat,na.rm=T))
                 
                             if(min(layerTable$nodeLong,na.rm=T) < LONGMIN) LONGMIN <<- min(layerTable$nodeLong,na.rm=T)
                             if(min(layerTable$nodeLat,na.rm=T) < LATMIN) LATMIN <<- min(layerTable$nodeLat,na.rm=T)
                             if(max(layerTable$nodeLong,na.rm=T) > LONGMAX) LONGMAX <<- max(layerTable$nodeLong,na.rm=T)
                             if(max(layerTable$nodeLat,na.rm=T) > LATMAX) LATMAX <<- max(layerTable$nodeLat,na.rm=T)
                                                                             
-                            print(paste("  Latitude boundaries: ",min(layerTable$nodeLat),max(layerTable$nodeLat)))
-                            print(paste("  Longitude boundaries: ",min(layerTable$nodeLong),max(layerTable$nodeLong)))
+                            print(paste("  Latitude boundaries: ",LATMIN,LATMAX))
+                            print(paste("  Longitude boundaries: ",LONGMIN,LONGMAX))
                             
                             #The input layout is geographic, we must convert it to cartesian
                             sphCoordinates <- list()
@@ -438,7 +438,7 @@ shinyServer(function(input, output, session) {
                     if(input$chkRESCALE_WEIGHT){
                         if(ncol(layerEdges[[l]])==3){
                             print("Rescaling weights...")
-                            layerEdges[[l]][,3] <<- layerEdges[[l]][,3]/min(layerEdges[[l]][,3])
+                            layerEdges[[l]][,3] <<- layerEdges[[l]][,3]/min(layerEdges[[l]][,3],na.rm=T)
                         }
                     }
                 }
@@ -1071,14 +1071,14 @@ shinyServer(function(input, output, session) {
                         x <- x + 1e-3
 
                         if(!input$chkANULAR_VIZ_LOG){
-                            if(max(x) != min(x)){
-                                x <- floor( 1 + Bins * (x - min(x))/(max(x) - min(x)) )
+                            if(max(x,na.rm=T) != min(x,na.rm=T)){
+                                x <- floor( 1 + Bins * (x - min(x,na.rm=T))/(max(x,na.rm=T) - min(x,na.rm=T)) )
                             }else{
                                 x <- rep(1,Nodes)
                             }
                         }else{
-                            if(max(x) != min(x)){
-                                x <- floor( 1 + Bins * (log(x) - log(min(x)))/(log(max(x)) - log(min(x))) )
+                            if(max(x,na.rm=T) != min(x,na.rm=T)){
+                                x <- floor( 1 + Bins * (log(x) - log(min(x,na.rm=T)))/(log(max(x,na.rm=T)) - log(min(x,na.rm=T))) )
                             }else{
                                 x <- rep(1,Nodes)
                             }
@@ -1160,14 +1160,14 @@ shinyServer(function(input, output, session) {
                             x <- x + 1e-3
 
                             if(!input$chkANULAR_VIZ_LOG){
-                                if(max(x) != min(x)){
-                                    x <- floor( 1 + Bins * (x - min(x))/(max(x) - min(x)) )
+                                if(max(x,na.rm=T) != min(x,na.rm=T)){
+                                    x <- floor( 1 + Bins * (x - min(x,na.rm=T))/(max(x,na.rm=T) - min(x,na.rm=T)) )
                                 }else{
                                     x <- rep(1,Nodes)
                                 }
                             }else{
-                                if(max(x) != min(x)){
-                                    x <- floor( 1 + Bins * (log(x) - log(min(x)))/(log(max(x)) - log(min(x))) )
+                                if(max(x,na.rm=T) != min(x,na.rm=T)){
+                                    x <- floor( 1 + Bins * (log(x) - log(min(x,na.rm=T)))/(log(max(x,na.rm=T)) - log(min(x,na.rm=T))) )
                                 }else{
                                     x <- rep(1,Nodes)
                                 }
@@ -1196,14 +1196,14 @@ shinyServer(function(input, output, session) {
                         x <- x + 1e-3
             
                         if(!input$chkANULAR_VIZ_LOG){
-                            if(max(x) != min(x)){
-                                x <- floor( 1 + Bins * (x - min(x))/(max(x) - min(x)) )
+                            if(max(x,na.rm=T) != min(x,na.rm=T)){
+                                x <- floor( 1 + Bins * (x - min(x,na.rm=T))/(max(x,na.rm=T) - min(x,na.rm=T)) )
                             }else{
                                 x <- rep(1,Nodes)
                             }
                         }else{
-                            if(max(x) != min(x)){
-                                x <- floor( 1 + Bins * (log(x) - log(min(x)))/(log(max(x)) - log(min(x))) )
+                            if(max(x,na.rm=T) != min(x,na.rm=T)){
+                                x <- floor( 1 + Bins * (log(x) - log(min(x,na.rm=T)))/(log(max(x,na.rm=T)) - log(min(x,na.rm=T))) )
                             }else{
                                 x <- rep(1,Nodes)
                             }
@@ -1601,17 +1601,36 @@ shinyServer(function(input, output, session) {
                             thisLATMAX <- as.numeric(input$txtGEOGRAPHIC_LAT_MAX)
                             thisLONGMIN <- as.numeric(input$txtGEOGRAPHIC_LONG_MIN)
                             thisLONGMAX <- as.numeric(input$txtGEOGRAPHIC_LONG_MAX)
-                
+
+                            #mapproject has problems in converting |latitudes| > 80, therefore we have to constrain
+                            if(thisLATMIN < -80){
+                                thisLATMIN <- -80
+                                print("Warning! Min Latitude smaller than -80, changing to -80.")
+                            }
+                            if(thisLATMAX > 80){
+                                thisLATMAX <- 80
+                                print("Warning! Max Latitude larger than 80, changing to 80.") 
+                            }
+                            #the geographical maps give error for extremal longitudes. Constrain here too..
+                            if(thisLONGMIN < -179){
+                                thisLONGMIN <- -179
+                                print("Warning! Min Longitude smaller than -179, changing to -179.")
+                            }
+                            if(thisLONGMAX>179){
+                                thisLONGMAX <- 179
+                                print("Warning! Max Longitude larger than 179, changing to 179.") 
+                            }
+                            
                             layerTable$nodeLong[ layerTable$nodeLong < thisLONGMIN ] <- thisLONGMIN
                             layerTable$nodeLong[ layerTable$nodeLong > thisLONGMAX ] <- thisLONGMAX
                             layerTable$nodeLat[ layerTable$nodeLat < thisLATMIN ] <- thisLATMIN
                             layerTable$nodeLat[ layerTable$nodeLat > thisLATMAX ] <- thisLATMAX
     
-                            longBounds = c(min(layerTable$nodeLong),max(layerTable$nodeLong))
-                            latBounds = c(min(layerTable$nodeLat),max(layerTable$nodeLat))
+                            longBounds = c(min(layerTable$nodeLong,na.rm=T),max(layerTable$nodeLong,na.rm=T))
+                            latBounds = c(min(layerTable$nodeLat,na.rm=T),max(layerTable$nodeLat,na.rm=T))
                                          
-                            print(paste("  Latitude new boundaries: ",min(layerTable$nodeLat),max(layerTable$nodeLat)))
-                            print(paste("  Longitude new boundaries: ",min(layerTable$nodeLong),max(layerTable$nodeLong)))
+                            print(paste("  Latitude new boundaries: ",latBounds[1],latBounds[2]))
+                            print(paste("  Longitude new boundaries: ",longBounds[1],longBounds[2]))
                             
                             #The input layout is geographic, we must convert it to cartesian
                             sphCoordinates <- list()
@@ -1909,7 +1928,25 @@ shinyServer(function(input, output, session) {
                     thisLONGMAX <- as.numeric(input$txtGEOGRAPHIC_LONG_MAX)
                 }
                 #print(paste(thisLATMIN,thisLATMAX,thisLONGMIN,thisLONGMAX))
-    
+                #mapproject has problems in converting |latitudes| > 80, therefore we have to constrain
+                if(thisLATMIN < -80){
+                    thisLATMIN <- -80
+                    print("Warning! Min Latitude smaller than -80, changing to -80.")
+                }
+                if(thisLATMAX > 80){
+                    thisLATMAX <- 80
+                    print("Warning! Max Latitude larger than 80, changing to 80.") 
+                }
+                #the geographical maps give error for extremal longitudes. Constrain here too..
+                if(thisLONGMIN < -179){
+                    thisLONGMIN <- -179
+                    print("Warning! Min Longitude smaller than -179, changing to -179.")
+                }
+                if(thisLONGMAX>179){
+                    thisLONGMAX <- 179
+                    print("Warning! Max Longitude larger than 179, changing to 179.") 
+                }
+
                 hash <- digest( c(thisLATMIN,thisLATMAX,thisLONGMIN,thisLONGMAX,input$selOSMType) , algo="md5" )
                 fileNamePNG <- paste("tmp/",hash,".png",sep="")
                 #print(paste("COORDS:",LATMIN,LATMAX,LONGMIN,LONGMAX,XMIN,XMAX,YMIN,YMAX))
@@ -2734,8 +2771,8 @@ shinyServer(function(input, output, session) {
         #Author: Chris Seidel
         # ----- Define a function for plotting a matrix ----- #
         myImagePlot <- function(x, ...){
-             min <- min(x)
-             max <- max(x)
+             min <- min(x,na.rm=T)
+             max <- max(x,na.rm=T)
              yLabels <- rownames(x)
              xLabels <- colnames(x)
              title <-c()
@@ -2815,7 +2852,7 @@ shinyServer(function(input, output, session) {
             if(length(x)!=length(y)){
                 stop("KLD: mismatching length of the two arrays")
             }
-            B <- max(max(x),max(y))
+            B <- max(max(x,na.rm=T),max(y))
             N <- length(x)
             KLD <- 0
         
@@ -2832,7 +2869,7 @@ shinyServer(function(input, output, session) {
             if(length(x)!=length(y)){
                 stop("JSD: mismatching length of the two arrays")
             }
-            B <- max(max(x),max(y))
+            B <- max(max(x,na.rm=T),max(y))
             N <- length(x)
             JSD <- 0
         
