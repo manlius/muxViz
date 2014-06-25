@@ -20,7 +20,7 @@ library(gplots)
 ##################################################
 # Global variables
 ##################################################
-
+ 
 #This is to avoid pushing a button and starting all the other ones..
 btnCalculateCorrelationDiagnosticsValue <- 0
 btnCalculateCentralityDiagnosticsValue <- 0
