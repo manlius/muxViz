@@ -46,5 +46,5 @@ if(!require(clue)){
 library(shiny)
 library(ShinyDash)
 
-runApp("./")
+runApp( getwd() )
 
