@@ -9,6 +9,7 @@ muxViz is a platform for the visualization and the analysis of interconnected mu
 - Multilayer centrality analysis and annular representation
 - Multilayer community structure detection
 - Dimensionality reduction
+- Animated visualization of dynamical processes and time-varying multilayer networks
 
 Support for data analysis is not mandatory and requires a working installation of GNU Octave 3.4.0 or above. 
 
@@ -165,6 +166,29 @@ The order of the columns should not be relevant.
 If nodeLat and nodeLong are specified, they will be automatically converted to Cartesian coordinates (through Mercator projection).
 
 The properties of each node in the multilayer must be specified or default values will be used (i.e., automatic labeling and layouting). If the number of nodes in the network is different from the number of nodes provided in the layout file, it will be assumed that something is wrong with the layout file and default values will be used.
+
+
+#### Format of a timeline file
+
+This module allows to build nice animated visualizations corresponding to dynamical processes on the top of a multilayer network. For instance, one can visualize the movements of one (or more) random walker(s) in the network, or the spreading of an epidemics or of a meme in a social network, the traffic (and possible congestions) in a transport/communication network, etc.
+
+The idea is to feed the module with a 'timeline' file where the change of the state of nodes and edges in the multilayer network are specified at each time step. The 'state' of an object can be altered by changing its color and/or its size. For instance, in the case of an epidemics spreading in a country, the size of each node (e.g., a metapopulation describing a city) can be proportional to the population and the color can encode the amount of infected people. This description allows a wide variety of dynamics to be represented and visualized: for instance, setting the size of nodes and edges to zero when required, it is possible to visualize a time-varying multilayer network where nodes and edges appear or disappear over time.
+
+The first line of the file must specify the name of the correponding timeline attributes. Allowed attributes:
+
+- timeStep: [mandatory] numerical integer id to identify time steps
+- labelStep: [mandatory] string specifying the snapshot label
+- entity: [mandatory] string specifying if the object to modify is 'node' or 'edge'
+- layerID: [mandatory] numerical integer id to identify each layer
+- nodeID: [mandatory] numerical integer id if entity is 'node' and string (e.g., '3-7', corresponding to the link from node 3 to node 7) if entity is 'edge'.
+- color: [mandatory] string specifying the color to be assigned
+- sizeFactor: [mandatory] float value specifying the relative size of the entity, scaling with respect to the default size
+
+The order of the columns is not relevant. If the network has L layers and you want to include the aggregate network in the visualization, then use L+1 in the layerID field for it.
+
+To keep users with the freedom to use their favorite video making software, the output of muxViz consists of png files representing the temporal snapshots of the dynamics. Snapshots are saved in the folder 'export/timeline/project_name'. Successively, users can use their favorite software to merge the sequence of snapshots into a single video. We recommend to use FFmpeg with the following parameters:
+
+	ffmpeg -r 1  -i /path/xyz_%05d.png -c:v libx264 -pix_fmt yuv420p -r 25 output_file.mp4
 
 
 
