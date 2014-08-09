@@ -20,12 +20,15 @@ library(gplots)
 ##################################################
 # Global variables
 ##################################################
- 
+
 #This is to avoid pushing a button and starting all the other ones..
 btnCalculateCorrelationDiagnosticsValue <- 0
 btnCalculateCentralityDiagnosticsValue <- 0
 btnCalculateCommunityDiagnosticsValue <- 0
 btnImportNetworksValue <- 0
+btnImportTimelineValue <- 0
+btnRenderDynamicsSnapshotsValue <- 0
+#btnFFMPEGDynamicsSnapshotsValue <- 0
 btnApplyLayoutValue <- 0
 btnRenderNetworksValue <- 0
 btnExportRenderingValue <- 0
@@ -51,6 +54,15 @@ listDiagnosticsSingleLayer <- data.frame()
 listDiagnostics <- data.frame()
 listCommunities <- data.frame()
 
+#the timeline for visualization of dynamical processes
+dfTimeline <- data.frame()
+
+#default properties (color and size) of the network
+defaultVsize <- vector("list",LAYERS+1)
+defaultEsize <- vector("list",LAYERS+1)
+defaultVcolor <- vector("list",LAYERS+1)
+defaultEcolor <- vector("list",LAYERS+1)
+
 #other global vars
 LAYOUT_BY_LAYER_ID <- 0
 LAYOUT_EXTERNAL <- F
@@ -75,6 +87,8 @@ offsetNode <- -1
 Nodes <- 0
 Edges <- 0
 
+orientationRGL <- NULL
+
 #==== Network type
 DIRECTED <- F
 WEIGHTED <- F
@@ -84,12 +98,40 @@ diagnosticsSingleLayerOK <- F
 diagnosticsOK <- F
 communityOK <- F
 
-            
-shinyServer(function(input, output, session) {
 
-    #commonRunif <<- runif(1)
-    commonRunif <- 0.0148374617565423
-    print(paste("SEED:",commonRunif))
+welcomeFunction <- function(){
+    print("")
+    print("==========================")
+    print("=== Welcome to muxViz ===")
+    print("==========================")
+    print("")
+    print(paste("You are running from",Sys.info()["sysname"]))
+    print("")
+}
+
+buildPath <- function(folder,objname){
+    if( Sys.info()["sysname"]=="Windows" ){
+        return( paste(getwd(),folder,objname,sep="\\") )
+    }else{
+        return( paste(getwd(),folder,objname,sep="/") )        
+    }
+}
+
+concatenatePath <- function(folder,objname){
+    if( Sys.info()["sysname"]=="Windows" ){
+        return( paste(folder,objname,sep="\\") )
+    }else{
+        return( paste(folder,objname,sep="/") )        
+    }
+}
+
+
+shinyServer(function(input, output, session) {
+    welcomeFunction()
+    
+    commonRunif <<- runif(1)
+    #commonRunif <- 0.0148374617565423
+    #print(paste("SEED:",commonRunif))
 
     result <- tryCatch({
 
@@ -100,7 +142,7 @@ shinyServer(function(input, output, session) {
         #Read the configuration file and set the global variables
         importNetworksFromConfigurationFile <- function(){
             if (input$btnImportNetworks == 0) return(NULL)
-            
+
             #if the table with paths to layers is valid, read the edgelist from each file
             if(length(input$project_file)>0){
                 if(!file.exists(input$project_file$datapath)){
@@ -111,6 +153,7 @@ shinyServer(function(input, output, session) {
                     return(NULL)
                 }
                 fileInput <<- readLines(input$project_file$datapath)
+
                 LAYERS <<- length(fileInput)
                 layerEdges <<- vector("list",LAYERS+1)
                 fileName <<- vector("list",LAYERS)
@@ -391,7 +434,20 @@ shinyServer(function(input, output, session) {
             return(tmplayerTable)
         })
     
-    
+        #Create a summary of the timeline file and the networks, when the Import button is pushed
+        output$projectTimelineHTML <- reactive({
+            if (input$btnImportTimeline == 0 || input$btnRenderNetworks == 0 || length(input$project_file)==0)
+                return(list())
+
+            #be careful: "=" is required instead of "<-"
+            return(list(
+                timelineTimesteps = max(dfTimeline$timeStep)-min(dfTimeline$timeStep)+1,
+                timelineAffectNodes = sum(dfTimeline$entity=="node"),
+                timelineAffectEdges = sum(dfTimeline$entity=="edge")
+            ))
+        })
+
+
       	################################################
       	# Create the graph objects
       	################################################
@@ -494,7 +550,7 @@ shinyServer(function(input, output, session) {
             #AdjMatrix[[LAYERS+1]] <<- Adj_aggr
             g[[LAYERS+1]] <<- graph.adjacency(AdjMatrix[[LAYERS+1]],weighted=T)
     
-            btnImportNetworksValue <- input$btnImportNetworks
+            btnImportNetworksValue <<- input$btnImportNetworks
         }
     
         observe({
@@ -512,11 +568,11 @@ shinyServer(function(input, output, session) {
                     progress$close()
                     return()
                 }
-                
+
                 progress$set(detail = 'Building the network...', value = 0.6)
                 Sys.sleep(1)
                 buildNetworks()
-                
+
                 #Fill the table summarizing the config file
                 output$edgelistTable <- renderGvis({
                     if(input$btnImportNetworks==0 || LAYERS==0 || input$chkOutputEdgelistTable==FALSE)
@@ -545,7 +601,245 @@ shinyServer(function(input, output, session) {
                 progress$close()
             })
         })
+
+        observe({
+            if(input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
+                
+            if(btnImportTimelineValue==input$btnImportTimeline) return()
+
+            if(input$btnImportTimeline==0) return()
+            
+            if(is.null(input$timeline_file$datapath)) return()
     
+            isolate({
+                progress <- Progress$new(session)
+                progress$set(message = 'Importing timeline...', value = 0.2)
+                Sys.sleep(1)
+                res <- importTimelineFromFile()
+                if(is.null(res)){
+                    progress$set(message = 'Errors occurred while reading input...', value = 0.2)
+                    Sys.sleep(5)
+                    progress$close()
+                    return()
+                }
+                                        
+                btnImportTimelineValue <<- input$btnImportTimeline
+                
+                progress$set(detail = 'Import Completed!', value = 1)
+                Sys.sleep(2)
+        
+                progress$close()
+            })
+        })
+        
+        importTimelineFromFile <- function(){
+            if(length(input$timeline_file)>0){
+                if(!file.exists(input$timeline_file$datapath)){
+                    progress <- Progress$new(session)
+                    progress$set(message = paste('ERROR! File',input$timeline_file$datapath,'does not exist.'), value = 0.01)
+                    Sys.sleep(10)
+                    progress$close()
+                    return(NULL)
+                }
+            }
+
+            fileTimeline <<- input$timeline_file$datapath
+            dfTimeline <<-  read.table(fileTimeline, header=TRUE, sep=as.character(input$txtTimelineFileSep))
+            
+            if(!(all(as.integer(as.character(dfTimeline$layerID)) >= 1) & all(as.integer(as.character(dfTimeline$layerID)) <= (LAYERS+1)))){
+                progress <- Progress$new(session)
+                progress$set(message = paste('ERROR! There are unknown layers in the timeline file'), value = 0.01)
+                Sys.sleep(10)
+                progress$close()
+                return(NULL)
+            }
+
+            if(!(all(as.integer(as.character(dfTimeline[dfTimeline$entity=="node",]$nodeID)) >= minNodeID) & all(as.integer(as.character(dfTimeline[dfTimeline$entity=="node",]$nodeID)) <= maxNodeID))){
+                progress <- Progress$new(session)
+                progress$set(message = paste('ERROR! There are unknown nodes in the timeline file'), value = 0.01)
+                Sys.sleep(10)
+                progress$close()
+                return(NULL)
+            }
+            
+            print(paste("Timeline imported! Found",nrow(dfTimeline),"entries"))
+        }
+        
+        #Export the visualization for each snapshot of the timeline
+        observe({
+            #print(paste(input$btnImportTimeline,input$btnRenderNetworks,input$btnApplyLayout,input$btnImportNetworks,LAYERS,length(dfTimeline),btnRenderDynamicsSnapshotsValue,input$btnRenderDynamicsSnapshots))
+            if(btnRenderDynamicsSnapshotsValue==input$btnRenderDynamicsSnapshots) return()
+            
+            if(input$btnImportTimeline==0 || input$btnRenderNetworks==0 || length(dfTimeline)==0) return()
+
+            isolate({
+                progress <- Progress$new(session)
+    
+                progress$set(detail = 'Building the dynamics...', value = 0.1)
+                Sys.sleep(1)
+                
+                #order the timeline by timestep
+                #dfTimeline[order(dfTimeline$timeStep),]
+                                
+                #get the list of all (unique) timesteps
+                timestepsList <- sort(unique(dfTimeline$timeStep))
+
+                #re-set the default color and size
+                if(length(input$txtTimelineDefaultNodesColor)>0){
+                    for(l in 1:(LAYERS+1)) V(g[[l]])$color <- input$txtTimelineDefaultNodesColor
+                }else{
+                    for(l in 1:(LAYERS+1)) V(g[[l]])$color <- defaultVcolor[[l]]
+                }
+
+                if(length(input$txtTimelineDefaultNodesSize)>0){
+                    for(l in 1:(LAYERS+1)) V(g[[l]])$size <- as.numeric(input$txtTimelineDefaultNodesSize)
+                }else{
+                    for(l in 1:(LAYERS+1)) V(g[[l]])$size <- defaultVsize[[l]]
+                }
+
+                if(length(input$txtTimelineDefaultEdgesColor)>0){
+                    for(l in 1:(LAYERS+1)) E(g[[l]])$color <- input$txtTimelineDefaultEdgesColor
+                }else{
+                    for(l in 1:(LAYERS+1)) E(g[[l]])$color <- defaultEcolor[[l]]
+                }
+
+                if(length(input$txtTimelineDefaultEdgesSize)>0){
+                    for(l in 1:(LAYERS+1)) E(g[[l]])$size <- as.numeric(input$txtTimelineDefaultEdgesSize)
+                }else{
+                    for(l in 1:(LAYERS+1)) E(g[[l]])$size <- defaultEsize[[l]]
+                }
+                
+                print("Rendering dynamics")
+
+                for(timestep in min(timestepsList):max(timestepsList)){                    
+                    #extract all the rows corresponding to this timestep and create a new dataframe
+                    tmpdfTimeline <- dfTimeline[dfTimeline$timeStep==timestep,]
+                                        
+                    print(paste("  Timeline (",100*which(timestepsList==timestep)/(max(timestepsList)-min(timestepsList)+1),"%",") -> timestep:",timestep))
+
+                    rgl.clear()
+                    tryCatch(rgl.pop("lights"),error=function(e) print("Warning: no lights to pop"))
+                    rgl.light(theta = 0, phi = 0, viewpoint.rel = TRUE, ambient = "#FFFFFF", 
+                   diffuse = "#FFFFFF", specular = "#FFFFFF")
+
+
+                    #for each time step, we have to modify the state of the network 
+                    #nodes
+                    tmpdfTimelineNode <- tmpdfTimeline[tmpdfTimeline$entity=="node",]
+                    #print(tmpdfTimelineNode)
+                    if(nrow(tmpdfTimelineNode)>0){
+                        for(r in 1:nrow(tmpdfTimelineNode)){
+                            l <- as.integer(as.character(tmpdfTimelineNode[r,]$layerID))
+                            n <- which(V(g[[l]])==as.integer(as.character(tmpdfTimelineNode[r,]$nodeID)))
+
+                            #we have to rescale node's default size, not the previous one..
+                            defNodeSize <- 1
+                            if(length(input$txtTimelineDefaultNodesSize)>0){
+                                defNodeSize <- as.numeric(input$txtTimelineDefaultNodesSize)
+                            }else{
+                                defNodeSize <- defaultVsize[[l]][n]
+                            }
+
+                            V(g[[l]])$size[n] <- defNodeSize * as.double(as.character(tmpdfTimelineNode[r,]$sizeFactor))
+                            V(g[[l]])$color[n] <- paste("#",tmpdfTimelineNode[r,]$color,sep='')
+                        }
+                    }else{
+                        #no changes in the state of the nodes
+                    }
+                             
+                    #edges
+                    tmpdfTimelineEdge <- tmpdfTimeline[tmpdfTimeline$entity=="edge",]
+                    #print(tmpdfTimelineNode)
+                    if(nrow(tmpdfTimelineEdge)>0){
+                        for(r in 1:nrow(tmpdfTimelineEdge)){
+                            l <- as.integer(as.character(tmpdfTimelineEdge[r,]$layerID))
+                            pair <- as.character(tmpdfTimelineEdge[r,]$nodeID)
+                            n1 <- which(V(g[[l]])==as.integer( unlist(strsplit(pair,"-"))[1] ))
+                            n2 <- which(V(g[[l]])==as.integer( unlist(strsplit(pair,"-"))[2] ))
+
+                            #we have to rescale node's default size, not the previous one..
+                            defEdgeSize <- 1
+                            if(length(input$txtTimelineDefaultEdgesSize)>0){
+                                defEdgeSize <- as.numeric(input$txtTimelineDefaultEdgesSize)
+                            }else{
+                                defEdgeSize <- AdjMatrix[[l]][n1,n2]
+                            }
+
+                            E(g[[l]])[n1 %--% n2]$size <- defEdgeSize * as.double(as.character(tmpdfTimelineEdge[r,]$sizeFactor))
+                            E(g[[l]])[n1 %--% n2]$color <- paste("#",tmpdfTimelineEdge[r,]$color,sep='')
+                        }
+                    }else{
+                        #no changes in the state of the edges
+                    }
+                    
+                    
+                    #now render the network
+                    for(l in 1:(LAYERS+1)){
+                        #progress$set(message = paste('Layer',l,'...'), value = 0.05 + 0.85*l/(LAYERS+1))
+        
+                        if(l==(LAYERS+1)){
+                            if((!input$chkAGGREGATE_SHOW || LAYERS==1) || (input$chkPLOT_AS_EDGE_COLORED && LAYOUT_DIMENSION==3)){
+                                #if we don't want to show the aggregate, we must skip the rest
+                                #we must skip also if the layers is just 1
+                                next
+                            }
+                        }
+                        if(l<LAYERS+1){
+                            print(paste("    Timeline Layer: ",l))
+                        }else{
+                            print(paste("    Timeline Layer: Aggregate"))    
+                        }
+                        
+                        print("      openGL phase...")
+                        #plot the graph with openGL    
+                        #print(layouts[[l]])
+                        V(g[[l]])$label <- ""
+                        rglplot.igraph(g[[l]], layout=layouts[[l]],
+                                            vertex.size=V(g[[l]])$size, 
+                                            vertex.color=V(g[[l]])$color,
+                                            vertex.label=V(g[[l]])$label,
+                                            vertex.label.dist=as.numeric(input$txtNODE_LABELS_DISTANCE), #,+ 0.01*V(g[[l]])$size,
+                                            vertex.label.font=2,
+                                            vertex.label.cex=as.numeric(input$txtNODE_LABELS_FONT_SIZE), 
+                                            vertex.label.color=V(g[[l]])$vertex.label.color,
+                                            edge.width=E(g[[l]])$size, 
+                                            edge.color=E(g[[l]])$color, 
+                                            edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
+                                            edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
+                                            edge.curved=E(g[[l]])$curve,
+                                            rescale=F)
+                                                                
+                        print(paste("    Layout of layer: finished."))
+                    }
+                    
+                    #Call the visualization of other graphics
+                    FinalizeRenderingMultiplex(progress)
+
+                    #assuming that all labels for this timestep are identical, as it should be..
+                    title3d(input$txtPLOT_TITLE, tmpdfTimeline$labelStep[1],'','','')
+
+                    print(paste("    Exporting snapshot",tmpdfTimeline$labelStep[1],"..."))
+                    
+                    timelineFolder <- concatenatePath( concatenatePath("export","timeline"), input$txtProjectName)
+
+                    #create the folder if it does not exist
+                    dir.create(buildPath("export","timeline"), showWarnings = FALSE)
+                    dir.create(timelineFolder, showWarnings = FALSE)
+
+                    FILE_RGL_SNAPSHOT <- buildPath(timelineFolder,paste(input$txtProjectName,"_",sprintf("%05d",timestep),".png",sep=""))
+                    rgl.snapshot(FILE_RGL_SNAPSHOT) 
+                    #Sys.sleep(1)
+                }
+                
+                progress$set(message = 'Rendering Completed!', value = 1)
+                Sys.sleep(2)
+                progress$close()
+            
+                btnRenderDynamicsSnapshotsValue <<- input$btnRenderDynamicsSnapshots
+            })
+        })
+
+
       	################################################
       	# Calculate diagnostics
       	################################################
@@ -566,10 +860,11 @@ shinyServer(function(input, output, session) {
                     Sys.sleep(2)
                     for(l in 1:(LAYERS+1)){
                         if(l<=LAYERS){
-                            outfilem <- paste("export/",input$txtProjectName,"_layer",l,".png",sep="")
+                            outfilem <- buildPath("export",paste(input$txtProjectName,"_layer",l,".png",sep=""))
+                            
                             progress$set(message = paste('Exporting image for layer ',l,'...',sep=""), value = 0.05 + 0.9*l/(LAYERS+1))  
                         }else{
-                            outfilem <- paste("export/",input$txtProjectName,"_layer","aggr",".png",sep="")
+                            outfilem <- buildPath("export",paste(input$txtProjectName,"_layer","aggr",".png",sep=""))
                         progress$set(message = paste('Exporting image for aggregated...',sep=""), value = 0.05 + 0.9*l/(LAYERS+1))  
                         }
     
@@ -627,7 +922,7 @@ shinyServer(function(input, output, session) {
                     overlapMatrix <- matrix(scan(resultFile, n = LAYERS*LAYERS), ncol=LAYERS, nrow=LAYERS, byrow = TRUE, dimnames=list(NULL, Layer))
                     if(file.exists(resultFile)) file.remove(resultFile)
     
-                    outfile0 <- "tmp/image_overlap.png"
+                    outfile0 <- buildPath("tmp","image_overlap.png")
                     png(outfile0, width=550, height=400)
                     rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selAssortativityTypeColorPalette],input$selAssortativityTypeColorPalette))
                     myImagePlot(overlapMatrix,xLabels=Layer,yLabels=Layer,title=c("Mean overlapping"),ColorRamp=rgb.palette(120))
@@ -674,7 +969,7 @@ shinyServer(function(input, output, session) {
                     interPearson <- matrix(scan(resultFile, n = LAYERS*LAYERS), ncol=LAYERS, nrow=LAYERS, byrow = TRUE, dimnames=list(NULL, Layer))
                     if(file.exists(resultFile)) file.remove(resultFile)
     
-                    outfile <- "tmp/image_pearson.png"
+                    outfile <- buildPath("tmp","image_pearson.png")
                     png(outfile, width=550, height=400)
                     rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selAssortativityTypeColorPalette],input$selAssortativityTypeColorPalette))
 
@@ -722,7 +1017,7 @@ shinyServer(function(input, output, session) {
                     interSpearman <- matrix(scan(resultFile, n = LAYERS*LAYERS), ncol=LAYERS, nrow=LAYERS, byrow = TRUE, dimnames=list(NULL, Layer))
                     if(file.exists(resultFile)) file.remove(resultFile)
     
-                    outfile2 <- "tmp/image_spearman.png"
+                    outfile2 <- buildPath("tmp","image_spearman.png")
                     png(outfile2, width=550, height=400)
                     rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selAssortativityTypeColorPalette],input$selAssortativityTypeColorPalette))
                     myImagePlot(interSpearman,xLabels=Layer,yLabels=Layer,title=c("Inter-layer assortativity: Spearman"),ColorRamp=rgb.palette(120))
@@ -1108,7 +1403,8 @@ shinyServer(function(input, output, session) {
                 if( input$chkANULAR_VIZ_CELL_BORDER==0 ) Border <- NA
                                 
                 progress$set(message = 'Creating figures...', value = 0.5)
-                outfileX <- "tmp/image_annular_multiplex.png"
+                outfileX <- buildPath("tmp","image_annular_multiplex.png")
+                
                 png(outfileX, width=1200, height=1200)
     
                 plotAnularViz(
@@ -1225,7 +1521,8 @@ shinyServer(function(input, output, session) {
                         
                         #build the plot                    
                         progress$set(message = 'Creating figures...', value = 0.9)
-                        outfileY <- paste("tmp/image_annular_",attrib,".png",sep="")
+                        outfileY <- buildPath("tmp",paste("image_annular_",attrib,".png",sep=""))
+                        
                         png(outfileY, width=1200, height=1200)
                         
                         Title <- attrib
@@ -1277,7 +1574,7 @@ shinyServer(function(input, output, session) {
                         local({
                             #print(i)
                             my_i <- i
-                            outfileY <- paste("tmp/image_annular_",attrib,".png",sep="")
+                            outfileY <- buildPath("tmp",paste("image_annular_",attrib,".png",sep=""))
                             plotname <- paste("plot", my_i, sep="")
                             
                             output[[plotname]] <- renderImage({
@@ -1350,7 +1647,8 @@ shinyServer(function(input, output, session) {
                 distanceMatrix <- matrix(scan(resultFile, n = LAYERS*LAYERS), ncol=LAYERS, nrow=LAYERS, byrow = TRUE, dimnames=list(NULL, Layer))
                 #if(file.exists(resultFile)) file.remove(resultFile)
     
-                outfile6 <- "tmp/image_jsd.png"
+                outfile6 <- buildPath("tmp","image_jsd.png")
+                
                 png(outfile6, width=650, height=650)
                 rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selReducibilityColorPalette],input$selReducibilityColorPalette))(200)
 
@@ -1369,7 +1667,7 @@ shinyServer(function(input, output, session) {
                     )
                 #if(file.exists(outfile6)) file.remove(outfile6)
     
-                outfile7 <- "tmp/image_dendrogram.png"
+                outfile7 <- buildPath("tmp","image_dendrogram.png")
                 png(outfile7, width=650, height=650)
                 plot(hclust(as.dist(distanceMatrix),method=input$selReducibilityClusterMethod),labels=Layer,cex=as.numeric(input$txtREDUCIBILITY_HEATMAP_FONT_SIZE),main="Reducibility Dendrogram",sub="", xlab="")
                 dev.off()
@@ -1601,7 +1899,7 @@ shinyServer(function(input, output, session) {
                             thisLATMAX <- as.numeric(input$txtGEOGRAPHIC_LAT_MAX)
                             thisLONGMIN <- as.numeric(input$txtGEOGRAPHIC_LONG_MIN)
                             thisLONGMAX <- as.numeric(input$txtGEOGRAPHIC_LONG_MAX)
-
+                            
                             #mapproject has problems in converting |latitudes| > 80, therefore we have to constrain
                             if(thisLATMIN < -80){
                                 thisLATMIN <- -80
@@ -1620,12 +1918,12 @@ shinyServer(function(input, output, session) {
                                 thisLONGMAX <- 179
                                 print("Warning! Max Longitude larger than 179, changing to 179.") 
                             }
-                            
+                                            
                             layerTable$nodeLong[ layerTable$nodeLong < thisLONGMIN ] <- thisLONGMIN
                             layerTable$nodeLong[ layerTable$nodeLong > thisLONGMAX ] <- thisLONGMAX
                             layerTable$nodeLat[ layerTable$nodeLat < thisLATMIN ] <- thisLATMIN
                             layerTable$nodeLat[ layerTable$nodeLat > thisLATMAX ] <- thisLATMAX
-    
+        
                             longBounds = c(min(layerTable$nodeLong,na.rm=T),max(layerTable$nodeLong,na.rm=T))
                             latBounds = c(min(layerTable$nodeLat,na.rm=T),max(layerTable$nodeLat,na.rm=T))
                                          
@@ -1652,7 +1950,7 @@ shinyServer(function(input, output, session) {
                             XMIN <<- cartCoordinates$x[1]
                             XMAX <<- cartCoordinates$x[2]
                             YMIN <<- cartCoordinates$y[1]
-                            YMAX <<- cartCoordinates$y[2]   
+                            YMAX <<- cartCoordinates$y[2]  
                         }            
                         layerLayout[[LAYERS+1]] <<- layerLayout[[1]]
                         layouts[[LAYERS+1]] <<- layerLayout[[1]]
@@ -1735,6 +2033,9 @@ shinyServer(function(input, output, session) {
                 progress$set(message = 'Start rendering...', value = 0.05)
                 Sys.sleep(1)
     
+                #save orientation for later user, if needed
+                orientationRGL <<- par3d(no.readonly=TRUE)
+                
                 rgl.clear()
                 tryCatch(rgl.pop("lights"),error=function(e) print("Warning: no lights to pop"))
                 rgl.light(theta = 0, phi = 0, viewpoint.rel = TRUE, ambient = "#FFFFFF", 
@@ -1894,6 +2195,13 @@ shinyServer(function(input, output, session) {
                     }
                    
                     print("  openGL phase...")
+
+                    #saving default values for later usage
+                    defaultVsize[[l]] <<- V(g[[l]])$size
+                    defaultVcolor[[l]] <<- V(g[[l]])$color
+                    defaultEsize[[l]] <<- E(g[[l]])$size
+                    defaultEcolor[[l]] <<- E(g[[l]])$color
+
                     #plot the graph with openGL    
                     #print(layouts[[l]])
                     rglplot.igraph(g[[l]], layout=layouts[[l]],
@@ -1914,166 +2222,9 @@ shinyServer(function(input, output, session) {
                     print(paste("  Layout of layer: finished."))
                 }
                 
-                #Towards the end.. add layers, textures if any, etc
-                #Create the hash of the properties of the map, to avoid downloading multiple times
-                #the same area 
-                thisLATMIN <- LATMIN
-                thisLATMAX <- LATMAX
-                thisLONGMIN <- LONGMIN
-                thisLONGMAX <- LONGMAX
-                if(input$txtGEOGRAPHIC_LAT_MIN != "" && input$txtGEOGRAPHIC_LAT_MAX != "" && input$txtGEOGRAPHIC_LONG_MIN != "" && input$txtGEOGRAPHIC_LONG_MAX != ""){
-                    thisLATMIN <- as.numeric(input$txtGEOGRAPHIC_LAT_MIN)
-                    thisLATMAX <- as.numeric(input$txtGEOGRAPHIC_LAT_MAX)
-                    thisLONGMIN <- as.numeric(input$txtGEOGRAPHIC_LONG_MIN)
-                    thisLONGMAX <- as.numeric(input$txtGEOGRAPHIC_LONG_MAX)
-                }
-                #print(paste(thisLATMIN,thisLATMAX,thisLONGMIN,thisLONGMAX))
-                #mapproject has problems in converting |latitudes| > 80, therefore we have to constrain
-                if(thisLATMIN < -80){
-                    thisLATMIN <- -80
-                    print("Warning! Min Latitude smaller than -80, changing to -80.")
-                }
-                if(thisLATMAX > 80){
-                    thisLATMAX <- 80
-                    print("Warning! Max Latitude larger than 80, changing to 80.") 
-                }
-                #the geographical maps give error for extremal longitudes. Constrain here too..
-                if(thisLONGMIN < -179){
-                    thisLONGMIN <- -179
-                    print("Warning! Min Longitude smaller than -179, changing to -179.")
-                }
-                if(thisLONGMAX>179){
-                    thisLONGMAX <- 179
-                    print("Warning! Max Longitude larger than 179, changing to 179.") 
-                }
-
-                hash <- digest( c(thisLATMIN,thisLATMAX,thisLONGMIN,thisLONGMAX,input$selOSMType) , algo="md5" )
-                fileNamePNG <- paste("tmp/",hash,".png",sep="")
-                #print(paste("COORDS:",LATMIN,LATMAX,LONGMIN,LONGMAX,XMIN,XMAX,YMIN,YMAX))
-                if(!file.exists(fileNamePNG)){
-                    if(GEOGRAPHIC_LAYOUT && (input$chkGEOGRAPHIC_BOUNDARIES_SHOW || input$chkGEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW)){
-                        progress$set(message = 'Downloading map...', value = 0.95)
-                        Sys.sleep(1)
-                        print(paste("  Downloading geographic area..."))
-                        #create a map with openstreetmap and save to a file for later use
-                        rescaleFactor <- (YMAX-YMIN)/(XMAX-XMIN)
-                        #H0/W0 = H/W  --> H = W/W0 * H0 = W*rescaleFactor in terms of Cartesian coords
-                        pngWidth = 720
-                        pngHeight = pngWidth*rescaleFactor
-                        png(filename=fileNamePNG,width=pngWidth,height=pngHeight)
-                        map = openmap(c(lat=thisLATMAX,   lon=thisLONGMIN), c(lat=thisLATMIN,   lon=thisLONGMAX), minNumTiles=18,type=input$selOSMType)
-                        plot(map)
-                        dev.off()
-                    }
-                }
-                            
-                progress$set(message = 'Finalizing rendering...', value = 0.95)
-    
-                if(input$chkLAYER_SHOW && !input$chkPLOT_AS_EDGE_COLORED){
-                    for(l in 1:(LAYERS+1)){
-                        if(LAYERS>1){
-                            #This draws a plan to be used as layer
-                            if(input$chkAGGREGATE_SHOW){
-                                d <- -1 + as.numeric(input$txtLAYER_SCALE)*as.numeric(input$txtLAYER_SPACE)*l/(LAYERS+1)
-                            }else{
-                                d <- -1 + as.numeric(input$txtLAYER_SCALE)*as.numeric(input$txtLAYER_SPACE)*l/LAYERS
-                            }
-                        }else{
-                            #to allow drawing single-layer networks
-                            d <- 1
-                        }
+                #Call the visualization of other graphics
+                FinalizeRenderingMultiplex(progress)
                 
-                        x <- c(-1,-1,-1+as.numeric(input$txtLAYER_SCALE),-1+as.numeric(input$txtLAYER_SCALE)) + (l-1)*as.numeric(input$txtLAYER_SHIFT)
-                        y <- c(-1+as.numeric(input$txtLAYER_SCALE),-1,-1,-1+as.numeric(input$txtLAYER_SCALE))
-                        z <- c(d,d,d,d)
-                        
-                        if(LAYOUT_DIMENSION==2){
-                            if(l<LAYERS+1){
-                                #planes3d(0,0,1, -d , alpha=LAYER_TRANSP, col=LAYER_COLOR)
-                                if(GEOGRAPHIC_LAYOUT && input$chkGEOGRAPHIC_BOUNDARIES_SHOW){
-                                    quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_TRANSP), col=input$txtLAYER_COLOR,texcoords=cbind(c(0,0,1,1), -c(0,1,1,0)), texture=fileNamePNG)
-                                }else{
-                                    quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_TRANSP), col=input$txtLAYER_COLOR)
-                                }
-                            }else{
-                                if(input$chkAGGREGATE_SHOW && LAYERS>1){
-                                    #planes3d(0,0,1, -d , alpha=LAYER_AGGREGATE_TRANSP, col=LAYER_AGGREGATE_COLOR)
-                                    if(GEOGRAPHIC_LAYOUT && input$chkGEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW){
-                                        quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_AGGREGATE_TRANSP), col=input$txtLAYER_AGGREGATE_COLOR,texcoords=cbind(c(0,0,1,1), -c(0,1,1,0)), texture=fileNamePNG)
-                                    }else{
-                                        quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_AGGREGATE_TRANSP), col=input$txtLAYER_AGGREGATE_COLOR)                    
-                                    }
-                                }else{
-                                    next
-                                }
-                            }
-                                            
-                            if(input$chkLAYER_ID_SHOW_BOTTOMLEFT){
-                                text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT), -1, d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
-                            }
-                            if(input$chkLAYER_ID_SHOW_TOPLEFT){
-                                text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT), -1 + as.numeric(input$txtLAYER_SCALE), d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
-                            }
-                            if(input$chkLAYER_ID_SHOW_BOTTOMRIGHT){
-                                text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT)+as.numeric(input$txtLAYER_SCALE), -1, d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
-                            }
-                            if(input$chkLAYER_ID_SHOW_TOPRIGHT){
-                                text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT)+as.numeric(input$txtLAYER_SCALE), -1 + as.numeric(input$txtLAYER_SCALE), d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
-                            }
-                        }
-                    }
-                
-                }
-                
-                if(!LAYOUT_INDEPENDENT){
-                    if(input$chkINTERLINK_SHOW && as.numeric(input$txtINTERLINK_SHOW_FRACTION)>0 && LAYERS>1){
-                        print("Adding interlayer links.")
-                        #to be generalized to allow cross-interlink and absence of interlinks for some nodes
-                        for( l in 1:(LAYERS-1) ){
-                            layerLinesX <- matrix(c(0),nrow=Nodes,ncol=2)
-                            layerLinesY <- matrix(c(0),nrow=Nodes,ncol=2)
-                            layerLinesZ <- matrix(c(0),nrow=Nodes,ncol=2)
-                
-                            layerLinesX <- cbind(layouts[[l]][,1] + (l-1)*as.numeric(input$txtLAYER_SHIFT),layouts[[l+1]][,1] + l*as.numeric(input$txtLAYER_SHIFT))
-                            layerLinesY <- cbind(layouts[[l]][,2],layouts[[l+1]][,2])
-                            layerLinesZ <- cbind(layouts[[l]][,3],layouts[[l+1]][,3])
-                
-                            for(i in 1:Nodes){
-                                if(runif(1)>1-as.numeric(input$txtINTERLINK_SHOW_FRACTION)){ 
-                                    segments3d(
-                                        layerLinesX[i,],
-                                        layerLinesY[i,],
-                                        layerLinesZ[i,],
-                                        lwd=as.numeric(input$txtINTERLINK_WIDTH), 
-                                        col=input$txtINTERLINK_COLOR, 
-                                        lty=input$txtINTERLINK_TYPE,
-                                        alpha=as.numeric(input$txtINTERLINK_TRANSP))
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                if(!input$chkPLOT_AS_EDGE_COLORED){
-                    M <- matrix(0, ncol=4,nrow=4)
-                    M[1,] <- c(0.54,0,0.84,0)
-                    M[2,] <- c(0.33,0.92,-0.22,0)
-                    M[3,] <- c(-0.77,0.39,0.5,0)
-                    M[4,] <- c(0,0,0,1)
-                    
-                    par3d(FOV=as.numeric(input$txtPLOT_FOV), userMatrix=M)
-                }
-                
-                bg3d(input$txtBACKGROUND_COLOR)
-                title3d(input$txtPLOT_TITLE, input$txtPLOT_SUBTITLE,'','','')
-                
-                if(input$chkPLOT_LIGHT){
-                    #add a light
-                    rgl.light(phi=as.numeric(input$txtPLOT_LIGHT_PHI),theta=as.numeric(input$txtPLOT_LIGHT_THETA))
-                }
-    
-                print("Finalizing rendering...")
-    
                 progress$set(message = 'Rendering Completed!', value = 1)
                 Sys.sleep(2)
                 progress$close()
@@ -2085,6 +2236,186 @@ shinyServer(function(input, output, session) {
         ############################################
         ## Global functions
         ############################################
+        
+        FinalizeRenderingMultiplex <- function(progress){
+            #Towards the end.. add layers, textures if any, etc
+            #Create the hash of the properties of the map, to avoid downloading multiple times
+            #the same area 
+            thisLATMIN <- LATMIN
+            thisLATMAX <- LATMAX
+            thisLONGMIN <- LONGMIN
+            thisLONGMAX <- LONGMAX
+            if(input$txtGEOGRAPHIC_LAT_MIN != "" && input$txtGEOGRAPHIC_LAT_MAX != "" && input$txtGEOGRAPHIC_LONG_MIN != "" && input$txtGEOGRAPHIC_LONG_MAX != ""){
+                thisLATMIN <- as.numeric(input$txtGEOGRAPHIC_LAT_MIN)
+                thisLATMAX <- as.numeric(input$txtGEOGRAPHIC_LAT_MAX)
+                thisLONGMIN <- as.numeric(input$txtGEOGRAPHIC_LONG_MIN)
+                thisLONGMAX <- as.numeric(input$txtGEOGRAPHIC_LONG_MAX)
+            }
+            #print(paste(thisLATMIN,thisLATMAX,thisLONGMIN,thisLONGMAX))
+            #mapproject has problems in converting |latitudes| > 80, therefore we have to constrain
+            if(thisLATMIN < -80){
+                thisLATMIN <- -80
+                print("Warning! Min Latitude smaller than -80, changing to -80.")
+            }
+            if(thisLATMAX > 80){
+                thisLATMAX <- 80
+                print("Warning! Max Latitude larger than 80, changing to 80.") 
+            }
+            #the geographical maps give error for extremal longitudes. Constrain here too..
+            if(thisLONGMIN < -179){
+                thisLONGMIN <- -179
+                print("Warning! Min Longitude smaller than -179, changing to -179.")
+            }
+            if(thisLONGMAX>179){
+                thisLONGMAX <- 179
+                print("Warning! Max Longitude larger than 179, changing to 179.") 
+            }
+            
+            hash <- digest( c(thisLATMIN,thisLATMAX,thisLONGMIN,thisLONGMAX,input$selOSMType) , algo="md5" )
+            fileNamePNG <- buildPath("tmp",paste(hash,".png",sep=""))
+            #print(paste("COORDS:",LATMIN,LATMAX,LONGMIN,LONGMAX,XMIN,XMAX,YMIN,YMAX))
+            if(!file.exists(fileNamePNG)){
+                if(GEOGRAPHIC_LAYOUT && (input$chkGEOGRAPHIC_BOUNDARIES_SHOW || input$chkGEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW)){
+                    progress$set(message = 'Downloading map...', value = 0.95)
+                    Sys.sleep(1)
+                    print(paste("  Downloading geographic area..."))
+                    #create a map with openstreetmap and save to a file for later use
+                    rescaleFactor <- (YMAX-YMIN)/(XMAX-XMIN)
+                    #H0/W0 = H/W  --> H = W/W0 * H0 = W*rescaleFactor in terms of Cartesian coords
+                    pngWidth = 720
+                    pngHeight = pngWidth*rescaleFactor
+                    png(filename=fileNamePNG,width=pngWidth,height=pngHeight)
+                    map = openmap(c(lat=thisLATMAX,   lon=thisLONGMIN), c(lat=thisLATMIN,   lon=thisLONGMAX), minNumTiles=18,type=input$selOSMType)
+                    plot(map)
+                    dev.off()
+                }
+            }
+                        
+            progress$set(message = 'Finalizing rendering...', value = 0.95)
+
+            if(input$chkLAYER_SHOW && !input$chkPLOT_AS_EDGE_COLORED){
+                for(l in 1:(LAYERS+1)){
+                    if(LAYERS>1){
+                        #This draws a plan to be used as layer
+                        if(input$chkAGGREGATE_SHOW){
+                            d <- -1 + as.numeric(input$txtLAYER_SCALE)*as.numeric(input$txtLAYER_SPACE)*l/(LAYERS+1)
+                        }else{
+                            d <- -1 + as.numeric(input$txtLAYER_SCALE)*as.numeric(input$txtLAYER_SPACE)*l/LAYERS
+                        }
+                    }else{
+                        #to allow drawing single-layer networks
+                        d <- 1
+                    }
+            
+                    x <- c(-1,-1,-1+as.numeric(input$txtLAYER_SCALE),-1+as.numeric(input$txtLAYER_SCALE)) + (l-1)*as.numeric(input$txtLAYER_SHIFT)
+                    y <- c(-1+as.numeric(input$txtLAYER_SCALE),-1,-1,-1+as.numeric(input$txtLAYER_SCALE))
+                    z <- c(d,d,d,d)
+                    
+                    if(LAYOUT_DIMENSION==2){
+                        if(l<LAYERS+1){
+                            #planes3d(0,0,1, -d , alpha=LAYER_TRANSP, col=LAYER_COLOR)
+                            if(GEOGRAPHIC_LAYOUT && input$chkGEOGRAPHIC_BOUNDARIES_SHOW){
+                                quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_TRANSP), col=input$txtLAYER_COLOR,texcoords=cbind(c(0,0,1,1), -c(0,1,1,0)), texture=fileNamePNG)
+                            }else{
+                                quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_TRANSP), col=input$txtLAYER_COLOR)
+                            }
+                        }else{
+                            if(input$chkAGGREGATE_SHOW && LAYERS>1){
+                                #planes3d(0,0,1, -d , alpha=LAYER_AGGREGATE_TRANSP, col=LAYER_AGGREGATE_COLOR)
+                                if(GEOGRAPHIC_LAYOUT && input$chkGEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW){
+                                    quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_AGGREGATE_TRANSP), col=input$txtLAYER_AGGREGATE_COLOR,texcoords=cbind(c(0,0,1,1), -c(0,1,1,0)), texture=fileNamePNG)
+                                }else{
+                                    quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_AGGREGATE_TRANSP), col=input$txtLAYER_AGGREGATE_COLOR)                    
+                                }
+                            }else{
+                                next
+                            }
+                        }
+                                        
+                        if(input$chkLAYER_ID_SHOW_BOTTOMLEFT){
+                            text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT), -1, d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                        }
+                        if(input$chkLAYER_ID_SHOW_TOPLEFT){
+                            text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT), -1 + as.numeric(input$txtLAYER_SCALE), d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                        }
+                        if(input$chkLAYER_ID_SHOW_BOTTOMRIGHT){
+                            text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT)+as.numeric(input$txtLAYER_SCALE), -1, d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                        }
+                        if(input$chkLAYER_ID_SHOW_TOPRIGHT){
+                            text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT)+as.numeric(input$txtLAYER_SCALE), -1 + as.numeric(input$txtLAYER_SCALE), d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                        }
+                    }
+                }
+            
+            }
+            
+            if(!LAYOUT_INDEPENDENT){
+                if(input$chkINTERLINK_SHOW && as.numeric(input$txtINTERLINK_SHOW_FRACTION)>0 && LAYERS>1){
+                    print("Adding interlayer links.")
+                    #to be generalized to allow cross-interlink and absence of interlinks for some nodes
+                    for( l in 1:(LAYERS-1) ){
+                        layerLinesX <- matrix(c(0),nrow=Nodes,ncol=2)
+                        layerLinesY <- matrix(c(0),nrow=Nodes,ncol=2)
+                        layerLinesZ <- matrix(c(0),nrow=Nodes,ncol=2)
+            
+                        layerLinesX <- cbind(layouts[[l]][,1] + (l-1)*as.numeric(input$txtLAYER_SHIFT),layouts[[l+1]][,1] + l*as.numeric(input$txtLAYER_SHIFT))
+                        layerLinesY <- cbind(layouts[[l]][,2],layouts[[l+1]][,2])
+                        layerLinesZ <- cbind(layouts[[l]][,3],layouts[[l+1]][,3])
+            
+                        for(i in 1:Nodes){
+                            if(runif(1)>1-as.numeric(input$txtINTERLINK_SHOW_FRACTION)){ 
+                                segments3d(
+                                    layerLinesX[i,],
+                                    layerLinesY[i,],
+                                    layerLinesZ[i,],
+                                    lwd=as.numeric(input$txtINTERLINK_WIDTH), 
+                                    col=input$txtINTERLINK_COLOR, 
+                                    lty=input$txtINTERLINK_TYPE,
+                                    alpha=as.numeric(input$txtINTERLINK_TRANSP))
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if(!input$chkPLOT_AS_EDGE_COLORED){
+                if(!input$chkPLOT_REMEMBER_ORIENTATION){
+                    #forget current orientation and use the default one
+                    M <- matrix(0, ncol=4,nrow=4)
+                    M[1,] <- c(0.54,0,0.84,0)
+                    M[2,] <- c(0.33,0.92,-0.22,0)
+                    M[3,] <- c(-0.77,0.39,0.5,0)
+                    M[4,] <- c(0,0,0,1)
+                    
+                    par3d(FOV=as.numeric(input$txtPLOT_FOV), userMatrix=M)
+                }else{
+                    #if orientation must be remembered but it's the first rendering:
+                    if(btnRenderNetworksValue==0){
+                        M <- matrix(0, ncol=4,nrow=4)
+                        M[1,] <- c(0.54,0,0.84,0)
+                        M[2,] <- c(0.33,0.92,-0.22,0)
+                        M[3,] <- c(-0.77,0.39,0.5,0)
+                        M[4,] <- c(0,0,0,1)
+                        
+                        par3d(FOV=as.numeric(input$txtPLOT_FOV), userMatrix=M)
+                    }
+                }
+                
+                #not really needed
+                #par3D(orientationRGL)
+            }
+                        
+            bg3d(input$txtBACKGROUND_COLOR)
+            title3d(input$txtPLOT_TITLE, input$txtPLOT_SUBTITLE,'','','')
+            
+            if(input$chkPLOT_LIGHT){
+                #add a light
+                rgl.light(phi=as.numeric(input$txtPLOT_LIGHT_PHI),theta=as.numeric(input$txtPLOT_LIGHT_THETA))
+            }
+
+            print("Finalizing rendering...")    
+        }
+        
     
         GetCentralityDataFrameArray <- function(Type){
             tmplistDiagnostics <- NULL
@@ -2548,7 +2879,7 @@ shinyServer(function(input, output, session) {
                 progress$set(message = 'Start exporting...', value = 0.05)
                 Sys.sleep(1)
     
-                FILE_RGL_SNAPSHOT <- paste("export/",input$txtProjectName,"_",as.character(format(Sys.time(), "%d-%m-%Y_%H%M%S")),".png",sep="")
+                FILE_RGL_SNAPSHOT <- buildPath("export",paste(input$txtProjectName,"_",as.character(format(Sys.time(), "%d-%m-%Y_%H%M%S")),".png",sep=""))
                 rgl.snapshot(FILE_RGL_SNAPSHOT) 
                 
                 #the idea is promising, but output is very bad
@@ -2577,7 +2908,7 @@ shinyServer(function(input, output, session) {
                 Sys.sleep(1)
     
                 #browseURL(paste("file://", writeWebGL(dir=file.path("/path/", "webGL"), width=700), sep=""))
-                writeWebGL(dir=file.path("export/", paste("webGL_",input$txtProjectName,sep="")), width=945)
+                writeWebGL(dir=buildPath("export", paste("webGL_",input$txtProjectName,sep="")), width=945)
                 progress$set(message = 'webGL exported. See export folder.', value = 1)
                 Sys.sleep(5)
                 progress$close()
@@ -2949,7 +3280,7 @@ shinyServer(function(input, output, session) {
         plotAnularViz <- function (FeaturesDataFrame, rCore=0.4,DisplacementFactor=0.05, Border = NA, sortbyFeatureID = 1, correlationMethod = "spearman", ShowLabels = T, Title = "") {
             myFontSize <- as.numeric(input$txtANULAR_VIZ_FONT_SIZE)
             
-            print("### Anular Viz")
+            print("### Annular Viz")
             
             #print(FeaturesDataFrame)
             

@@ -46,5 +46,8 @@ if(!require(clue)){
 library(shiny)
 library(ShinyDash)
 
-runApp("./")
+#uncomment the line below for detailed log of your session. Can be useful for debug purposes
+#options(shiny.trace=TRUE)
+
+runApp(getwd())
 

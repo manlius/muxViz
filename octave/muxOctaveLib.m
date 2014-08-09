@@ -693,10 +693,10 @@ function [S,Q] = GetMultisliceCommunityGeneralizedLouvain(NodesTensor, Layers, N
     % The distinction between ordered slices and categorical slices manifests in the presence 
     % of all-to-all identity arcs between slices.
     
-    if strcmp(Type,"ordered")
+    if strcmp(Type,"categorical")
         B = spalloc(Nodes*Layers,Nodes*Layers,(Nodes+Layers)*Nodes*Layers);
     end
-    if strcmp(Type, "categorical")
+    if strcmp(Type, "ordered")
         B = spalloc(Nodes*Layers,Nodes*Layers,Nodes*Nodes*Layers+2*Nodes*Layers);
     end
 
@@ -710,12 +710,12 @@ function [S,Q] = GetMultisliceCommunityGeneralizedLouvain(NodesTensor, Layers, N
         B(indx,indx) = NodesTensor{s} - GammaParameter* k' * k /twom;
     end
 
-    if strcmp(Type,"ordered")
+    if strcmp(Type,"categorical")
         twomu = twomu + Layers*OmegaParameter*Nodes*(Layers-1);
         all2all = Nodes*[(-Layers+1):-1,1:(Layers-1)];
         B = B + OmegaParameter*spdiags(ones(Nodes*Layers,2*Layers-2),all2all,Nodes*Layers,Nodes*Layers);
     end
-    if strcmp(Type, "categorical")
+    if strcmp(Type, "ordered")
         twomu = twomu + 2*OmegaParameter*Nodes*(Layers-1);
         B = B + OmegaParameter*spdiags(ones(Nodes*Layers,2),[-Nodes,Nodes],Nodes*Layers,Nodes*Layers);
     end

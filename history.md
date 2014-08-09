@@ -1,3 +1,22 @@
+### 8 August 2014
+
+Manlio De Domenico:
+
+- Solved some issues with file paths when running on Windows
+- Minor bugs in the GUI solved
+
+### 22 July 2014
+
+Manlio De Domenico:
+
+- Added the sub-module "Dynamics" in the "Visualization" module, allowing to visualize/export snapshots of a given dynamics on the top of a multiplex network. Possibility to make an animated movie through ffmpeg included.
+
+### 19 July 2014
+
+Manlio De Domenico:
+
+- Added possibility to keep desired orientation in successive renderings (it's useful!)
+
 ### 5 May 2014
 
 Manlio De Domenico:

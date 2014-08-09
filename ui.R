@@ -101,7 +101,7 @@ shinyUI(bootstrapPage(
                             radioButtons('radMultiplexType', '',
                                 c(Ordinal='MULTIPLEX_IS_ORDERED',
                                     Categorical='MULTIPLEX_IS_CATEGORICAL'),
-                                    'Categorical'
+                                    selected='MULTIPLEX_IS_CATEGORICAL'
                                 ),
                             tags$hr(),
                             textInput("txtOmega", label=HTML("Strength of inter-layer connections:"), "1"),
@@ -180,7 +180,7 @@ shinyUI(bootstrapPage(
                                     Infomap='COMMUNITY_INFOMAP',
                                     Random_Walk_Trap='COMMUNITY_RANDOM_WALK_TRAP',
                                     Edge_Betweenness='COMMUNITY_EDGE_BETWEENNESS'),
-                                    'Multiplex'
+                                    selected='COMMUNITY_MULTIPLEX'
                                 ),
                             textInput("txtCOMMUNITY_MIN_SIZE",label="Color-code with the same RGB all nodes in communities smaller than (useful for evidencing larger communities, not valid for the multiplex):","1"),
                             tags$hr(),
@@ -272,11 +272,12 @@ shinyUI(bootstrapPage(
                             HTML('<h4>Annular representation</h4>'),
                             actionButton("btnAnularViz", "Render Annular Plot"),
                             tags$hr(),
+                            HTML("'<font color='red'>BE CAREFUL: this module is supposed to work *AFTER* you calculated diagnostics in the multiplex, using the tensorial formulation. If you try to use this module without calculating multiplex centralities, an error will be generated.</font><br><br>"),
                             radioButtons('radAnularVizCorrelationMethod', 'Correlation method for ring ordering:',
                                 c(Spearman='ANULAR_VIZ_CORRELATION_SPEARMAN',
                                     Pearson='ANULAR_VIZ_CORRELATION_PEARSON',
                                     Jensen_Shannon_Divergence='ANULAR_VIZ_CORRELATION_JSD'),
-                                    'Spearman'
+                                    selected='ANULAR_VIZ_CORRELATION_SPEARMAN'
                                 ),
                             textInput("txtANULAR_VIZ_BINS",label="Number of bins (tune the colors)","50"),
                             checkboxInput("chkANULAR_VIZ_LOG","Logarithmic binning",FALSE),
@@ -322,12 +323,12 @@ shinyUI(bootstrapPage(
                                     Kamada_Kawai='LAYOUT_KAMADA_KAWAI',
                                     Reingold_Tilford='LAYOUT_REINGOLD_TILFORD',
                                     Combined='LAYOUT_COMBINED'),
-                                    'Combined'
+                                    selected='LAYOUT_COMBINED'
                                 ),
                             radioButtons('radLayoutDimension', '',
                                 c(Two_Dimensional='LAYOUT_DIMENSION_2D',
                                     Three_Dimensional='LAYOUT_DIMENSION_3D'),
-                                    'Two_Dimensional'
+                                    selected='LAYOUT_DIMENSION_2D'
                                 ),
                             checkboxInput("chkPLOT_AS_EDGE_COLORED",HTML("Visualize as edge-colored multigraph (<font color='red'>Very experimental! Works only with centrality/community in the multiplex.</font>)"),FALSE),
                             tags$hr(),
@@ -336,7 +337,7 @@ shinyUI(bootstrapPage(
                                 c(Multiplex='LAYOUT_MULTIPLEX',
                                     By_LayerID='LAYOUT_BY_LAYER_ID',
                                     Independent='LAYOUT_INDEPENDENT'),
-                                    'Multiplex'
+                                    selected='LAYOUT_MULTIPLEX'
                                 ),
                             #this is a dynamic object changing because of input
                             uiOutput("selOutputLayerID"),
@@ -383,6 +384,7 @@ shinyUI(bootstrapPage(
                             textInput('txtLAYER_SHIFT', label=HTML('Shift layers (along horizontal axis to improve perspective, <font color="red">must apply the layout again</font>) by:'), "0.8"),
                             textInput('txtLAYER_SCALE', label=HTML('Scale layers (<font color="red">must apply the layout again</font>) by:'), "4"),
                             textInput('txtLAYER_SPACE', label=HTML('Space between layers (<font color="red">must apply the layout again</font>) by:'), "3"),
+                            checkboxInput("chkPLOT_REMEMBER_ORIENTATION","Remember previous orientation in a new rendering",TRUE),
                             checkboxInput("chkPLOT_LIGHT","Add a light to the plot (to improve visualization):",FALSE),
                             textInput('txtPLOT_LIGHT_PHI', label='Phi coordinate (deg):', "20"),
                             textInput('txtPLOT_LIGHT_THETA', label='Theta coordinate (deg):', "30")
@@ -437,13 +439,13 @@ shinyUI(bootstrapPage(
                                     Hub='NODE_SIZE_PROPORTIONAL_TO_HUB',
                                     Authority='NODE_SIZE_PROPORTIONAL_TO_AUTHORITY',
                                     Katz='NODE_SIZE_PROPORTIONAL_TO_KATZ'),
-                                    'Strength'
+                                    selected='NODE_SIZE_PROPORTIONAL_TO_STRENGTH'
                                 ),
                             radioButtons('radNodeSizeType2', 'Type of proportionality:',
                                 c(Constant='NODE_SIZE_PROPORTIONAL_TYPE_NORMAL',
                                     Log='NODE_SIZE_PROPORTIONAL_TYPE_LOG',
                                     LogLog='NODE_SIZE_PROPORTIONAL_TYPE_LOGLOG'),
-                                    'LogLog'
+                                    selected='NODE_SIZE_PROPORTIONAL_TYPE_LOGLOG'
                                 ),
                             checkboxInput("chkNODE_ISOLATED_HIDE","Exclude isolated nodes from the visualization",TRUE),
                             tags$hr(),
@@ -457,9 +459,9 @@ shinyUI(bootstrapPage(
                             radioButtons('radNodeColor', 'Node color:',
                                 c(Random='NODE_COLOR_RANDOM',
                                     Community='NODE_COLOR_COMMUNITY',
-                                    Component='NODE_COLOR_COMPONENT',
+                                    #Component='NODE_COLOR_COMPONENT',
                                     TopRank='NODE_COLOR_TOPRANK'),
-                                    'Community'
+                                    selected='NODE_COLOR_COMMUNITY'
                                 ),
                             textInput('txtNODE_COLOR_TOP', label='Number of top-ranked nodes to consider:', "5"),
                             textInput('txtNODE_COLOR_TOP_COLOR_TOP', label='Color of top-ranked nodes (any valid R type):', "#FF0000"),
@@ -473,13 +475,13 @@ shinyUI(bootstrapPage(
                             radioButtons('radEdgeSizeType', 'Edge size proportional to:',
                                 c(Uniform='EDGE_SIZE_PROPORTIONAL_TO_UNIFORM',
                                     Weight='EDGE_SIZE_PROPORTIONAL_TO_WEIGHT'),
-                                    'Weight'
+                                    selected='EDGE_SIZE_PROPORTIONAL_TO_WEIGHT'
                                 ),
                             radioButtons('radEdgeSizeType2', 'Type of proportionality:',
                                 c(Constant='EDGE_SIZE_PROPORTIONAL_TYPE_NORMAL',
                                     Log='EDGE_SIZE_PROPORTIONAL_TYPE_LOG',
                                     LogLog='EDGE_SIZE_PROPORTIONAL_TYPE_LOGLOG'),
-                                    'LogLog'
+                                    selected='EDGE_SIZE_PROPORTIONAL_TYPE_LOGLOG'
                                 ),
                             textInput('txtEDGE_DEFAULT_SIZE', label='Default size (used for fine tuning of Uniform, Log and LogLog option):', "0.6"),
                             textInput('txtEDGE_TRANSP', label='Edge transparency (from 0 to 1; 1 means full color):', "0.2"),
@@ -489,6 +491,52 @@ shinyUI(bootstrapPage(
                         tabPanel("Export",
                             actionButton("btnExportRendering","Export PNG"),
                             actionButton("btnExportRenderingWeb","Export for Web")
+                            ),
+                        tabPanel("Dynamics",
+                            HTML('<h4>Visualization of dynamical processes</h4>'),
+                            actionButton("btnRenderDynamicsSnapshots", "Render Dynamics Snapshots"),
+                            actionButton("btnFFMPEGDynamicsSnapshots", "Make Video (require ffmpeg)"),
+                            tags$hr(),
+                            
+                            helpText(HTML("<h4>Open Timeline File</h4>")),
+                            helpText(HTML("<strong><font color='#262626'>* Input format for the timeline file:</font></strong>")),
+                            #checkboxInput('chkTimelineFileHeader', 'Header', TRUE),
+                            textInput("txtTimelineFileSep", label=HTML("Separator (default is one space):"), " "),
+                            fileInput('timeline_file', HTML('<strong>* Open the timeline file:</strong>'),
+                                  accept=c('text/csv', 'text/comma-separated-values,text/plain', '.csv')
+                                ),
+                            actionButton("btnImportTimeline", "Import Timeline"),
+                        helpText(HTML("<h4>Summary for the timeline</h4>")),
+                        conditionalPanel(condition="input.btnImportTimeline>0 && input.btnRenderNetworks>0",
+                            htmlWidgetOutput(
+                                      outputId = 'projectTimelineHTML',
+                                      HTML(paste(
+                                        'Time steps: <span id="timelineTimesteps"></span><br>',
+                                        'Affecting the dynamics of nodes: <span id="timelineAffectNodes"></span><br>',
+                                        'Affecting the dynamics of edges: <span id="timelineAffectEdges"></span><br>',
+                                        '<br>'
+                                      ))
+                                )
+                            ),
+                            tags$hr(),
+                            textInput("txtTimelineDefaultNodesSize", label=HTML("Default size of all nodes (leave this blank to use the Rendering setup):"), "20"),
+                            textInput("txtTimelineDefaultNodesColor", label=HTML("Default color of all nodes (any valid R type; leave this blank to use the Rendering setup):"), "#959595"),
+                            textInput("txtTimelineDefaultEdgesSize", label=HTML("Default size of all edges (leave this blank to use the Rendering setup):"), "1"),
+                            textInput("txtTimelineDefaultEdgesColor", label=HTML("Default color of all edges (any valid R type; leave this blank to use the Rendering setup):"), "#959595"),
+                            #tags$hr(),
+                            #textInput("txtFFMPEG_PATH",label="Full path of your ffmpeg binary to make the video (if not valid, video will not be made):",""),
+                            #textInput("txtFFMPEG_FLAGS",label="Parameters to be passed to ffmpeg (if not valid, video will not be made):",""),
+                            tags$hr(),
+                            HTML("<h3>Quick help</h3>"),
+                            htmlWidgetOutput(
+                                outputId = 'projectDynamics',
+                                HTML(paste(
+                                'This module allows the visualization of a dynamical process on the top of a multiplex network (although with an adequate timeline input it can also deal with time-varying networks where nodes and edges can appear or disappear). Before importing the timeline (i.e., the file where you specify the dynamics, see the Help for further details) it is mandatory to render the multiplex network at least once to obtain a complete visualization with the desired graphical options.<br>',
+                                'This module is designed to generate the snapshots of your dynamical process (e.g., random walks, diffusion, epidemics and/or information spreading). The snapshots are exported in the export/timeline folder.<br><br>',
+                                'Note that to build an animated visualization from the snapshots you need to use an external/third-party software for merging. For this task, you can use your favorite software, although we recommend <a href="https://www.ffmpeg.org/" target="_blank">FFmpeg</a>. See the Help to know more details about this easy task.',
+                                '<br>'
+                                ))
+                                )    
                             )
                         ),
                     value=0
@@ -502,7 +550,7 @@ shinyUI(bootstrapPage(
                             HTML('<h4>Algorithms to be used to calculate the correlation between layers and clustering</h4>'),
                             radioButtons('radReducibilityCorrelationMethod', '',
                                 c(Jensen_Shannon_Divergence='REDUCIBILITY_METHOD_CORRELATION_JENSEN_SHANNON'),
-                                    'Jensen_Shannon_Divergence'
+                                    selected='REDUCIBILITY_METHOD_CORRELATION_JENSEN_SHANNON'
                                 ),
                             tags$hr(),
                             selectInput("selReducibilityClusterMethod", HTML("Algorithm to be used for hierarchical clustering:</strong>"), 
@@ -586,6 +634,23 @@ shinyUI(bootstrapPage(
                             "The remaining sub-tabs control the appearance of 'Multiplex', 'Layers', 'Nodes' and 'Edges'.<br>",
                             "Once the set up is completed, click on the 'Render Network / Apply Viz Options' button.<br><br>",
                             "Note that it is possible to export the visualization either to a png or to a web page, by means of export buttons available in 'Export' sub-tab.<br><br>",
+                            "<h4>Visualization of dynamics</h4>",
+                            "This module allows to build nice animated visualizations corresponding to dynamical processes on the top of a multilayer network. For instance, one can visualize the movements of one (or more) random walker(s) in the network, or the spreading of an epidemics or of a meme in a social network, the traffic (and possible congestions) in a transport/communication network, etc.<br>",
+                            "The idea is to feed the module with a 'timeline' file where the change of the state of nodes and edges in the multilayer network are specified at each time step. The 'state' of an object can be altered by changing its color and/or its size. For instance, in the case of an epidemics spreading in a country, the size of each node (e.g., a metapopulation describing a city) can be proportional to the population and the color can encode the amount of infected people. This description allows a wide variety of dynamics to be represented and visualized: for instance, setting the size of nodes and edges to zero when required, it is possible to visualize a time-varying multilayer network where nodes and edges appear or disappear over time.<br>",
+                            "<u>Format of a timeline file:</u> (<a href='example_timeline.txt' target='_blank'>click here</a> to open an example)<br>",
+                            "The first line of the file must specify the name of the correponding timeline attributes. Allowed attributes:",
+                            "<ul>",
+                            "<li> <strong>timeStep</strong>: [mandatory] numerical integer id to identify time steps",
+                            "<li> <strong>labelStep</strong>: [mandatory] string specifying the snapshot label",
+                            "<li> <strong>entity</strong>: [mandatory] string specifying if the object to modify is 'node' or 'edge'",
+                            "<li> <strong>layerID</strong>: [mandatory] numerical integer id to identify each layer",
+                            "<li> <strong>nodeID</strong>: [mandatory] numerical integer id if entity is 'node' and string (e.g., '3-7', corresponding to the link from node 3 to node 7) if entity is 'edge'.",
+                            "<li> <strong>color</strong>: [mandatory] string specifying the color to be assigned",
+                            "<li> <strong>sizeFactor</strong>: [mandatory] float value specifying the relative size of the entity, scaling with respect to the default size",
+                            "</ul>",
+                            "The order of the columns is not relevant. If the network has L layers and you want to include the aggregate network in the visualization, then use L+1 in the layerID field for it.<br><br>",
+                            "To keep users with the freedom to use their favorite video making software, the output of muxViz consists of png files representing the temporal snapshots of the dynamics. Snapshots are saved in the folder 'export/timeline/project_name'. Successively, users can use their favorite software to merge the sequence of snapshots into a single video. We recommend to use <a href='https://www.ffmpeg.org/' target='_blank'>FFmpeg</a> with the following parameters:",
+                            "<pre>ffmpeg -r 1  -i /path/xyz_%05d.png -c:v libx264 -pix_fmt yuv420p -r 25 output_file.mp4</pre>",
                             "<hr>",
                             "<h4>Reducibility</h4>",
                             "<strong>Reduce the dimensionality of the multiplex.</strong><br>",

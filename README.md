@@ -12,17 +12,21 @@ muxViz is a platform for the visualization and the analysis of interconnected mu
 
 Support for data analysis is not mandatory and requires a working installation of GNU Octave 3.4.0 or above. 
 
-#### Official website
+#### Official Websites and Social Networks
 
 Please, visit the official website (<http://muxviz.net>) of muxViz for further information. 
+
+You might also want to take a look at muxViz in action: see the [Youtube channel](https://www.youtube.com/channel/UCinHX7m-8_EFFJo2A8huoUA)
+
+Visit the dedicated [Google Group](https://groups.google.com/forum/#!forum/muxviz) if you have questions or to report bugs.
+
+Instead, if you create amazing visualizations using muxViz and you want to tweet them, remember to include the "#muxviz" hashtag: we will be happy to retweet.
 
 #### Citation
 
 If you use muxViz (or any part of muxViz, or images available in the gallery) for your multilayer analysis and visualization, you should cite the paper
 
-Manlio De Domenico, Mason A. Porter, Alex Arenas, Multilayer Analysis and Visualization of Networks, arXiv:1405.0843
-
-freely available here: <http://arxiv.org/abs/1405.0843>
+Manlio De Domenico, Mason A. Porter, Alex Arenas, Multilayer Analysis and Visualization of Networks, Accepted for publication in Journal of Complex Networks (preprint freely available here: <http://arxiv.org/abs/1405.0843>)
 
 Please, note that muxViz is based on some algorithms developed in other studies. You should cite the original paper(s) every time that you use those algorithms. 
 
@@ -64,8 +68,13 @@ However, the main script should be able to detect the missing packages and insta
 
 You can download muxViz from Github: <https://github.com/manlius/muxViz/archive/master.zip>
 
-To work properly with geographical networks, the GDAL  (Geospatial Data Abstraction Library) is required. GDAL can be found here: <http://www.gdal.org/>
-Note that GDAL should be installed *before* running muxViz for the first time.
+To work properly with geographical networks, the GDAL (Geospatial Data Abstraction Library) is required and should be installed *before* running muxViz for the first time. GDAL should be available as an R package and should be easily installed just by typing
+
+	install.packages("sp")
+	install.packages("rgdal")
+
+within the R environment. However, in a few cases it can be more complicated and some users reported problems for its installation. If this is also your case you might want to take a look at some suggestions on stackoverflow (<http://stackoverflow.com/questions/15248815/rgdal-package-installation>) or on spatial.ly (<http://spatial.ly/2010/11/installing-rgdal-on-mac-os-x/>). In any case, it is highly recommend to visit the GDAL website and follow the hints provided there (<http://trac.osgeo.org/gdal/wiki/BuildHints>).
+
 
 ###### Very quick installation on Linux
 
