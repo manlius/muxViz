@@ -1,3 +1,9 @@
+### 13 August 2014
+
+Manlio De Domenico:
+
+- Added possibility to import edges list where nodes are identified by labels (either arbitrary integers or strings) instead of sequential integers. Removed one of the biggest annoyance in muxViz!
+
 ### 8 August 2014
 
 Manlio De Domenico:

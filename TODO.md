@@ -6,11 +6,11 @@ The following list reflects the possible improvements of muxNet. I am in debt wi
 ##### High priority
 
 - Full porting of Octave code to R: packages like 
-  <http://cran.r-project.org/web/packages/RcppOctave/vignettes/RcppOctave.pdf>
+  [RcppOctave](http://cran.r-project.org/web/packages/RcppOctave/vignettes/RcppOctave.pdf)
+  and 
+  [R.matlab](http://cran.r-project.org/web/packages/R.matlab/R.matlab.pdf)
   and
-  <http://cran.r-project.org/web/packages/R.matlab/R.matlab.pdf>
-  and
-  <http://cran.r-project.org/web/packages/matlab/matlab.pdf>
+  [matlab](http://cran.r-project.org/web/packages/matlab/matlab.pdf)
   are promising, but a full porting would be the best option
 
 - The calculation of some centrality measures can be avoided when the multiplex is undirected (e.g., if the eigenvector centrality is calculated, HITS centrality would give the same result for undirected networks and we can exploit this to avoid re-calculation). This is already done for strength, for instance.
@@ -21,6 +21,8 @@ The following list reflects the possible improvements of muxNet. I am in debt wi
 
 
 ##### Low priority
+
+- When a richer layout file is provided (ie, with more columns/attributes), it could be useful to allow selection of sub-sets of the data, according to specific cuts
 
 - More complicated interconnections, as for instance between different nodes in different layers, should be available at some point. Currently, only multiplexes/time-varying networks are considered, where each node is interconnected only to its replicas in other layers
 
@@ -38,10 +40,9 @@ The following list reflects the possible improvements of muxNet. I am in debt wi
 
 - It could be useful to allow modifying font size and offset of label in reducibility dendrogram
 
-- The dendrogram could have colored branches like this:
-<http://stackoverflow.com/questions/18036094/how-to-create-a-dendrogram-with-colored-branches>
+- The dendrogram could have colored branches like [this](http://stackoverflow.com/questions/18036094/how-to-create-a-dendrogram-with-colored-branches)
 
-- There are open issues with the native RGL device. This is far beyond the scope of muxViz, but maybe someone could find a way to solve them
+There are open issues with the native RGL device. This is far beyond the scope of muxViz, but maybe someone could find a way to solve them
 
 To the best of my knowledge:
 

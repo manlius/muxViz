@@ -149,6 +149,30 @@ where
 - label_layer_X: [optional] specify the label to be used in the rendering for that layer
 - layout_layer_X: [optional] specify the path and the filename to the file containing information about nodes
 
+A typical edges list is expected to be a file with at most three columns, giving the list of edges from a node (first column) to other nodes (second column), possibly weighted by an integer or floating number (third column). For instance:
+
+	1 2 0.5
+	1 3 1.4
+	...
+	18 124 0.1
+
+is a typical weighted edges list.
+
+IDs of nodes are expected to be sequential integers (starting from 0 or 1, up to the number of nodes in the network). Nevertheless, it is possible to import label-based edges list, where the IDs of nodes are labels (arbitrary integers or strings): in this case, one should check the appropriate box before importing the networks, to let muxViz know how to interpret the format. The edges list could look like
+
+	alice bob 0.5
+	alice charlie 1.4
+	...
+	john david 0.1
+
+In this specific case, it is mandatory to provide a layout file (see next section) reporting the sequential node ID (field nodeID) to be assigned to each node label (field nodeLabel). This would look like
+
+	nodeID nodeLabel
+	1 alice
+	2 bob
+	3 john
+	4 david
+	...
     
 ##### Format of a layout file
 
@@ -168,7 +192,7 @@ If nodeLat and nodeLong are specified, they will be automatically converted to C
 The properties of each node in the multilayer must be specified or default values will be used (i.e., automatic labeling and layouting). If the number of nodes in the network is different from the number of nodes provided in the layout file, it will be assumed that something is wrong with the layout file and default values will be used.
 
 
-#### Format of a timeline file
+##### Format of a timeline file
 
 This module allows to build nice animated visualizations corresponding to dynamical processes on the top of a multilayer network. For instance, one can visualize the movements of one (or more) random walker(s) in the network, or the spreading of an epidemics or of a meme in a social network, the traffic (and possible congestions) in a transport/communication network, etc.
 

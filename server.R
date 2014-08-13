@@ -100,13 +100,30 @@ communityOK <- F
 
 
 welcomeFunction <- function(){
-    print("")
-    print("==========================")
-    print("=== Welcome to muxViz ===")
-    print("==========================")
-    print("")
-    print(paste("You are running from",Sys.info()["sysname"]))
-    print("")
+    muxVizVersion <- "0.2.2"
+    muxVizUpdate <- "13 Aug 2014"
+
+    cat("\n")    
+    cat(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n")
+    cat("::: Welcome to muxViz\n")
+    #cat("==========================\n")
+    cat(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n")
+    cat("\n")
+    cat(":: muxViz: Tool for Multilayer Analysis and Visualization\n")
+    cat(":: Copyright (C) 2013-2014 Manlio De Domenico\n")
+    cat(":: School of Computer Science and Mathematics\n")
+    cat(":: Universitat Rovira i Virgili (Tarragona, Spain)\n")
+    cat("\n")
+    cat(":: This software is released under GNU GPL v3:\n")
+    cat(":: http://www.gnu.org/copyleft/gpl.html\n")
+    cat("\n")
+    cat(paste(":: Version:",muxVizVersion,"\n"))
+    cat(paste(":: Last update:",muxVizUpdate,"\n"))
+    cat("\n")
+    cat(paste(":: You are running from",Sys.info()["sysname"],"\n"))
+    cat(paste("::",Sys.info()["version"],"\n"))
+    cat(paste("::",version["version.string"][[1]],"\n"))
+    cat("\n")
 }
 
 buildPath <- function(folder,objname){
@@ -186,6 +203,51 @@ shinyServer(function(input, output, session) {
                     
                     print(paste("file",fileName[[l]][1]))
                     layerEdges[[l]] <<-  read.table(fileName[[l]][1], header=input$chkEdgeListFileHeader, sep=as.character(input$txtEdgeListFileSep))
+                    
+                    if(input$chkEdgeListLabel){
+                        #edges list are with labeled nodes instead of sequential integer IDs, we transform it
+                        #according to the layout file
+                        print("  Input is label-based: converting to sequential integer IDs...")
+                        
+                        if(layerLayoutFile[[l]][1] !="" && (!is.na(layerLayoutFile[[l]][1])) && file.exists(layerLayoutFile[[l]][1])){
+                            layerTable <- read.table(layerLayoutFile[[l]][1], header=T)
+
+                            if("nodeID" %in% colnames(layerTable) && "nodeLabel" %in% colnames(layerTable)){
+                                convTable = setNames(as.numeric(layerTable$nodeID), as.character(layerTable$nodeLabel))
+                                for(i in 1:2) layerEdges[[l]][,i] <<- convTable[ as.character(unlist(layerEdges[[l]][,i])) ]
+                                
+                                write.table(layerEdges[[l]], paste(fileName[[l]][1],".rel",sep=""), quote=F, row.names=F, col.names=F)
+                                
+                                print("  Done!")
+                            }else{
+                                progress <- Progress$new(session)
+                                progress$set(message = paste('ERROR! Layout file',layerLayoutFile[[l]][1],'is not in a valid format (missing nodeID or nodeLabel column(s)). This format is required when edges lists use labeled nodes instead of sequential integer IDs.'), value = 0.01)
+                                print("  Error: invalid layout format")
+                                Sys.sleep(20)
+                                progress$close()
+                                return(NULL)
+                            }                            
+                        }else{
+                            progress <- Progress$new(session)
+                            progress$set(message = paste('ERROR! Layout file',layerLayoutFile[[l]][1],'is not specified or does not exist. This file is required when edges lists use labeled nodes instead of sequential integer IDs.'), value = 0.01)
+                            print("  Error: invalid layout file")
+                            Sys.sleep(20)
+                            progress$close()
+                            return(NULL)
+                        }
+                    }else{
+                        #check if the input is numeric, as expected, or raise errors:
+                        for(i in 1:ncol(layerEdges[[l]])){
+                            if( !is.numeric(layerEdges[[l]][,]) ){
+                                progress <- Progress$new(session)
+                                progress$set(message = paste('ERROR! Edges list (',fileName[[l]][1],') is not specified by nodes with sequential integer IDs or weights (if any) are not numeric. If you use labels instead of sequential integer IDs you have to check the corresponding box before importing the networks.'), value = 0.01)
+                                print("  Error: invalid edges list file")
+                                Sys.sleep(20)
+                                progress$close()
+                                return(NULL)
+                            }
+                        }
+                    }
                     
                     if(layerLabel[[l]][1]=="" || is.na(layerLabel[[l]][1])){
                         layerLabel[[l]][1] <<- as.character(paste(input$txtLAYER_LABEL_PREFIX, l))
@@ -3053,8 +3115,13 @@ shinyServer(function(input, output, session) {
                 file=octaveConfigFile,append=F)
     
             for(l in 1:LAYERS){
-                write(paste("LayersList{",l,"}=\"",normalizePath(fileName[[l]][1]),"\";",sep=""),
-                    file=octaveConfigFile,append=T)
+                if(input$chkEdgeListLabel){
+                    write(paste("LayersList{",l,"}=\"",normalizePath(paste(fileName[[l]][1],".rel",sep="")),"\";",sep=""),
+                        file=octaveConfigFile,append=T)                    
+                }else{
+                    write(paste("LayersList{",l,"}=\"",normalizePath(fileName[[l]][1]),"\";",sep=""),
+                        file=octaveConfigFile,append=T)
+                }
             }
     
             if(!DIRECTED){
