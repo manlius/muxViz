@@ -238,7 +238,7 @@ shinyServer(function(input, output, session) {
                     }else{
                         #check if the input is numeric, as expected, or raise errors:
                         for(i in 1:ncol(layerEdges[[l]])){
-                            if( !is.numeric(layerEdges[[l]][,]) ){
+                            if( !is.numeric(layerEdges[[l]][,i]) ){
                                 progress <- Progress$new(session)
                                 progress$set(message = paste('ERROR! Edges list (',fileName[[l]][1],') is not specified by nodes with sequential integer IDs or weights (if any) are not numeric. If you use labels instead of sequential integer IDs you have to check the corresponding box before importing the networks.'), value = 0.01)
                                 print("  Error: invalid edges list file")
