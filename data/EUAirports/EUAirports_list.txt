@@ -1,4 +1,4 @@
-data/EUAirports/edge_list_airline-europe_layer2.txt;Ryanair;data/EUAirports/airports.txt
-data/EUAirports/edge_list_airline-europe_layer1.txt;Lufthansa;data/EUAirports/airports.txt
-data/EUAirports/edge_list_airline-europe_layer21.txt;Vueling;data/EUAirports/airports.txt
-data/EUAirports/edge_list_airline-europe_layer4.txt;British Airways;data/EUAirports/airports.txt
+data/EUAirports/edge_list_airline-europe_layer2.txt;Ryanair;data/EUAirports/airports_layout.txt
+data/EUAirports/edge_list_airline-europe_layer1.txt;Lufthansa;data/EUAirports/airports_layout.txt
+data/EUAirports/edge_list_airline-europe_layer21.txt;Vueling;data/EUAirports/airports_layout.txt
+data/EUAirports/edge_list_airline-europe_layer4.txt;British Airways;data/EUAirports/airports_layout.txt
