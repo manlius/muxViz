@@ -52,7 +52,8 @@ function [A,N] = loadNetworkFromFile(fileName,Flags,Nodes=0,FirstNode=0)
     if ismember("D",Flags) && ismember("U",Flags)
         %input is undirected but provided in directed shape, we need to sum the transpose
         fprintf(2,"#Input is undirected but in directed shape\n");
-        A = A + A';
+        A = A + A' - diag(diag(A));
+        #the -diag() is to avoid counting twice the self-loops
     endif
 end
 
