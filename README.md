@@ -27,7 +27,7 @@ Instead, if you create amazing visualizations using muxViz and you want to tweet
 
 If you use muxViz (or any part of muxViz, or images available in the gallery) for your multilayer analysis and visualization, you should cite the paper
 
-Manlio De Domenico, Mason A. Porter, Alex Arenas, Multilayer Analysis and Visualization of Networks, Accepted for publication in Journal of Complex Networks (preprint freely available here: <http://arxiv.org/abs/1405.0843>)
+Manlio De Domenico, Mason A. Porter, Alex Arenas, Multilayer Analysis and Visualization of Networks, published in [Journal of Complex Networks](http://comnet.oxfordjournals.org/content/early/2014/10/12/comnet.cnu038.abstract) (Open Access)
 
 Please, note that muxViz is based on some algorithms developed in other studies. You should cite the original paper(s) every time that you use those algorithms. 
 
