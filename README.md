@@ -110,11 +110,17 @@ If you use a Linux (Ubuntu-like) distribution, you are very lucky, because the f
     #install GDAL
     sudo apt-get install libgdal1-dev libproj-dev
 
-Finally, if your system has a working installation of Octave, R and GDAL, you can download the last version of muxViz, unzip it and type the following within R environment:
+Finally, if your system has a working installation of Octave, R and GDAL, you can download the last version of muxViz, unzip it, go into the unzipped folder and type the following within R environment:
 
 	source('muxVizGUI.R')
 
 This should be enough. The script will check for the required packages and will try to automatically install the missing ones. The whole process might take a few minutes, the first time you run muxViz.
+
+##### Troubleshooting
+
+Please, if you have any problem during the installation of muxViz, visit the dedicated [Google Group](https://groups.google.com/forum/#!forum/muxviz) or check the TROUBLESHOOTING.md file before asking for help: you might find the solution faster.
+
+If you find a smart solution to an installation/usage issue, feel free to send me an email and I will add your solution to the TROUBLESHOOTING.md file.
 
 
 ### Gallery
