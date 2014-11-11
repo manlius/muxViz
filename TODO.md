@@ -52,7 +52,9 @@ Adding additional interactivity (eg, node selection, layer selection, etc) to th
 
 ##### High priority
 
-- Additional centrality descriptors (betweenness, closeness, random walk betweenness, random walk closeness) should be included as soon as possible. 
+- Additional centrality descriptors (betweenness, closeness, random walk betweenness, random walk closeness) should be included as soon as possible (see [this paper](http://dl.acm.org/citation.cfm?id=2615687) for some references). 
+
+- Add support to calculation of [shortest paths](http://dl.acm.org/citation.cfm?id=2615687) and their visualization
 
 - Additional centrality descriptors: node/edge multiplexity, overlapping, clustering/transitivity (see [paper1](http://arxiv.org/abs/1405.0425) [paper2](http://arxiv.org/abs/1308.3182) [paper3](http://arxiv.org/abs/1403.1546) [paper4](http://arxiv.org/abs/1307.6780))
 
