@@ -317,7 +317,7 @@ shinyServer(function(input, output, session) {
                 #If each layout is specified correctly
                 for(l in 1:LAYERS){
                     if(layerLayoutFile[[l]][1] !="" && (!is.na(layerLayoutFile[[l]][1]))){
-                        layerTable <- read.table(layerLayoutFile[[l]][1], header=T)
+                        layerTable <- read.table(layerLayoutFile[[l]][1], header=T, sep=as.character(input$txtEdgeListFileSep))
                         layerLayout[[l]] <<- matrix(c(1),nrow=Nodes,ncol=2)
                         
                         if(length(layerTable$nodeLat)==Nodes && length(layerTable$nodeLong)==Nodes){
@@ -1952,7 +1952,7 @@ shinyServer(function(input, output, session) {
                     if(input$txtGEOGRAPHIC_LAT_MIN != "" && input$txtGEOGRAPHIC_LAT_MAX != "" && input$txtGEOGRAPHIC_LONG_MIN != "" && input$txtGEOGRAPHIC_LONG_MAX != ""){
                         #we are sure here that each layout is specified correctly
                         for(l in 1:LAYERS){
-                            layerTable <- read.table(layerLayoutFile[[l]][1], header=T)
+                            layerTable <- read.table(layerLayoutFile[[l]][1], header=T, sep=as.character(input$txtEdgeListFileSep))
                             layerLayout[[l]] <<- matrix(c(1),nrow=Nodes,ncol=2)
                             
                             print(paste("Layout for layer",l,"is geographic and user-defined. Converting."))
