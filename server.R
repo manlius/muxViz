@@ -210,7 +210,7 @@ shinyServer(function(input, output, session) {
                         print("  Input is label-based: converting to sequential integer IDs...")
                         
                         if(layerLayoutFile[[l]][1] !="" && (!is.na(layerLayoutFile[[l]][1])) && file.exists(layerLayoutFile[[l]][1])){
-                            layerTable <- read.table(layerLayoutFile[[l]][1], header=T)
+                            layerTable <- read.table(layerLayoutFile[[l]][1], header=T, sep=as.character(input$txtEdgeListFileSep))
 
                             if("nodeID" %in% colnames(layerTable) && "nodeLabel" %in% colnames(layerTable)){
                                 convTable = setNames(as.numeric(layerTable$nodeID), as.character(layerTable$nodeLabel))
