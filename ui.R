@@ -1,6 +1,6 @@
 library(shiny)
 library(ShinyDash)
-library(shinyIncubator)
+#library(shinyIncubator)
 
 #RGB colors table
 #http://www.javascripter.net/faq/rgbtohex.htm
@@ -10,7 +10,7 @@ paletteChoiceArray <- sort(row.names(brewer.pal.info[1]))
 
 
 shinyUI(bootstrapPage(
-    progressInit(),
+    #progressInit(),
 #pageWithSidebar(    
     tags$head(tags$link(rel='stylesheet', type='text/css', href='styles.css')),
     #headerPanel("muxViz Graphical User Interface"),
@@ -467,7 +467,7 @@ shinyUI(bootstrapPage(
                                 ),
                             textInput('txtNODE_COLOR_TOP', label='Number of top-ranked nodes to consider:', "5"),
                             textInput('txtNODE_COLOR_TOP_COLOR_TOP', label='Color of top-ranked nodes (any valid R type):', "#FF0000"),
-                            textInput('txtNODE_COLOR_TOP_COLOR_OTHERS', label='Color of the other nodes (any valid R type):', "#F2F2F2"),         
+                            textInput('txtNODE_COLOR_TOP_COLOR_OTHERS', label='Color of the other nodes and all edges (any valid R type):', "#F2F2F2"),         
                             checkboxInput("chkNODE_LABELS_SHOW_ONLY_TOP","Show nodes labels only for top-ranked nodes:",TRUE),                   
                             textInput('txtNODE_COLOR_TOP_LABELS_FONT_COLOR', label='Color of nodes labels (any valid R type):', "#000000"),
                             tags$hr()

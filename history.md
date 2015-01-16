@@ -1,3 +1,10 @@
+### 17 January 2015
+
+Manlio De Domenico:
+
+- Fixed progressBar compatibility with latest version of Shiny
+
+
 ### 13 August 2014
 
 Manlio De Domenico:

@@ -8,7 +8,7 @@ library(maps)
 library(OpenStreetMap)
 library(shiny)
 library(ShinyDash)
-library(shinyIncubator)
+#library(shinyIncubator)
 library(digest)
 library(googleVis)
 library(lattice)
@@ -100,8 +100,8 @@ communityOK <- F
 
 
 welcomeFunction <- function(){
-    muxVizVersion <- "0.2.2"
-    muxVizUpdate <- "13 Aug 2014"
+    muxVizVersion <- "0.2.3"
+    muxVizUpdate <- "17 Jan 2015"
 
     cat("\n")    
     cat(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n")
@@ -163,10 +163,10 @@ shinyServer(function(input, output, session) {
             #if the table with paths to layers is valid, read the edgelist from each file
             if(length(input$project_file)>0){
                 if(!file.exists(input$project_file$datapath)){
-                    progress <- Progress$new(session)
+                    progress <- shiny::Progress$new(session)
+                    on.exit(progress$close())
                     progress$set(message = paste('ERROR! File',input$project_file$datapath,'does not exist.'), value = 0.01)
                     Sys.sleep(10)
-                    progress$close()
                     return(NULL)
                 }
                 fileInput <<- readLines(input$project_file$datapath)
@@ -183,10 +183,10 @@ shinyServer(function(input, output, session) {
                     fileName[l] <<- strsplit(fileInput[l],';')[[1]][1]
 
                     if(!file.exists(fileName[[l]][1])){
-                        progress <- Progress$new(session)
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
                         progress$set(message = paste('ERROR! File',fileName[[l]][1],'does not exist.'), value = 0.01)
                         Sys.sleep(10)
-                        progress$close()
                         return(NULL)
                     }                    
                     
@@ -194,10 +194,10 @@ shinyServer(function(input, output, session) {
                     layerLayoutFile[l] <<- strsplit(fileInput[l],';')[[1]][3]
 
                     if(!file.exists(layerLayoutFile[[l]][1])){
-                        progress <- Progress$new(session)
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
                         progress$set(message = paste('ERROR! File',layerLayoutFile[[l]][1],'does not exist.'), value = 0.01)
                         Sys.sleep(10)
-                        progress$close()
                         return(NULL)
                     }                    
                     
@@ -220,30 +220,30 @@ shinyServer(function(input, output, session) {
                                 
                                 print("  Done!")
                             }else{
-                                progress <- Progress$new(session)
+                                progress <- shiny::Progress$new(session)
+                                on.exit(progress$close())
                                 progress$set(message = paste('ERROR! Layout file',layerLayoutFile[[l]][1],'is not in a valid format (missing nodeID or nodeLabel column(s)). This format is required when edges lists use labeled nodes instead of sequential integer IDs.'), value = 0.01)
                                 print("  Error: invalid layout format")
                                 Sys.sleep(20)
-                                progress$close()
                                 return(NULL)
                             }                            
                         }else{
-                            progress <- Progress$new(session)
+                            progress <- shiny::Progress$new(session)
+                            on.exit(progress$close())
                             progress$set(message = paste('ERROR! Layout file',layerLayoutFile[[l]][1],'is not specified or does not exist. This file is required when edges lists use labeled nodes instead of sequential integer IDs.'), value = 0.01)
                             print("  Error: invalid layout file")
                             Sys.sleep(20)
-                            progress$close()
                             return(NULL)
                         }
                     }else{
                         #check if the input is numeric, as expected, or raise errors:
                         for(i in 1:ncol(layerEdges[[l]])){
                             if( !is.numeric(layerEdges[[l]][,i]) ){
-                                progress <- Progress$new(session)
+                                progress <- shiny::Progress$new(session)
+                                on.exit(progress$close())
                                 progress$set(message = paste('ERROR! Edges list (',fileName[[l]][1],') is not specified by nodes with sequential integer IDs or weights (if any) are not numeric. If you use labels instead of sequential integer IDs you have to check the corresponding box before importing the networks.'), value = 0.01)
                                 print("  Error: invalid edges list file")
                                 Sys.sleep(20)
-                                progress$close()
                                 return(NULL)
                             }
                         }
@@ -620,14 +620,14 @@ shinyServer(function(input, output, session) {
                 return()
     
             isolate({
-                progress <- Progress$new(session)
+                progress <- shiny::Progress$new()
+                on.exit(progress$close())
                 progress$set(message = 'Importing edges lists...', value = 0.2)
                 Sys.sleep(1)
                 res <- importNetworksFromConfigurationFile()
                 if(is.null(res)){
                     progress$set(message = 'Errors occurred while reading input...', value = 0.2)
                     Sys.sleep(5)
-                    progress$close()
                     return()
                 }
 
@@ -659,8 +659,6 @@ shinyServer(function(input, output, session) {
                 
                 progress$set(detail = 'Import Completed!', value = 1)
                 Sys.sleep(2)
-        
-                progress$close()
             })
         })
 
@@ -674,14 +672,14 @@ shinyServer(function(input, output, session) {
             if(is.null(input$timeline_file$datapath)) return()
     
             isolate({
-                progress <- Progress$new(session)
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
                 progress$set(message = 'Importing timeline...', value = 0.2)
                 Sys.sleep(1)
                 res <- importTimelineFromFile()
                 if(is.null(res)){
                     progress$set(message = 'Errors occurred while reading input...', value = 0.2)
                     Sys.sleep(5)
-                    progress$close()
                     return()
                 }
                                         
@@ -689,18 +687,16 @@ shinyServer(function(input, output, session) {
                 
                 progress$set(detail = 'Import Completed!', value = 1)
                 Sys.sleep(2)
-        
-                progress$close()
             })
         })
         
         importTimelineFromFile <- function(){
             if(length(input$timeline_file)>0){
                 if(!file.exists(input$timeline_file$datapath)){
-                    progress <- Progress$new(session)
+                    progress <- shiny::Progress$new(session)
+                    on.exit(progress$close())
                     progress$set(message = paste('ERROR! File',input$timeline_file$datapath,'does not exist.'), value = 0.01)
                     Sys.sleep(10)
-                    progress$close()
                     return(NULL)
                 }
             }
@@ -709,18 +705,18 @@ shinyServer(function(input, output, session) {
             dfTimeline <<-  read.table(fileTimeline, header=TRUE, sep=as.character(input$txtTimelineFileSep))
             
             if(!(all(as.integer(as.character(dfTimeline$layerID)) >= 1) & all(as.integer(as.character(dfTimeline$layerID)) <= (LAYERS+1)))){
-                progress <- Progress$new(session)
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
                 progress$set(message = paste('ERROR! There are unknown layers in the timeline file'), value = 0.01)
                 Sys.sleep(10)
-                progress$close()
                 return(NULL)
             }
 
             if(!(all(as.integer(as.character(dfTimeline[dfTimeline$entity=="node",]$nodeID)) >= minNodeID) & all(as.integer(as.character(dfTimeline[dfTimeline$entity=="node",]$nodeID)) <= maxNodeID))){
-                progress <- Progress$new(session)
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
                 progress$set(message = paste('ERROR! There are unknown nodes in the timeline file'), value = 0.01)
                 Sys.sleep(10)
-                progress$close()
                 return(NULL)
             }
             
@@ -735,7 +731,8 @@ shinyServer(function(input, output, session) {
             if(input$btnImportTimeline==0 || input$btnRenderNetworks==0 || length(dfTimeline)==0) return()
 
             isolate({
-                progress <- Progress$new(session)
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
     
                 progress$set(detail = 'Building the dynamics...', value = 0.1)
                 Sys.sleep(1)
@@ -895,7 +892,6 @@ shinyServer(function(input, output, session) {
                 
                 progress$set(message = 'Rendering Completed!', value = 1)
                 Sys.sleep(2)
-                progress$close()
             
                 btnRenderDynamicsSnapshotsValue <<- input$btnRenderDynamicsSnapshots
             })
@@ -913,7 +909,8 @@ shinyServer(function(input, output, session) {
             if(btnCalculateCorrelationDiagnosticsValue==input$btnCalculateCorrelationDiagnostics) return()
     
             isolate({
-                progress <- Progress$new(session)
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
     
                 #cell LAYERS+1 contains the data for the multiplex
     
@@ -1111,7 +1108,6 @@ shinyServer(function(input, output, session) {
                 btnCalculateCorrelationDiagnosticsValue <<- input$btnCalculateCorrelationDiagnostics
                 progress$set(message = 'Correlation Diagnostics Completed!', value = 1)
                 Sys.sleep(2)
-                progress$close()
 
             })
         })
@@ -1123,7 +1119,8 @@ shinyServer(function(input, output, session) {
             if(btnCalculateCentralityDiagnosticsValue==input$btnCalculateCentralityDiagnostics) return()
     
             isolate({
-                progress <- Progress$new(session)
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
                    
                 ###############
                 ## Centrality
@@ -1170,7 +1167,6 @@ shinyServer(function(input, output, session) {
                 
                 progress$set(message = 'Centrality Completed!', value = 1)
                 Sys.sleep(2)
-                progress$close()
             })
         })
         
@@ -1181,7 +1177,8 @@ shinyServer(function(input, output, session) {
             if(btnCalculateCommunityDiagnosticsValue==input$btnCalculateCommunityDiagnostics) return()
     
             isolate({
-                progress <- Progress$new(session)
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
                 
                 ###############
                 ## Community
@@ -1366,7 +1363,6 @@ shinyServer(function(input, output, session) {
     
                 progress$set(message = 'Community Detection Completed!', value = 1)
                 Sys.sleep(2)
-                progress$close()
             })  
         })
     
@@ -1381,7 +1377,8 @@ shinyServer(function(input, output, session) {
             if(btnAnularVizValue==input$btnAnularViz) return()
         
             isolate({
-                progress <- Progress$new(session)
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
                 muxFeatureDataFrame <- NULL
                 monoxFeatureDataFrame <- NULL
                 muxFeatureDataFrameArray <- NULL
@@ -1670,7 +1667,6 @@ shinyServer(function(input, output, session) {
     
                 progress$set(message = 'Annular Viz Completed!', value = 1)
                 Sys.sleep(2)
-                progress$close()
             })  
         })
     
@@ -1686,7 +1682,8 @@ shinyServer(function(input, output, session) {
             if(btnCalculateReducibilityValue==input$btnCalculateReducibility) return()
     
             isolate({
-                progress <- Progress$new(session)
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
     
                 progress$set(message = 'Calculating Redundancy...', value = 0.05)
                     
@@ -1765,7 +1762,6 @@ shinyServer(function(input, output, session) {
     
                 progress$set(message = 'Reducibility analysis Completed!', value = 1)
                 Sys.sleep(2)
-                progress$close()
             })  
         })
     
@@ -1781,7 +1777,8 @@ shinyServer(function(input, output, session) {
             if(btnApplyLayoutValue==input$btnApplyLayout) return()
     
             isolate({
-                progress <- Progress$new(session)
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
                 
                 #First check if the layout is wrt Multiplex, a layer or independent
                 if(input$radLayoutType == 'LAYOUT_BY_LAYER_ID' && input$selInputLayerID!='None'){
@@ -2054,6 +2051,8 @@ shinyServer(function(input, output, session) {
                             }else{
                                 layouts[[l]][,3] <<- 0
                             }
+                            
+                            print(layouts[[l]])
                         }else{
                             if(input$chkAGGREGATE_SHOW){
                                 layouts[[l]][,3] <<- -1 + as.numeric(input$txtLAYER_SCALE)*as.numeric(input$txtLAYER_SPACE)*l/(LAYERS+1)
@@ -2073,7 +2072,6 @@ shinyServer(function(input, output, session) {
     
                 progress$set(message = 'Layout Completed!', value = 1)
                 Sys.sleep(2)
-                progress$close()
                 print("Layouting finished. Proceeding with openGL plot of each layer.")
             
                 btnApplyLayoutValue <<- input$btnApplyLayout
@@ -2090,7 +2088,8 @@ shinyServer(function(input, output, session) {
             if(btnRenderNetworksValue==input$btnRenderNetworks) return()
             
             isolate({
-                progress <- Progress$new(session)
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
     
                 progress$set(message = 'Start rendering...', value = 0.05)
                 Sys.sleep(1)
@@ -2280,7 +2279,7 @@ shinyServer(function(input, output, session) {
                                         edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
                                         edge.curved=E(g[[l]])$curve,
                                         rescale=F)
-                                                            
+         
                     print(paste("  Layout of layer: finished."))
                 }
                 
@@ -2289,7 +2288,6 @@ shinyServer(function(input, output, session) {
                 
                 progress$set(message = 'Rendering Completed!', value = 1)
                 Sys.sleep(2)
-                progress$close()
             
                 btnRenderNetworksValue <<- input$btnRenderNetworks
             })
@@ -2497,7 +2495,8 @@ shinyServer(function(input, output, session) {
                 tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Label = nodesLabel[[l]]))
     
                 if(input$chkNODE_CENTRALITY_STRENGTH){
-                    progress <- Progress$new(session)
+                    progress <- shiny::Progress$new(session)
+                    on.exit(progress$close())
                     progress$set(message = paste('Current: Strength...'), value = 0.5)
                     
                     createOctaveConfigFile()
@@ -2519,7 +2518,6 @@ shinyServer(function(input, output, session) {
 
                     progress$set(message = paste('Current: Strength... Done!'), value = 1)
                     Sys.sleep(1)
-                    progress$close()
                 }else{
                     for(l in 1:LAYERS){
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Strength = rep("-",Nodes)))
@@ -2529,7 +2527,7 @@ shinyServer(function(input, output, session) {
                 }
     
                 if(input$chkNODE_CENTRALITY_STRENGTH){
-                    progress <- Progress$new(session)
+                    progress <- shiny::Progress$new(session)
                     progress$set(message = paste('Current: In-Strength...'), value = 0.5)
                     
                     if(DIRECTED){
@@ -2557,7 +2555,6 @@ shinyServer(function(input, output, session) {
 
                     progress$set(message = paste('Current: In-Strength... Done!'), value = 1)
                     Sys.sleep(1)
-                    progress$close()
 
                 }else{
                     for(l in 1:LAYERS){
@@ -2568,7 +2565,7 @@ shinyServer(function(input, output, session) {
                 }
     
                 if(input$chkNODE_CENTRALITY_STRENGTH){
-                    progress <- Progress$new(session)
+                    progress <- shiny::Progress$new(session)
                     progress$set(message = paste('Current: Out-Strength...'), value = 0.5)
 
                     if(DIRECTED){
@@ -2596,7 +2593,6 @@ shinyServer(function(input, output, session) {
 
                     progress$set(message = paste('Current: Out-Strength... Done!'), value = 1)
                     Sys.sleep(1)
-                    progress$close()
 
                 }else{
                     for(l in 1:LAYERS){
@@ -2607,7 +2603,8 @@ shinyServer(function(input, output, session) {
                 }
                 
                 if(input$chkNODE_CENTRALITY_PAGERANK){
-                    progress <- Progress$new(session)
+                    progress <- shiny::Progress$new(session)
+                    on.exit(progress$close())
                     progress$set(message = paste('Current: PageRank...'), value = 0.5)
 
                     createOctaveConfigFile()
@@ -2631,7 +2628,6 @@ shinyServer(function(input, output, session) {
                     
                     progress$set(message = paste('Current: PageRank... Done!'), value = 1)
                     Sys.sleep(1)
-                    progress$close()
 
                 }else{
                     for(l in 1:LAYERS){
@@ -2642,7 +2638,8 @@ shinyServer(function(input, output, session) {
                 }
     
                 if(input$chkNODE_CENTRALITY_EIGENVECTOR){
-                    progress <- Progress$new(session)
+                    progress <- shiny::Progress$new(session)
+                    on.exit(progress$close())
                     progress$set(message = paste('Current: Eigenvector...'), value = 0.5)
 
                     #call octave
@@ -2678,7 +2675,6 @@ shinyServer(function(input, output, session) {
                     
                     progress$set(message = paste('Current: Eigenvector... Done!'), value = 1)
                     Sys.sleep(1)
-                    progress$close()
 
                 }else{
                     for(l in 1:LAYERS){
@@ -2689,7 +2685,8 @@ shinyServer(function(input, output, session) {
                 }
     
                 if(input$chkNODE_CENTRALITY_HUB){
-                    progress <- Progress$new(session)
+                    progress <- shiny::Progress$new(session)
+                    on.exit(progress$close())
                     progress$set(message = paste('Current: Hub...'), value = 0.5)
 
                     #call octave
@@ -2712,7 +2709,6 @@ shinyServer(function(input, output, session) {
                     
                     progress$set(message = paste('Current: Hub... Done!'), value = 1)
                     Sys.sleep(1)
-                    progress$close()
 
                 }else{
                     for(l in 1:LAYERS){
@@ -2723,7 +2719,8 @@ shinyServer(function(input, output, session) {
                 }
     
                 if(input$chkNODE_CENTRALITY_AUTHORITY){
-                    progress <- Progress$new(session)
+                    progress <- shiny::Progress$new(session)
+                    on.exit(progress$close())
                     progress$set(message = paste('Current: Authority...'), value = 0.5)
 
                     #call octave
@@ -2746,7 +2743,6 @@ shinyServer(function(input, output, session) {
                     
                     progress$set(message = paste('Current: Authority... Done!'), value = 1)
                     Sys.sleep(1)
-                    progress$close()
 
                 }else{
                     for(l in 1:LAYERS){
@@ -2757,7 +2753,8 @@ shinyServer(function(input, output, session) {
                 }
     
                 if(input$chkNODE_CENTRALITY_KATZ){
-                    progress <- Progress$new(session)
+                    progress <- shiny::Progress$new(session)
+                    on.exit(progress$close())
                     progress$set(message = paste('Current: Katz...'), value = 0.5)
 
                     #call octave
@@ -2780,7 +2777,6 @@ shinyServer(function(input, output, session) {
                     
                     progress$set(message = paste('Current: Katz... Done!'), value = 1)
                     Sys.sleep(1)
-                    progress$close()
 
                 }else{
                     for(l in 1:LAYERS){
@@ -2805,7 +2801,8 @@ shinyServer(function(input, output, session) {
                                                         
                 for(l in 1:(LAYERS+1)){
                     if(input$chkNODE_CENTRALITY_STRENGTH){
-                        progress <- Progress$new(session)
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
                         progress$set(message = paste('Current: Strength  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/graph.strength.html
@@ -2819,7 +2816,6 @@ shinyServer(function(input, output, session) {
                         }
                         progress$set(message = paste('Current: Strength  for layer',l,'... Done!'), value = 1)
                         Sys.sleep(1)
-                        progress$close()
 
                     }else{
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Strength = rep("-",Nodes)))
@@ -2828,7 +2824,8 @@ shinyServer(function(input, output, session) {
                     }
     
                     if(input$chkNODE_CENTRALITY_PAGERANK){
-                        progress <- Progress$new(session)
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
                         progress$set(message = paste('Current: PageRank  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/page.rank.html
@@ -2837,14 +2834,14 @@ shinyServer(function(input, output, session) {
                         
                         progress$set(message = paste('Current: PageRank  for layer',l,'... Done!'), value = 1)
                         Sys.sleep(1)
-                        progress$close()
 
                     }else{
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(PageRank = rep("-",Nodes)))
                     }
     
                     if(input$chkNODE_CENTRALITY_EIGENVECTOR){
-                        progress <- Progress$new(session)
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
                         progress$set(message = paste('Current: Eigenvector  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/evcent.html
@@ -2856,14 +2853,14 @@ shinyServer(function(input, output, session) {
                         
                         progress$set(message = paste('Current: Eigenvector  for layer',l,'... Done!'), value = 1)
                         Sys.sleep(1)
-                        progress$close()
 
                     }else{
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Eigenvector = rep("-",Nodes)))
                     }
     
                     if(input$chkNODE_CENTRALITY_HUB){
-                        progress <- Progress$new(session)
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
                         progress$set(message = paste('Current: Hub  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/kleinberg.html
@@ -2872,14 +2869,14 @@ shinyServer(function(input, output, session) {
                         
                         progress$set(message = paste('Current: Hub  for layer',l,'... Done!'), value = 1)
                         Sys.sleep(1)
-                        progress$close()
 
                     }else{
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Hub = rep("-",Nodes)))
                     }
     
                     if(input$chkNODE_CENTRALITY_AUTHORITY){
-                        progress <- Progress$new(session)
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
                         progress$set(message = paste('Current: Authority  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/kleinberg.html
@@ -2888,14 +2885,14 @@ shinyServer(function(input, output, session) {
                         
                         progress$set(message = paste('Current: Authority  for layer',l,'... Done!'), value = 1)
                         Sys.sleep(1)
-                        progress$close()
 
                     }else{
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Authority = rep("-",Nodes)))
                     }
     
                     if(input$chkNODE_CENTRALITY_KATZ){
-                        progress <- Progress$new(session)
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
                         progress$set(message = paste('Current: Katz  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/alpha.centrality.html
@@ -2915,7 +2912,6 @@ shinyServer(function(input, output, session) {
                         
                         progress$set(message = paste('Current: Katz  for layer',l,'... Done!'), value = 1)
                         Sys.sleep(1)
-                        progress$close()
 
                     }else{
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Katz = rep("-",Nodes)))
@@ -2936,7 +2932,8 @@ shinyServer(function(input, output, session) {
             if(btnExportRenderingValue==input$btnExportRendering) return()
     
             isolate({
-                progress <- Progress$new(session)
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
     
                 progress$set(message = 'Start exporting...', value = 0.05)
                 Sys.sleep(1)
@@ -2952,7 +2949,6 @@ shinyServer(function(input, output, session) {
                 
                 progress$set(message = paste('Image exported to',FILE_RGL_SNAPSHOT), value = 1)
                 Sys.sleep(5)
-                progress$close()
     
                 btnExportRenderingValue <<- input$btnExportRendering
             })
@@ -2964,7 +2960,8 @@ shinyServer(function(input, output, session) {
             if(btnExportRenderingWebValue==input$btnExportRenderingWeb) return()
     
             isolate({
-                progress <- Progress$new(session)
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
     
                 progress$set(message = 'Start exporting webGL...', value = 0.05)
                 Sys.sleep(1)
@@ -2973,8 +2970,7 @@ shinyServer(function(input, output, session) {
                 writeWebGL(dir=buildPath("export", paste("webGL_",input$txtProjectName,sep="")), width=945)
                 progress$set(message = 'webGL exported. See export folder.', value = 1)
                 Sys.sleep(5)
-                progress$close()
-                
+
                 btnExportRenderingWebValue <<- input$btnExportRenderingWeb
             })
         })
@@ -3443,17 +3439,17 @@ shinyServer(function(input, output, session) {
     }, warning = function(war) {
       # warning handler picks up where error was generated
       print(paste("Warning:  ",war))
-        progress <- Progress$new(session)
+        progress <- shiny::Progress$new(session)
+        on.exit(progress$close())
         progress$set(message = paste('Warning! ',war), value = 0.5)
         Sys.sleep(10)
-        progress$close()
     }, error = function(err) {
       # error handler picks up where error was generated
       print(paste("Error:  ",err))
-        progress <- Progress$new(session)
+        progress <- shiny::Progress$new(session)
+        on.exit(progress$close())
         progress$set(message = paste('Error! ',err), value = 0.5)
         Sys.sleep(10)
-        progress$close()
     }, finally = {
     }) #end tryCatch
 

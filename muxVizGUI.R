@@ -1,8 +1,16 @@
 if(!require(shiny)){
     install.packages("shiny")
     install.packages("devtools")
+    library(devtools)
     devtools::install_github("ShinyDash", "trestletech")
     devtools::install_github("shiny-incubator", "rstudio")
+}else{
+    #check the version, and in case update to the latest one
+    if(as.numeric(strsplit(packageDescription("shiny")$Version,"[.]")[[1]][2])<10){
+        #install.packages("shiny")        
+        library(devtools)
+        devtools::install_github("rstudio/shiny")
+    }
 }
 if(!require(RColorBrewer)){
     install.packages("RColorBrewer")
