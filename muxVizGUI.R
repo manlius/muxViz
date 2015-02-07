@@ -49,6 +49,9 @@ if(!require(clue)){
     install.packages("clue")
 }
 
+if(system("octave -h", ignore.stdout = T, ignore.stderr = T)!=0){
+    print(paste("WARNING! A valid installation of Octave NOT FOUND. \nYou will not be able to calculate multilayer descriptors.\nYou can ignore this warning if you are using muxViz only for visualization purposes."))
+}
 
 
 library(shiny)
