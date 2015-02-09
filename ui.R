@@ -451,7 +451,7 @@ shinyUI(bootstrapPage(
                                 ),
                             checkboxInput("chkNODE_ISOLATED_HIDE","Exclude isolated nodes from the visualization",TRUE),
                             tags$hr(),
-                            textInput('txtNODE_DEFAULT_SIZE', label='Default size (used for fine tuning of Uniform, Log and LogLog option):', "2"),
+                            textInput('txtNODE_DEFAULT_SIZE', label='Default size (used for fine tuning of Uniform, Log and LogLog option):', "15"),
                             textInput('txtNODE_TRANSP', label='Node transparency (from 0 to 1; 1 means full color):', "0.2"),
                             checkboxInput("chkNODE_LABELS_SHOW","Show nodes labels (recommended only for small networks):",FALSE),
                             textInput('txtNODE_LABELS_DISTANCE', label='Distance of labels from nodes:', "0.5"),
@@ -485,7 +485,7 @@ shinyUI(bootstrapPage(
                                     LogLog='EDGE_SIZE_PROPORTIONAL_TYPE_LOGLOG'),
                                     selected='EDGE_SIZE_PROPORTIONAL_TYPE_LOGLOG'
                                 ),
-                            textInput('txtEDGE_DEFAULT_SIZE', label='Default size (used for fine tuning of Uniform, Log and LogLog option):', "0.6"),
+                            textInput('txtEDGE_DEFAULT_SIZE', label='Default size (used for fine tuning of Uniform, Log and LogLog option):', "2"),
                             textInput('txtEDGE_TRANSP', label='Edge transparency (from 0 to 1; 1 means full color):', "0.2"),
                             textInput('txtLAYER_ARROW_SIZE', label='Arrow size:', "0.5"),
                             textInput('txtLAYER_ARROW_WIDTH', label='Arrow width:', "0.5")

@@ -1,0 +1,5 @@
+data/DanioRerio/edge_list_danioRerio_layer1.txt;Assoc.;data/DanioRerio/danioRerio_layout.txt
+data/DanioRerio/edge_list_danioRerio_layer2.txt;Supp.Gen.Int.;data/DanioRerio/danioRerio_layout.txt
+data/DanioRerio/edge_list_danioRerio_layer3.txt;Dir.Int.;data/DanioRerio/danioRerio_layout.txt
+data/DanioRerio/edge_list_danioRerio_layer4.txt;Add.Gen.Int.;data/DanioRerio/danioRerio_layout.txt
+data/DanioRerio/edge_list_danioRerio_layer5.txt;Phys.Assoc;data/DanioRerio/danioRerio_layout.txt
