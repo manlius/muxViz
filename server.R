@@ -212,8 +212,9 @@ shinyServer(function(input, output, session) {
                         if(layerLayoutFile[[l]][1] !="" && (!is.na(layerLayoutFile[[l]][1])) && file.exists(layerLayoutFile[[l]][1])){
                             layerTable <- read.table(layerLayoutFile[[l]][1], header=T, sep=as.character(input$txtEdgeListFileSep))
 
-                            if("nodeID" %in% colnames(layerTable) && "nodeLabel" %in% colnames(layerTable)){
-                                convTable = setNames(as.numeric(layerTable$nodeID), as.character(layerTable$nodeLabel))
+                            if("nodeLabel" %in% colnames(layerTable)){
+                                layerTable$nodeID <- 1:nrow(layerTable)
+                                convTable = setNames(layerTable$nodeID, as.character(layerTable$nodeLabel))
                                 for(i in 1:2) layerEdges[[l]][,i] <<- convTable[ as.character(unlist(layerEdges[[l]][,i])) ]
                                 
                                 write.table(layerEdges[[l]], paste(fileName[[l]][1],".rel",sep=""), quote=F, row.names=F, col.names=F)
@@ -222,7 +223,7 @@ shinyServer(function(input, output, session) {
                             }else{
                                 progress <- shiny::Progress$new(session)
                                 on.exit(progress$close())
-                                progress$set(message = paste('ERROR! Layout file',layerLayoutFile[[l]][1],'is not in a valid format (missing nodeID or nodeLabel column(s)). This format is required when edges lists use labeled nodes instead of sequential integer IDs.'), value = 0.01)
+                                progress$set(message = paste('ERROR! Layout file',layerLayoutFile[[l]][1],'is not in a valid format (missing nodeLabel column). This format is required when edges lists use labeled nodes instead of sequential integer IDs.'), value = 0.01)
                                 print("  Error: invalid layout format")
                                 Sys.sleep(20)
                                 return(NULL)
@@ -318,6 +319,7 @@ shinyServer(function(input, output, session) {
                 for(l in 1:LAYERS){
                     if(layerLayoutFile[[l]][1] !="" && (!is.na(layerLayoutFile[[l]][1]))){
                         layerTable <- read.table(layerLayoutFile[[l]][1], header=T, sep=as.character(input$txtEdgeListFileSep))
+                        if(input$chkEdgeListLabel) layerTable$nodeID <- 1:nrow(layerTable)
                         layerLayout[[l]] <<- matrix(c(1),nrow=Nodes,ncol=2)
                         
                         if(length(layerTable$nodeLat)==Nodes && length(layerTable$nodeLong)==Nodes){
@@ -749,7 +751,7 @@ shinyServer(function(input, output, session) {
                 }else{
                     for(l in 1:(LAYERS+1)) V(g[[l]])$color <- defaultVcolor[[l]]
                 }
-
+                
                 if(length(input$txtTimelineDefaultNodesSize)>0){
                     for(l in 1:(LAYERS+1)) V(g[[l]])$size <- as.numeric(input$txtTimelineDefaultNodesSize)
                 }else{
@@ -853,6 +855,7 @@ shinyServer(function(input, output, session) {
                         #plot the graph with openGL    
                         #print(layouts[[l]])
                         V(g[[l]])$label <- ""
+                                                
                         rglplot.igraph(g[[l]], layout=layouts[[l]],
                                             vertex.size=V(g[[l]])$size, 
                                             vertex.color=V(g[[l]])$color,
@@ -1804,7 +1807,7 @@ shinyServer(function(input, output, session) {
                 print(paste("Layout dimension:",LAYOUT_DIMENSION))
                 
                 #Check if the layouts are specified by external files, otherwise proceed with the automatic ones
-                if(!LAYOUT_EXTERNAL){
+                if(!LAYOUT_EXTERNAL || (GEOGRAPHIC_LAYOUT && input$chkPLOT_AS_EDGE_COLORED)){
                     if(!LAYOUT_INDEPENDENT){    
                         print("Constrained layout option.")
                         progress$set(message = 'Constrained layout...', value = 0.05)
@@ -1950,6 +1953,9 @@ shinyServer(function(input, output, session) {
                         #we are sure here that each layout is specified correctly
                         for(l in 1:LAYERS){
                             layerTable <- read.table(layerLayoutFile[[l]][1], header=T, sep=as.character(input$txtEdgeListFileSep))
+                            
+                            if(input$chkEdgeListLabel) layerTable$nodeID <- 1:nrow(layerTable)
+                            
                             layerLayout[[l]] <<- matrix(c(1),nrow=Nodes,ncol=2)
                             
                             print(paste("Layout for layer",l,"is geographic and user-defined. Converting."))
@@ -2016,22 +2022,26 @@ shinyServer(function(input, output, session) {
                         layouts[[LAYERS+1]] <<- cbind(layouts[[LAYERS+1]][,1:2],0)
                     }
                 }
-    
-    
+
+                print(paste("LIMITS:", XMIN, XMAX, YMIN, YMAX))
+                            
                 #rescale the layout to allow superposition with shift along z-axis
                 progress$set(message = 'Normalizing coordinates...', value = 0.95)
     
                 print("  Normalizing coordinates...")    
     
                 for(l in 1:(LAYERS+1)){
-                    deltaX <- min(layouts[[l]][,1],na.rm=T) - XMIN
-                    if(XMIN > min(layouts[[l]][,1],na.rm=T)){
-                        deltaX <- -deltaX
-                    }
-                    deltaY <- min(layouts[[l]][,2],na.rm=T) - YMIN
-                    if(YMIN > min(layouts[[l]][,2],na.rm=T)){
-                        deltaY <- -deltaY
-                    }
+                    #not quite sure about this piece of code, waiting for empirical problems
+                    #deltaX <- min(layouts[[l]][,1],na.rm=T) - XMIN
+                    #if(XMIN > min(layouts[[l]][,1],na.rm=T)){
+                    #    deltaX <- -deltaX
+                    #}
+                    #deltaY <- min(layouts[[l]][,2],na.rm=T) - YMIN
+                    #if(YMIN > min(layouts[[l]][,2],na.rm=T)){
+                    #    deltaY <- -deltaY
+                    #}
+                    deltaX <- 0
+                    deltaY <- 0
                     layouts[[l]][,1] <<- as.numeric(input$txtLAYER_SCALE)*(layouts[[l]][,1] - XMIN + deltaX)/(XMAX-XMIN) - 1 + (l-1)*as.numeric(input$txtLAYER_SHIFT)
                     layouts[[l]][,2] <<- as.numeric(input$txtLAYER_SCALE)*(layouts[[l]][,2] - YMIN + deltaY)/(YMAX-YMIN) - 1
     
@@ -2798,11 +2808,12 @@ shinyServer(function(input, output, session) {
                 tmplistDiagnostics[[LAYERS+1]] <- data.frame(Layer = rep("Aggr",Nodes))
                 tmplistDiagnostics[[LAYERS+1]] <- cbind(tmplistDiagnostics[[LAYERS+1]],data.frame(Node = 1:Nodes))
                 tmplistDiagnostics[[LAYERS+1]] <- cbind(tmplistDiagnostics[[LAYERS+1]],data.frame(Label = nodesLabel[[LAYERS+1]]))
+
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
                                                         
                 for(l in 1:(LAYERS+1)){
                     if(input$chkNODE_CENTRALITY_STRENGTH){
-                        progress <- shiny::Progress$new(session)
-                        on.exit(progress$close())
                         progress$set(message = paste('Current: Strength  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/graph.strength.html
@@ -2824,8 +2835,6 @@ shinyServer(function(input, output, session) {
                     }
     
                     if(input$chkNODE_CENTRALITY_PAGERANK){
-                        progress <- shiny::Progress$new(session)
-                        on.exit(progress$close())
                         progress$set(message = paste('Current: PageRank  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/page.rank.html
@@ -2840,8 +2849,6 @@ shinyServer(function(input, output, session) {
                     }
     
                     if(input$chkNODE_CENTRALITY_EIGENVECTOR){
-                        progress <- shiny::Progress$new(session)
-                        on.exit(progress$close())
                         progress$set(message = paste('Current: Eigenvector  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/evcent.html
@@ -2859,8 +2866,6 @@ shinyServer(function(input, output, session) {
                     }
     
                     if(input$chkNODE_CENTRALITY_HUB){
-                        progress <- shiny::Progress$new(session)
-                        on.exit(progress$close())
                         progress$set(message = paste('Current: Hub  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/kleinberg.html
@@ -2875,8 +2880,6 @@ shinyServer(function(input, output, session) {
                     }
     
                     if(input$chkNODE_CENTRALITY_AUTHORITY){
-                        progress <- shiny::Progress$new(session)
-                        on.exit(progress$close())
                         progress$set(message = paste('Current: Authority  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/kleinberg.html
@@ -2891,8 +2894,6 @@ shinyServer(function(input, output, session) {
                     }
     
                     if(input$chkNODE_CENTRALITY_KATZ){
-                        progress <- shiny::Progress$new(session)
-                        on.exit(progress$close())
                         progress$set(message = paste('Current: Katz  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/alpha.centrality.html
