@@ -3,11 +3,11 @@ if(!require(shiny)){
     install.packages("devtools")
     library(devtools)
     devtools::install_version("shiny", version = "0.10.1")
-    devtools::install_github("ShinyDash", "trestletech")
-    devtools::install_github("shiny-incubator", "rstudio")
+    devtools::install_github("trestletech/ShinyDash")
+    devtools::install_github("rstudio/shiny-incubator")
 }else{
     #check the version, and in case update to the latest one
-    #if(as.numeric(strsplit(packageDescription("shiny")$Version,"[.]")[[1]][2])<10){
+    if(as.numeric(strsplit(packageDescription("shiny")$Version,"[.]")[[1]][2])!=10){
         #install.packages("shiny")        
         library(devtools)
         devtools::install_version("shiny", version = "0.10.1")
