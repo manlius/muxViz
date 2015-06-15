@@ -1,18 +1,23 @@
+if(!require(devtools)){
+    install.packages("devtools")
+}
 if(!require(shiny)){
     #install.packages("shiny")
-    install.packages("devtools")
+    install.packages("shiny")
     library(devtools)
-    devtools::install_version("shiny", version = "0.10.1")
     devtools::install_github("trestletech/ShinyDash")
     devtools::install_github("rstudio/shiny-incubator")
 }else{
     #check the version, and in case update to the latest one
-    if(as.numeric(strsplit(packageDescription("shiny")$Version,"[.]")[[1]][2])!=10){
+    if(packageDescription("shiny")$Version!="0.12.1"){
         #install.packages("shiny")        
         library(devtools)
-        devtools::install_version("shiny", version = "0.10.1")
+        install.packages("shiny")
         #devtools::install_github("rstudio/shiny")
     }
+}
+if(!require(shinydashboard)){
+    install.packages("shinydashboard")
 }
 if(!require(RColorBrewer)){
     install.packages("RColorBrewer")
@@ -58,6 +63,7 @@ if(system("octave -h", ignore.stdout = T, ignore.stderr = T)!=0){
 
 library(shiny)
 library(ShinyDash)
+#library(shinydashboard)
 
 #uncomment the line below for detailed log of your session. Can be useful for debug purposes
 #options(shiny.trace=TRUE)
