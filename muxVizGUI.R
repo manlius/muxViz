@@ -1,3 +1,7 @@
+if(grep("3.2",version$version.string)!=1){
+    stop(paste("WARNING! muxViz requires R 3.2.x or higher in order to work properly. \nPlease update your R framework.\n"))
+}
+
 if(!require(devtools)){
     install.packages("devtools")
 }
@@ -18,6 +22,15 @@ if(!require(shiny)){
 }
 if(!require(shinydashboard)){
     install.packages("shinydashboard")
+}
+if(!require(markdown)){
+    install.packages("markdown")
+}
+if(!require(ggplot2)){
+    install.packages("ggplot2")
+}
+if(!require(rCharts)){
+    install_github('ramnathv/rCharts')
 }
 if(!require(RColorBrewer)){
     install.packages("RColorBrewer")
@@ -63,7 +76,7 @@ if(system("octave -h", ignore.stdout = T, ignore.stderr = T)!=0){
 
 library(shiny)
 library(ShinyDash)
-#library(shinydashboard)
+library(shinydashboard)
 
 #uncomment the line below for detailed log of your session. Can be useful for debug purposes
 #options(shiny.trace=TRUE)

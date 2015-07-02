@@ -1,3 +1,15 @@
+### 2 July 2015
+
+Manlio De Domenico:
+
+- Fixed compatibility with latest version of Shiny (0.12.1)
+- Fixed minor bugs (filling centrality and community tables, updating annular viz)
+- Restyled the GUI (completely!)
+- Added a heatmap to quickly visualize communities and patterns
+- Support multilayer motif analysis
+- Added information about available datasets
+
+
 ### 17 January 2015
 
 Manlio De Domenico:

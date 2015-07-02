@@ -2,6 +2,12 @@ body{
   font-size: 14px;    
 }
 
+#projectTimelineHTML span {
+  color: #944;
+  font-weight: 400;
+  font-size: 16px;
+}
+
 #projectSummaryHTML span {
   color: #944;
   font-weight: 400;
@@ -20,7 +26,19 @@ body{
   font-size: 16px;
 }
 
+#tabCitation  span {
+  color: #944;
+  font-weight: 400;
+  font-size: 16px;
+}
+
 #tabCredits  span {
+  color: #944;
+  font-weight: 400;
+  font-size: 16px;
+}
+
+#tabLicense  span {
   color: #944;
   font-weight: 400;
   font-size: 16px;

@@ -17,6 +17,9 @@ The following list reflects the possible improvements of muxViz. I am in debt wi
 
 - Community-piechart in muxviz to show overlapping modules? (see [this paper](http://arxiv.org/abs/1408.2925) and also [multi-layer pie charts](http://www.r-bloggers.com/how-to-draw-venn-pie-agram-multi-layer-pie-chart-in-r/) for additional ideas)
 
+- Layered visualization of adjacency matrices in a 3D environment
+
+
 - There are open issues with the native RGL device. This is far beyond the scope of muxViz for the moment, but maybe someone could find a way to solve them
 
 To the best of my knowledge:
@@ -35,6 +38,8 @@ Adding additional interactivity (eg, node selection, layer selection, etc) to th
 
 - Add possibility to control the border of layers
 
+- Add possibility to pass a vector of colors to color layers, as well as a single color
+
 - Light problem: insert a button to reset lights
 
 #### Low priority
@@ -44,8 +49,6 @@ Adding additional interactivity (eg, node selection, layer selection, etc) to th
 - Reducibility: the dendrogram could have colored branches like [this](http://stackoverflow.com/questions/18036094/how-to-create-a-dendrogram-with-colored-branches), possibly according to a threshold
 
 - Reducibility: possibility to generate a circular dendrogram and to apply cuts
-
-
 
 
 ## TODO Analysis 
@@ -62,11 +65,18 @@ Adding additional interactivity (eg, node selection, layer selection, etc) to th
 
 - It could be useful to export tables to files
 
+- Motifs? See the possibility to port FANMOD
+
+- Multiplex Infomap? See the possibility to port or to make a stand-alone package/plugin for igraph
+
 - Connected component calculation (according to existing literature) and coloring. Code should be already done in muxNet for some cases
 
 ##### Medium priority
 
 - The calculation of some centrality measures can be avoided when the multiplex is undirected (e.g., if the eigenvector centrality is calculated, HITS centrality would give the same result for undirected networks and we can exploit this to avoid re-calculation). This is already done for strength, for instance.
+
+- It could be useful allowing to plot the histogram/density of centrality measures, single/multi-layer, including possibility of log-binning
+
 
 - Update multislice community detection to the new version "Louvain Random"
 
@@ -103,7 +113,13 @@ Adding additional interactivity (eg, node selection, layer selection, etc) to th
   [R.matlab](http://cran.r-project.org/web/packages/R.matlab/R.matlab.pdf)
   and
   [matlab](http://cran.r-project.org/web/packages/matlab/matlab.pdf)
-  are promising, but a full porting would be the best option
+  are promising, but a full porting would be the best option.
+  It seems that on Mac and Linux it is possible to exploit the already existing
+  linear algebra R packages by forcing R to use a faster BLAS version. 
+  On a Mac OS X this is easily achieved by
+  
+  sudo ln -sf /System/Library/Frameworks/Accelerate.framework/Frameworks/vecLib.framework/Versions/Current/libBLAS.dylib /Library/Frameworks/R.framework/Resources/lib/libRblas.dylib
+
 
 - When single layers are provided, support for any input format allowed by igraph (currently working only with edges list) is required
 

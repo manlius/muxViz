@@ -1,4 +1,4 @@
-muxViz v0.2
+muxViz v0.3
 =========
 
 ### Visualization and Analysis of Multilayer Networks
@@ -8,7 +8,8 @@ muxViz is a platform for the visualization and the analysis of interconnected mu
 - Multilayer correlation analysis
 - Multilayer centrality analysis and annular representation
 - Multilayer community structure detection
-- Dimensionality reduction
+- Multilayer structural reducibility
+- Multilayer motifs analysis
 - Animated visualization of dynamical processes and time-varying multilayer networks
 
 Support for data analysis is not mandatory and requires a working installation of GNU Octave 3.4.0 or above. 
@@ -35,6 +36,11 @@ Please, note that muxViz is based on some algorithms developed in other studies.
 
 ![muxViz GUI](gallery/gui1.png "muxViz GUI")
 
+![muxViz data](gallery/guiData.png "muxViz data")
+
+Note that linked data is in a different format and can not be used "as they are" by muxViz. A tool for easily convert from that format to muxViz is under development. 
+
+
 ##### Requirements and Installation
 
 Download and install a copy of Octave (3.4.0 or above):
@@ -43,29 +49,11 @@ Download and install a copy of Octave (3.4.0 or above):
 
 Octave should be accessible through command line from any folder (i.e., it is mandatory to add it in your PATH environment variable). If you are not familiar with this simple task, you should visit <http://www.java.com/en/download/help/path.xml>
 
-muxViz requires R v3.0.2 (or above). Download and install a copy of R from
+muxViz requires R v3.2.0 (or above). Download and install a copy of R from
 
 <http://www.r-project.org/>
 
-The following packages are required within the R environment:
-
-- shiny 0.8.0 (or above)
-- ShinyDash 0.0.1 (or above)
-- shinyIncubator 0.2.0 (or above)
-- igraph v0.6.5 (or above)
-- gplots 2.12.1 (or above)
-- RGL 0.93.963 (or above)
-- googleVis 0.4.7 (or above)
-- digest 0.6.4 (or above)
-- mapproject v1.2-1 (or above)
-- openstreetmap v0.3.1 (or above)
-- RColorBrewer 1.0-5 (or above)
-- raster 2.2-31 (or above)
-- fields 6.9.1 (or above)
-- lattice 0.20-27 (or above)
-- clue 0.3-47 (or above)
-
-However, the main script should be able to detect the missing packages and install them, automatically. Therefore, it is likely that you *do not* need to install them by yourself.
+Some external packages are required within the R environment. However, the main script should be able to detect the missing packages and install them, automatically. Therefore, it is likely that you *do not* need to install them by yourself.
 
 You can download muxViz from Github: <https://github.com/manlius/muxViz/archive/master.zip>
 
@@ -83,7 +71,7 @@ If you use a Linux (Ubuntu-like) distribution, you are very lucky, because the f
 
     #download Octave and R from their repository
     wget http://ftp.gnu.org/gnu/octave/octave-3.6.0.tar.gz
-    wget http://cran.es.r-project.org/src/base/R-3/R-3.0.3.tar.gz
+    wget http://cran.es.r-project.org/src/base/R-3/R-3.2.0.tar.gz
     DIR=$PWD
     
     #install Octave
@@ -250,13 +238,13 @@ The muxViz package now includes a script for the visualization of standard netwo
 Copyright
 =========
 
-##### (C) Copyright 2013-2014, Manlio De Domenico.
+##### (C) Copyright 2013-2015, Manlio De Domenico.
 
 This code has no warranty whatsoever and any kind of support is provided.
 You are free to do what you like with this code as long as you leave this copyright in place.
 Please, explicitly cite muxViz if you find it useful for your visualizations.
 
-(C) Copyright 2013-2014, Manlio De Domenico (manlio.dedomenico at urv.cat) 
+(C) Copyright 2013-2015, Manlio De Domenico (manlio.dedomenico at urv.cat) 
 
 Each file in this folder is part of the muxViz package. 
 

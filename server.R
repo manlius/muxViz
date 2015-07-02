@@ -16,6 +16,8 @@ library(lattice)
 library(fields)
 library(clue)
 library(gplots)
+library(rCharts)
+library(ggplot2)
 
 
 ##################################################
@@ -23,6 +25,7 @@ library(gplots)
 ##################################################
 
 #This is to avoid pushing a button and starting all the other ones..
+btnCalculateMotifsValue <- 0
 btnCalculateCorrelationDiagnosticsValue <- 0
 btnCalculateCentralityDiagnosticsValue <- 0
 btnCalculateCommunityDiagnosticsValue <- 0
@@ -36,6 +39,7 @@ btnExportRenderingValue <- 0
 btnExportRenderingWebValue <- 0
 btnAnularVizValue <- 0
 btnCalculateReducibilityValue <- 0
+btnSaveSessionValue <- 0
 
 #Other variables
 fileInput <- NULL
@@ -101,8 +105,8 @@ communityOK <- F
 
 
 welcomeFunction <- function(){
-    muxVizVersion <- "0.2.3"
-    muxVizUpdate <- "17 Jan 2015"
+    muxVizVersion <- "0.3.0"
+    muxVizUpdate <- "2 Jul 2015"
 
     cat("\n")    
     cat(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n")
@@ -111,7 +115,7 @@ welcomeFunction <- function(){
     cat(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n")
     cat("\n")
     cat(":: muxViz: Tool for Multilayer Analysis and Visualization\n")
-    cat(":: Copyright (C) 2013-2014 Manlio De Domenico\n")
+    cat(":: Copyright (C) 2013-2015 Manlio De Domenico\n")
     cat(":: School of Computer Science and Mathematics\n")
     cat(":: Universitat Rovira i Virgili (Tarragona, Spain)\n")
     cat("\n")
@@ -143,15 +147,118 @@ concatenatePath <- function(folder,objname){
     }
 }
 
+getExecutablePath <- function(exec_name){
+    path <- ""
+    if( Sys.info()["sysname"]=="Windows" ){
+        path <- buildPath("bin",paste0(exec_name,"_windows"))    
+    }else if( Sys.info()["sysname"]=="Linux" ){
+        path <- buildPath("bin",paste0(exec_name,"_linux"))
+    }else{
+        path <- buildPath("bin",paste0(exec_name,"_macosx"))
+    }
+    
+    return(path)
+}
+
+#to open/save a session.. still experimental
+#https://github.com/jcheng5/shiny-resume
+#print(objects(all.names = TRUE))
+#http://www.inside-r.org/packages/cran/session/docs
+    
+#to make a CRAN package in the next future
+#http://hilaryparker.com/2014/04/29/writing-an-r-package-from-scratch/
 
 shinyServer(function(input, output, session) {
     welcomeFunction()
-    
+   
     commonRunif <<- runif(1)
     #commonRunif <- 0.0148374617565423
     #print(paste("SEED:",commonRunif))
 
     result <- tryCatch({
+
+        output$communityParameters <- renderUI({
+            #control the parameters to show while choosing a community detection method
+            if(input$radCommunityAlgorithm == "COMMUNITY_MULTIPLEX"){
+                textInput("txtGamma", label=HTML("Resolution parameter (for multislice community detection):"), "1")
+            }
+        })
+            
+        #Fill the table summarizing the config file
+        output$dataTable <- renderDataTable({
+            inFile <- "mux_dataset.csv"
+            
+            if (is.null(inFile))
+                return(NULL)
+    
+            #return(gvisTable(read.csv(inFile, header=T, sep=";"),options=list(page='enable',pageSize=100)))
+            return(read.csv(inFile, header=T, sep=";"))
+        })
+
+        output$dataPieChart <- renderChart2({
+            inFile <- "mux_dataset.csv"
+            
+            if (is.null(inFile))
+                return(NULL)
+
+            data <- read.csv(inFile, header=T, sep=";")
+            distrib <- table(data$Type)
+            dfChart <- data.frame(Type=names(distrib), N=as.numeric(distrib))
+            dfChart$perc <- round(100*dfChart$N/sum(dfChart$N),2)
+            doughnut <- nPlot(N~Type, data = dfChart, type = "pieChart")
+            doughnut$chart(tooltipContent = "#! function(key, y, e, graph){return '<h4>' + 'Category: ' + key + '</h4>' + '<p>'+ 'Networks: ' + e.point.N + ' (' + e.point.perc + '%)'} !#")
+            doughnut$set(width = 600, height = 400) # mk changed width to 800 and height to 500
+
+            doughnut$chart(donut = TRUE)
+
+            return(doughnut)
+        })
+
+
+#        output$dataPieChart <- renderGvis({
+#            inFile <- "mux_dataset.csv"
+#            
+#            if (is.null(inFile))
+#                return(NULL)
+#
+#            data <- read.csv(inFile, header=T, sep=";")
+#            distrib <- table(data$Type)
+#            dfChart <- data.frame(Type=names(distrib), N=as.numeric(distrib))
+#
+#            doughnut <- gvisPieChart(dfChart, 
+#                      options=list(
+#                        width=600,
+#                        height=300,
+#                        colors="['black','orange', '#2b8cbe', 
+#                        'red', '#756bb1', '#31a354', 'gray']",
+#                        pieSliceText='percentage',
+#                        title='Multiplex Data Types',
+#                        pieHole=0.3),
+#                      chartid="doughnut")
+#            return(doughnut)
+#        })
+
+        output$dataScatterPlot <- renderChart2({
+            inFile <- "mux_dataset.csv"
+            
+            if (is.null(inFile))
+                return(NULL)
+
+            data <- read.csv(inFile, header=T, sep=";")
+            data$logEdges <- log10(data$Edges)
+            data$logNodes <- log10(data$Nodes)
+            data$logLayers <- log10(data$Layers)
+            
+            rplot <- nPlot(logEdges~logNodes, data=data, 
+                                group="Type", type="scatterChart", opacity=list(const=0.7), height=400,width=600)
+            rplot$yAxis(axisLabel="log10 #Edges")
+            rplot$xAxis(axisLabel="log10 #Nodes")
+            rplot$chart(size = '#! function(d){return d.logLayers} !#')
+            rplot$chart(tooltipContent = "#! function(key, x, y, e){ return  '<h3>Network:</h3> ' + e.point.Name + '<br><b>Category:</b> ' + key + '<br><b>Ref:</b> ' + e.point.Reference } !#")
+            rplot$chart(forceY=c(floor(min(data$logEdges)),floor(max(data$logEdges))+1), 
+                              forceX=c(floor(min(data$logNodes)),floor(max(data$logNodes))+1))
+            return(rplot)
+        })
 
       	################################################
       	# Layers table
@@ -903,9 +1010,178 @@ shinyServer(function(input, output, session) {
 
 
       	################################################
+      	# Motifs
+      	################################################
+        observe({
+            if(input$btnCalculateMotifs==0 || input$btnImportNetworks == 0 ||  LAYERS<=1)
+                return()
+            
+            if(btnCalculateMotifsValue==input$btnCalculateMotifs) return()
+    
+            isolate({
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
+                
+                #to output full numbers
+                options(scipen=999)
+                
+                progress$set(message = 'Setting up the algorithms...', value = 0.2)
+                #todo: export file in fanmod format
+                
+                inputFile <- paste(input$txtProjectName,"_fanmod.edges",sep="")
+                
+                #fanmod format assume 0-starting labeling for nodes, 1-starting for layers
+                mergedEdgelist <- data.frame()
+                layerLabels <- NULL
+                for(l in 1:LAYERS){
+                    mergedEdgelist <- rbind(mergedEdgelist, data.frame(from=layerEdges[[l]][,1]-1, to=layerEdges[[l]][,2]-1, layer=l))
+                    layerLabels <- c(layerLabels, layerLabel[[l]])
+                }
+                write.table(file=inputFile, mergedEdgelist, row.names=F, col.names=F, quote=F)     
+                resultFile <- paste(input$txtProjectName,"_fanmod.csv",sep="")
+                
+                progress$set(message = 'Calculating motifs...', value = 0.5)
+
+                nullModelID <- 2
+                if(input$selMotifNullModel=="Local const"){
+                    nullModelID <- 2
+                }else if(input$selMotifNullModel=="Global const"){
+                    nullModelID <- 1
+                }else if(input$selMotifNullModel=="No regard"){
+                    nullModelID <- 0
+                }
+                
+                exePath <- getExecutablePath("fanmod")
+                exeFlags <- paste(as.numeric(input$selMotifSize),
+                                              as.numeric(input$txtMotifSamples),
+                                              1,
+                                              inputFile,
+                                              as.numeric(DIRECTED),
+                                              0,
+                                              1,
+                                              nullModelID,
+                                              0,
+                                              1,
+                                              0,
+                                              as.numeric(input$txtMotifRandomNetworks),
+                                              as.numeric(input$txtMotifRandomExchangePerEdges),
+                                              as.numeric(input$txtMotifRandomExchangeAttempts),
+                                              resultFile,
+                                              0,
+                                              0
+                                    )
+                
+                #call fanmod
+                #print( paste(exePath,exeFlags) )
+                system(paste(exePath,exeFlags),intern=T)
+                
+                #read output. Here I could redirect the output inside the R environment.. but
+                #for compatibility with the rest of the code I prefer to read a file
+                #ID,Adj-Matrix,Frequency,Mean-Freq,Standard-Dev,Z-Score,p-Value
+                motifsTable <- read.table(resultFile, header=T, sep=",", colClasses=c("character","character",rep("numeric",5)))
+                
+                progress$set(message = 'Rendering the results...', value = 0.8)
+                
+                #sorting
+                if(input$selMotifResultsSortBy=="Frequency"){
+                    motifsTable <- motifsTable[order(-motifsTable[,3]),]
+                }else if(input$selMotifResultsSortBy=="Z-score"){
+                    motifsTable <- motifsTable[order(-motifsTable[,6]),]
+                }else if(input$selMotifResultsSortBy=="p-value"){
+                    motifsTable <- motifsTable[order(motifsTable[,7]),]
+                }
+                
+                #cutting
+                if(input$chkMotifAbsZscore){
+                    motifsTable <- motifsTable[ abs(motifsTable[,6])> as.numeric(input$txtMotifAbsZscore), ]
+                }
+                if(input$chkMotifPvalue){
+                    motifsTable <- motifsTable[ abs(motifsTable[,7])< as.numeric(input$txtMotifPvalue), ]
+                }
+                if(input$chkMotifFrequency){
+                    motifsTable <- motifsTable[ abs(motifsTable[,3])> as.numeric(input$txtMotifFrequency), ]
+                }
+
+                motifsTable$Mean.Freq <- NULL
+                motifsTable$Standard.Dev <- NULL
+                
+                #creating figures
+                rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selMotifColorPalette],input$selMotifColorPalette))(LAYERS)
+                
+                motifsTable$Motif <- rep("",nrow(motifsTable))
+                for(r in 1:nrow(motifsTable)){
+                    motif_name <- motifsTable[r,]$Adj.Matrix
+                    outpng <- concatenatePath(concatenatePath(buildPath("www","img"),"motifs"), paste0(motif_name,".png"))
+                    
+                    png(outpng,width=128,height=128)
+                    #print(motif_name)
+                    #print(t(matrix(as.numeric(strsplit(motif_name,"")[[1]]),ncol=as.numeric(input$selMotifSize))))
+                    g.motif <- graph.adjacency( t(matrix(as.numeric(strsplit(motif_name,"")[[1]]),ncol=as.numeric(input$selMotifSize))) )
+                    E(g.motif)$color <- 1
+                    g.motif <- simplify(g.motif,edge.attr.comb=list(color="sum"))
+                    par(mar=c(0, 0, 0, 0), xaxs='i', yaxs='i') 
+                    par(oma=c(0, 0, 0, 0))
+                    plot(x=NULL, y=NULL, type="n", 
+                        xlim=c(-1,1), ylim=c(-1,1)
+                        )
+
+                    g.layout <- layout.circle(g.motif)
+                    g.layout[,1] <- 0.95*(g.layout[,1] - min(g.layout[,1]))/(max(g.layout[,1])-min(g.layout[,1])) - 0.95/2
+                    g.layout[,2] <- 0.95*(g.layout[,2] - min(g.layout[,2]))/(max(g.layout[,2])-min(g.layout[,2])) - 0.95/2
+                    
+                    plot(g.motif, layout=g.layout,
+                        vertex.label="",
+                        vertex.color="#A0A0A0",
+                        vertex.frame.color="#A0A0A0",
+                        edge.color=rgb.palette[E(g.motif)$color], 
+                        edge.arrow.size=1, 
+                        edge.arrow.width=1.5,
+                        edge.width=3,
+                        rescale=F, xlim=c(-1,1), ylim=c(-1,1)
+                        )
+                    dev.off()
+
+                    motifsTable[r,]$Motif <- paste0("<img src='img/motifs/",motif_name,".png' width='128' height='128'>")
+                }
+
+                output$motifsColorLegend <- renderPlot({
+                    mydf <- data.frame(layer=1:LAYERS, fake=1, color=rgb.palette)
+                    p <- ggplot(mydf, aes(x=layer, y=fake, fill=layer)) + geom_tile() + 
+                            scale_fill_gradientn(colours = rgb.palette) +  
+                            ylab("") + 
+                            xlab("") + 
+                            scale_x_discrete(breaks=c(1:LAYERS), limits=c(1:LAYERS), labels=layerLabels) + 
+                            scale_y_discrete(breaks=NULL, limits=c(0,1)) + 
+                            guides(fill=FALSE) + 
+                            theme_bw() + 
+                            theme( plot.background = element_blank(),
+                                panel.grid.major = element_blank() ,
+                                panel.grid.minor = element_blank() ,
+                                panel.border = element_blank() ,
+                                panel.background = element_blank(),
+                                axis.line = element_blank(),
+                                text = element_text(size=25),
+                                axis.text.x = element_text(angle=90, vjust=1)
+                              )
+                    print(p)
+                }, height = 250)
+                
+                output$motifsGvisTable <- renderGvis({
+                    gvisTable(motifsTable,options=googleVisMotifsSummaryTableOptions())
+                })   
+                
+                #to reset output options
+                options(scipen=0)
+                progress$set(message = 'Calculation Completed!', value = 1)
+                Sys.sleep(2)
+            })
+        })
+        
+                                    
+      	################################################
       	# Calculate diagnostics
       	################################################
-    
+
         observe({
             if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 ||  LAYERS==0)
                 return()
@@ -1157,13 +1433,14 @@ shinyServer(function(input, output, session) {
     
                     progress$set(message = 'Creating tables...', value = 0.95)
                     Sys.sleep(1)
-
+                    
                     #Fill the table summarizing centrality 
                     output$centralityTable <- renderGvis({
                         if(input$btnCalculateCentralityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
                             return(NULL)
                         
-                        gvisTable(listDiagnosticsMerge,options=googleVisCentralityTableOptions())
+                        return(gvisTable(listDiagnosticsMerge,options=list(page='enable',pageSize=Nodes)))
+                        #googleVisCentralityTableOptions()))
                     })   
                 }
                 
@@ -1187,7 +1464,7 @@ shinyServer(function(input, output, session) {
                 ###############
                 ## Community
                 ###############
-                if(input$chkPERFORM_COMMUNITY_DETECTION){
+                #if(input$chkPERFORM_COMMUNITY_DETECTION){
                     progress$set(message = 'Calculating community structure...', value = 0.05)
                     print("  Detecting communities...")    
                     listCommunities <<- NULL
@@ -1345,13 +1622,41 @@ shinyServer(function(input, output, session) {
                                     
                     progress$set(message = 'Creating tables...', value = 0.95)
                     Sys.sleep(1)
-                                
+
+
+                    matComm <- matrix(nrow=LAYERS, ncol=Nodes, 0)
+                    Layer <- NULL
+                    for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
+                    for(l in 1:(LAYERS)){
+                        matComm[l,] <- listCommunities[[l]]$Community
+                    }
+                    outfile <- buildPath("tmp","image_comms.png")
+                    png(outfile, width=600, height=400)
+                    rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selCommunityColorPalette],input$selCommunityColorPalette))(max(matComm))
+                    heatmap.2(matComm,labRow=Layer,labCol=1:Nodes,cexRow=200/Nodes,cexCol=40/Nodes,col=rgb.palette,symm=F,dendrogram="none",trace="none",offsetCol=-0.4,offsetRow=-0.4)
+                    #myImagePlot(matComm,xLabels=Nodes,yLabels=Layer,title=c("Community Membership"),ColorRamp=rgb.palette)
+                #,zlim=c(-1,1)
+                    dev.off()
+    
+                   output$matCommunitySummaryImage <- renderImage({
+                        list(src = outfile,
+                            contentType = 'image/png',
+                            width = 600,
+                            height = 400,
+                            alt = "")
+                          }, 
+                          deleteFile = FALSE
+                        )
+
+
+
                     #Fill the table summarizing the community
                     output$communityTable <- renderGvis({
                         if(input$btnCalculateCommunityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
                             return(NULL)
                         
-                        gvisTable(listCommunitiesMerge,options=googleVisCommunityTableOptions())
+                        gvisTable(listCommunitiesMerge,options=list(page='enable',pageSize=Nodes))
+                        #googleVisCommunityTableOptions())
                     })
                     
                     #Fill the table summarizing the community
@@ -1359,9 +1664,10 @@ shinyServer(function(input, output, session) {
                         if(input$btnCalculateCommunityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
                             return(NULL)
                         
-                        gvisTable(sumCommunitiesMerge,options=googleVisCommunitySummaryTableOptions())
+                        gvisTable(sumCommunitiesMerge,options=list(page='enable',pageSize=Nodes))
+                        #googleVisCommunitySummaryTableOptions())
                     })
-                }
+                #}
                 
                 btnCalculateCommunityDiagnosticsValue <<- input$btnCalculateCommunityDiagnostics
     
@@ -1388,13 +1694,27 @@ shinyServer(function(input, output, session) {
                 muxFeatureDataFrameArray <- NULL
                 monoxFeatureDataFrameArray <- NULL
 
+                if(length(listDiagnosticsSingleLayer)>0 && length(listDiagnostics)>0){
+                    for( attrib in colnames(listDiagnostics[[1]]) ){
+                        if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") ){
+                            if( all(listDiagnosticsSingleLayer[[1]][,attrib]==rep("-",Nodes)) && all(listDiagnostics[[1]][,attrib]!=rep("-",Nodes)) ){
+                                diagnosticsSingleLayerOK <<- FALSE
+                                break
+                            }
+                        }
+                    }
+                }
+
                 if(!diagnosticsSingleLayerOK){
+                    print("  Calculation of single-layer descriptors...")
                     listDiagnosticsSingleLayer <<- GetCentralityDataFrameArray("SingleLayer")
                     diagnosticsSingleLayerOK <<- TRUE
                 }
                 monoxFeatureDataFrameArray <- listDiagnosticsSingleLayer
+                print(monoxFeatureDataFrameArray)
 
                 if(!diagnosticsMultiplexOK){
+                    print("  Calculation of multiplex descriptors...")
                     listDiagnostics <<- GetCentralityDataFrameArray("Multiplex")
                     diagnosticsMultiplexOK <<- TRUE
                 }
@@ -1744,7 +2064,22 @@ shinyServer(function(input, output, session) {
                         }, 
                         deleteFile = FALSE
                     )
-    
+
+                output$reducibilityQualityFunction <- renderChart2({
+                    resultFile <- paste(input$txtProjectName,"_reducibility_quality.txt",sep="")
+                    data <- read.table(resultFile, header=T, sep=" ")[,1:2]
+                    colnames(data) <- c("Step", "Q")
+                    linechart <- nPlot(Q ~ Step, data = data, type = 'lineChart')
+                    linechart$addParams(width = 600, height = 400, title="Quality function") 
+                    linechart$xAxis(axisLabel="Step")
+                    linechart$yAxis(axisLabel="Q")
+
+                    linechart$chart(forceY=c(floor(min(data$Q)),floor(max(data$Q))+1), 
+                                      forceX=c(floor(min(data$Step)),floor(max(data$Step))+1))
+
+                    return(linechart)
+                })    
+
                 #interSpearman <- data.frame(interSpearman)
                 #interSpearman <- cbind(data.frame(Layer),interSpearman)
     
@@ -1755,12 +2090,13 @@ shinyServer(function(input, output, session) {
                 #    gvisTable(interSpearman,options=googleVisInterSpearmanSummaryTableOptions())
                 #})   
                 
+                #Sys.sleep(2)
                 if(file.exists("hclust_method.tmp")) file.remove("hclust_method.tmp")
                 if(file.exists("hclust_merge.txt")) file.remove("hclust_merge.txt")
                 if(file.exists("jsd_distance_matrix.txt")) file.remove("jsd_distance_matrix.txt")
                 if(file.exists(resultFile)) file.remove(resultFile)
                 resultFile <- paste(input$txtProjectName,"_reducibility_quality.txt",sep="")
-                if(file.exists(resultFile)) file.remove(resultFile)
+                #if(file.exists(resultFile)) file.remove(resultFile)
                 
                 btnCalculateReducibilityValue <<- input$btnCalculateReducibility
     
@@ -2219,7 +2555,7 @@ shinyServer(function(input, output, session) {
                     #random color coding of the node is the default, therefore we check only for other options
                     if(input$radNodeColor=="NODE_COLOR_COMMUNITY"){
                         if(communityOK){
-                            if(input$chkPERFORM_COMMUNITY_DETECTION && input$btnCalculateCommunityDiagnostics>0){
+                            if(input$btnCalculateCommunityDiagnostics>0){
                                 if(input$radCommunityAlgorithm!="COMMUNITY_MULTIPLEX"){
                                     #color-code by community
                                     tmpColor <- rainbow( max(listCommunities[[l]]$Community) + 2, alpha=as.numeric(input$txtNODE_TRANSP), start=runif(1))[ listCommunities[[l]]$Community ]
@@ -2506,9 +2842,9 @@ shinyServer(function(input, output, session) {
                 tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Label = nodesLabel[[l]]))
     
                 if(input$chkNODE_CENTRALITY_STRENGTH){
-                    progress <- shiny::Progress$new(session)
-                    on.exit(progress$close())
-                    progress$set(message = paste('Current: Strength...'), value = 0.5)
+                    progress2 <- shiny::Progress$new(session)
+                    on.exit(progress2$close())
+                    progress2$set(message = paste('Current: Strength...'), value = 0.5)
                     
                     createOctaveConfigFile()
                     #call octave
@@ -2527,8 +2863,9 @@ shinyServer(function(input, output, session) {
                     tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Strength = centralityVector))
                     if(file.exists(resultFile)) file.remove(resultFile)
 
-                    progress$set(message = paste('Current: Strength... Done!'), value = 1)
+                    progress2$set(message = paste('Current: Strength... Done!'), value = 1)
                     Sys.sleep(1)
+                    progress2$close()
                 }else{
                     for(l in 1:LAYERS){
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Strength = rep("-",Nodes)))
@@ -2538,8 +2875,9 @@ shinyServer(function(input, output, session) {
                 }
     
                 if(input$chkNODE_CENTRALITY_STRENGTH){
-                    progress <- shiny::Progress$new(session)
-                    progress$set(message = paste('Current: In-Strength...'), value = 0.5)
+                    progress2 <- shiny::Progress$new(session)
+                    on.exit(progress2$close())
+                    progress2$set(message = paste('Current: In-Strength...'), value = 0.5)
                     
                     if(DIRECTED){
                         createOctaveConfigFile()
@@ -2564,8 +2902,9 @@ shinyServer(function(input, output, session) {
                         }
                     }
 
-                    progress$set(message = paste('Current: In-Strength... Done!'), value = 1)
+                    progress2$set(message = paste('Current: In-Strength... Done!'), value = 1)
                     Sys.sleep(1)
+                    progress2$close()
 
                 }else{
                     for(l in 1:LAYERS){
@@ -2576,8 +2915,9 @@ shinyServer(function(input, output, session) {
                 }
     
                 if(input$chkNODE_CENTRALITY_STRENGTH){
-                    progress <- shiny::Progress$new(session)
-                    progress$set(message = paste('Current: Out-Strength...'), value = 0.5)
+                    progress2 <- shiny::Progress$new(session)
+                    on.exit(progress2$close())
+                    progress2$set(message = paste('Current: Out-Strength...'), value = 0.5)
 
                     if(DIRECTED){
                         createOctaveConfigFile()
@@ -2602,8 +2942,9 @@ shinyServer(function(input, output, session) {
                         }
                     }
 
-                    progress$set(message = paste('Current: Out-Strength... Done!'), value = 1)
+                    progress2$set(message = paste('Current: Out-Strength... Done!'), value = 1)
                     Sys.sleep(1)
+                    progress2$close()
 
                 }else{
                     for(l in 1:LAYERS){
@@ -2639,6 +2980,7 @@ shinyServer(function(input, output, session) {
                     
                     progress$set(message = paste('Current: PageRank... Done!'), value = 1)
                     Sys.sleep(1)
+                    progress$close()
 
                 }else{
                     for(l in 1:LAYERS){
@@ -2686,7 +3028,7 @@ shinyServer(function(input, output, session) {
                     
                     progress$set(message = paste('Current: Eigenvector... Done!'), value = 1)
                     Sys.sleep(1)
-
+                    progress$close()
                 }else{
                     for(l in 1:LAYERS){
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Eigenvector = rep("-",Nodes)))
@@ -2720,7 +3062,7 @@ shinyServer(function(input, output, session) {
                     
                     progress$set(message = paste('Current: Hub... Done!'), value = 1)
                     Sys.sleep(1)
-
+                    progress$close()
                 }else{
                     for(l in 1:LAYERS){
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Hub = rep("-",Nodes)))
@@ -2754,7 +3096,7 @@ shinyServer(function(input, output, session) {
                     
                     progress$set(message = paste('Current: Authority... Done!'), value = 1)
                     Sys.sleep(1)
-
+                    progress$close()
                 }else{
                     for(l in 1:LAYERS){
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Authority = rep("-",Nodes)))
@@ -2788,7 +3130,7 @@ shinyServer(function(input, output, session) {
                     
                     progress$set(message = paste('Current: Katz... Done!'), value = 1)
                     Sys.sleep(1)
-
+                    progress$close()
                 }else{
                     for(l in 1:LAYERS){
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Katz = rep("-",Nodes)))
@@ -2810,11 +3152,11 @@ shinyServer(function(input, output, session) {
                 tmplistDiagnostics[[LAYERS+1]] <- cbind(tmplistDiagnostics[[LAYERS+1]],data.frame(Node = 1:Nodes))
                 tmplistDiagnostics[[LAYERS+1]] <- cbind(tmplistDiagnostics[[LAYERS+1]],data.frame(Label = nodesLabel[[LAYERS+1]]))
 
-                progress <- shiny::Progress$new(session)
-                on.exit(progress$close())
                                                         
                 for(l in 1:(LAYERS+1)){
                     if(input$chkNODE_CENTRALITY_STRENGTH){
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
                         progress$set(message = paste('Current: Strength  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/graph.strength.html
@@ -2828,7 +3170,7 @@ shinyServer(function(input, output, session) {
                         }
                         progress$set(message = paste('Current: Strength  for layer',l,'... Done!'), value = 1)
                         Sys.sleep(1)
-
+                        progress$close()
                     }else{
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Strength = rep("-",Nodes)))
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthIn = rep("-",Nodes)))
@@ -2836,20 +3178,24 @@ shinyServer(function(input, output, session) {
                     }
     
                     if(input$chkNODE_CENTRALITY_PAGERANK){
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
                         progress$set(message = paste('Current: PageRank  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/page.rank.html
-                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(PageRank = page.rank.old(g[[l]],directed=DIRECTED)))
+                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(PageRank = page.rank(g[[l]],directed=DIRECTED)$vector))
                         tmplistDiagnostics[[l]]$PageRank <- tmplistDiagnostics[[l]]$PageRank/max(tmplistDiagnostics[[l]]$PageRank)
                         
                         progress$set(message = paste('Current: PageRank  for layer',l,'... Done!'), value = 1)
                         Sys.sleep(1)
-
+                        progress$close()
                     }else{
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(PageRank = rep("-",Nodes)))
                     }
     
                     if(input$chkNODE_CENTRALITY_EIGENVECTOR){
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
                         progress$set(message = paste('Current: Eigenvector  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/evcent.html
@@ -2861,12 +3207,14 @@ shinyServer(function(input, output, session) {
                         
                         progress$set(message = paste('Current: Eigenvector  for layer',l,'... Done!'), value = 1)
                         Sys.sleep(1)
-
+                        progress$close()
                     }else{
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Eigenvector = rep("-",Nodes)))
                     }
     
                     if(input$chkNODE_CENTRALITY_HUB){
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
                         progress$set(message = paste('Current: Hub  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/kleinberg.html
@@ -2875,12 +3223,14 @@ shinyServer(function(input, output, session) {
                         
                         progress$set(message = paste('Current: Hub  for layer',l,'... Done!'), value = 1)
                         Sys.sleep(1)
-
+                        progress$close()
                     }else{
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Hub = rep("-",Nodes)))
                     }
     
                     if(input$chkNODE_CENTRALITY_AUTHORITY){
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
                         progress$set(message = paste('Current: Authority  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/kleinberg.html
@@ -2889,12 +3239,14 @@ shinyServer(function(input, output, session) {
                         
                         progress$set(message = paste('Current: Authority  for layer',l,'... Done!'), value = 1)
                         Sys.sleep(1)
-
+                        progress$close()
                     }else{
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Authority = rep("-",Nodes)))
                     }
     
                     if(input$chkNODE_CENTRALITY_KATZ){
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
                         progress$set(message = paste('Current: Katz  for layer',l,'...'), value = 0.5)
 
                         #http://igraph.sourceforge.net/doc/R/alpha.centrality.html
@@ -2914,11 +3266,12 @@ shinyServer(function(input, output, session) {
                         
                         progress$set(message = paste('Current: Katz  for layer',l,'... Done!'), value = 1)
                         Sys.sleep(1)
-
+                        progress$close()
                     }else{
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Katz = rep("-",Nodes)))
                     }
                 }
+                #progress$close()
             }
             
             return(tmplistDiagnostics)
@@ -2927,6 +3280,24 @@ shinyServer(function(input, output, session) {
         #######################################
         ## Export
         #######################################
+        
+        #observe({
+            #if(input$btnImportNetworks == 0 || LAYERS<=0) return()
+            
+            #if(btnSaveSessionValue==input$btnSaveSession) return()
+            
+            #isolate({
+                #progress <- shiny::Progress$new(session)
+                #on.exit(progress$close())
+                #progress$set(message = 'Saving current session...', value = 0.05)
+            #    print(ls(all.names = TRUE))
+            #    save(list = ls(all.names = TRUE), file = "~/Desktop/test.RData", envir = .GlobalEnv)
+                #progress$set(message = 'Session correctly saved!', value = 1)
+                #Sys.sleep(5)
+            #    btnSaveSessionValue <<- input$btnSaveSession
+            #})
+
+        #})
         
         observe({
             if(input$btnExportRendering==0 || input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
@@ -2978,6 +3349,19 @@ shinyServer(function(input, output, session) {
         })
         
         #this is to setup the pageable table output
+        googleVisMotifsSummaryTableOptions <- reactive({
+            #other options here:
+            #http://www.inside-r.org/packages/cran/googleVis/docs/gvisTable
+            if(input$btnCalculateMotifs==0 || input$btnImportNetworks == 0 || LAYERS<=1)
+                return()
+                
+            list(
+                page='enable',
+                width=750,
+                alternatingRowStyle = FALSE
+            )
+        })
+
         googleVisOverlapMatrixSummaryTableOptions <- reactive({
             #other options here:
             #http://www.inside-r.org/packages/cran/googleVis/docs/gvisTable
@@ -3023,7 +3407,7 @@ shinyServer(function(input, output, session) {
         googleVisCommunitySummaryTableOptions <- reactive({
             #other options here:
             #http://www.inside-r.org/packages/cran/googleVis/docs/gvisTable
-            if(input$btnCalculateCommunityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0 || !input$chkPERFORM_COMMUNITY_DETECTION)
+            if(input$btnCalculateCommunityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
                 return()
                 
             list(
@@ -3042,7 +3426,7 @@ shinyServer(function(input, output, session) {
         googleVisCommunityTableOptions <- reactive({
             #other options here:
             #http://www.inside-r.org/packages/cran/googleVis/docs/gvisTable
-            if(input$btnCalculateCommunityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0 || !input$chkPERFORM_COMMUNITY_DETECTION)
+            if(input$btnCalculateCommunityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
                 return()
                 
             if(is.null(input$communityTablePageSize)){
@@ -3054,7 +3438,7 @@ shinyServer(function(input, output, session) {
             }else{
                 list(
                     page=ifelse(input$communityTablePageable==TRUE,'enable','disable'),
-                    pageSize=input$communityTablePageSize,
+                    pageSize=as.numeric(input$communityTablePageSize),
                     width=550
                 )
             }
@@ -3073,14 +3457,14 @@ shinyServer(function(input, output, session) {
             
             if(is.null(input$centralityTablePageSize)){
                 list(
-                    page=ifelse(input$centralityTablePageable==TRUE,'enable','disable'),
+                    #page=ifelse(input$centralityTablePageable==TRUE,'enable','disable'),
                     pageSize=Nodes,
                     width=550
                 )
             }else{
                 list(
-                    page=ifelse(input$centralityTablePageable==TRUE,'enable','disable'),
-                    pageSize=input$centralityTablePageSize,
+                    #page=ifelse(input$centralityTablePageable==TRUE,'enable','disable'),
+                    pageSize=as.numeric(input$centralityTablePageSize),
                     width=550
                 )                
             }
@@ -3137,10 +3521,17 @@ shinyServer(function(input, output, session) {
     
             write(paste("FirstNodeLabel = ",minNodeID,";"),
                 file=octaveConfigFile,append=T)
+
+            if(!is.null(input$txtGamma) && input$txtGamma!=""){
+                #trick necessary because this value is hidden at the beginning and it would recognize its value
+                #only if you pass from multislice community detection panel.. 
+                write(paste("GammaParameter = ",input$txtGamma,";"),
+                    file=octaveConfigFile,append=T)
+            }else{
+                write(paste("GammaParameter = ",1,";"),
+                    file=octaveConfigFile,append=T)                
+            }
                 
-            write(paste("GammaParameter = ",input$txtGamma,";"),
-                file=octaveConfigFile,append=T)
-    
             write(paste("OmegaParameter = ",input$txtOmega,";"),
                 file=octaveConfigFile,append=T)
     

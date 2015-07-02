@@ -23,10 +23,10 @@ If you use a Linux (Ubuntu-like) distribution, you are very lucky, because the f
     
     #install R
     sudo apt-get build-dep r-base-core
-    sudo mv R-3.0.3.tar.gz ~
+    sudo mv R-3.2.0.tar.gz ~
     cd ~
-    tar xvf R-3.0.3.tar.gz
-    cd R-3.0.3
+    tar xvf R-3.2.0.tar.gz
+    cd R-3.2.0
     ./configure
     make
     sudo make install
