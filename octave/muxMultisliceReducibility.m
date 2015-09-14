@@ -9,7 +9,14 @@ muxOctaveConfig;
 
 NodesTensor = {}; 
 Layers = 0;
-[NodesTensor,Layers,Nodes] = BuildMultiplexFromFileList(LayersList,Flags,MaxNodes,FirstNodeLabel);
+
+if isExtendedEdgesList
+    [SupraAdjacencyMatrix,Layers,Nodes] = BuildSupraAdjacencyMatrixFromFile(MultiLayerEdgesListFile,Flags,MaxNodes,FirstNodeLabel);
+    NodesTensor = SupraAdjacencyToNodesTensor(SupraAdjacencyMatrix,Layers,Nodes);
+else
+    [NodesTensor,Layers,Nodes] = BuildMultiplexFromFileList(LayersList,Flags,MaxNodes,FirstNodeLabel);         
+endif
+
 
 if Layers > 1    
     %%%%%%%%%%%%%%%%%

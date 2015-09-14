@@ -20,16 +20,12 @@ else
     SupraAdjacencyMatrix = BuildSupraAdjacencyMatrix(NodesTensor,LayersTensor,Layers,Nodes);
 endif
 
+
 % Calculate the centralities
 
-CentralityVector = GetMultiDegreeSum(SupraAdjacencyMatrix,Layers,Nodes,Flags);
-outputFile = strcat(AnalysisName,"_centrality_degree.txt");
+CentralityVector = GetOverallMultiplexityCentrality(SupraAdjacencyMatrix,Layers,Nodes);
+outputFile = strcat(AnalysisName,"_centrality_multiplexity.txt");
 dlmwrite (outputFile, CentralityVector, 'delimiter',' ')
 printf("Multislice centrality output to: %s\n",outputFile);
 
-#aggregate
-Aggregate = GetAggregateMatrix(NodesTensor,Layers,Nodes);
-CentralityVector = GetMultiDegreeSum(Aggregate,1,Nodes,Flags);
-outputFile = strcat(AnalysisName,"_centrality_degree_aggregate.txt");
-dlmwrite (outputFile, CentralityVector, 'delimiter',' ')
-printf("Multislice centrality output to: %s\n",outputFile);
+#aggregate is single-layer. No multiplexity centrality

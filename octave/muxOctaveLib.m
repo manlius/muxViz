@@ -109,6 +109,61 @@ endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function [M,L,N] = BuildSupraAdjacencyMatrixFromFile(fileName,Flags,Nodes=0,FirstNode=0)
+    %auto-detection of number of layers and nodes (if not forced with Nodes parameter)
+    %input is expected to be a weighted edge list with 5 columns:
+    %node layer node layer [weight]
+    %if flag W is not specified, weight = 1 is assumed
+    
+    A = load(fileName);
+    
+    %if the first node is numbered by zero shift of 1 unit to relabel
+    if FirstNode==0
+        A(:,1) = A(:,1) + 1; 
+        A(:,3) = A(:,3) + 1; 
+    endif
+
+    %number of layers, assuming they are numbered starting from 1
+    L = max(max(A(:,2)),max(A(:,4)));
+
+    if Nodes==0
+        N = max(max(A(:,1)),max(A(:,3)));
+    else
+        N = Nodes;
+    endif
+    
+    if max(ismember(Flags, 'W'))==0
+        if size(A)(2) == 5
+            %input is weighted, but the W flag is missing: reset weights to 1
+            A(:,5) = 1;
+        else
+            %input is assumed to be an unweighted edge list
+            %add a column of ones as weight for connected nodes
+            A = [A 1.0*ones(size(A,1),1)];
+        endif
+    endif
+    
+    M = [A(:,1) + (A(:,2)-1)*N A(:,3) + (A(:,4)-1)*N A(:,5)];
+
+    M = spconvert(M);
+    %M = full(M)
+    %we work with sparse matrices
+    
+    M(size(M,1)+1:N*L,size(M,2)+1:N*L) = 0;
+
+    if ismember("D",Flags) && ismember("U",Flags)
+        %input is undirected but provided in directed shape, we need to sum the transpose
+        fprintf(2,"#Input is undirected but in directed shape\n");
+        M = M + M' - diag(diag(M));
+        #the -diag() is to avoid counting twice the self-loops
+    endif
+
+    printf("#%d Layers %d Nodes %d Edges (file: %s)\n",L,N,sum(sum(M>0)),fileName);
+endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function LayersTensor = BuildLayersTensor(Layers,Nodes,OmegaParameter,MultisliceType)
     %Build the network of layers used to build the multiplex
     if Layers>1
@@ -673,6 +728,34 @@ function CentralityVector = GetOverallAuthCentrality(SupraAdjacencyMatrix,Layers
 
     CentralityVector = sum(reshape(LeadingEigenvector,Nodes,Layers),2);
     CentralityVector = CentralityVector/max(CentralityVector);
+endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function CentralityVector = GetOverallMultiplexityCentrality(SupraAdjacencyMatrix,Layers,Nodes)
+    #build the block tensor
+    BlockTensor = SupraAdjacencyToBlockTensor(SupraAdjacencyMatrix,Layers,Nodes);
+    existingNodes = {};
+    nodeMultiplexity = zeros(1,Nodes);
+    
+    for l = 1:Layers
+        #find rows where sum by column is > zero to identify existing nodes. Apply modulus Nodes
+        col = mod(find(sum(BlockTensor{l,l},2)!=0 ),Nodes);
+        #Impose that where modulus give 0, there should be the largest ID (= Nodes)
+        col(col==0) = Nodes;
+        #same with cols
+        row = mod(find(sum(BlockTensor{l,l},1)!=0 ),Nodes)';
+        row(row==0) = Nodes;
+        
+        #merge the two (this approach is necessary to deal also with directed networks)
+        existingNodes{l} = union(col, row);
+        for n = 1:Nodes
+            nodeMultiplexity(n) += length(find(existingNodes{l}==n));
+        end
+    end
+    
+    CentralityVector = nodeMultiplexity'/Layers;
 endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

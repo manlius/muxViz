@@ -1,9 +1,9 @@
-muxViz v0.3
+muxViz v1.0
 =========
 
 ### Visualization and Analysis of Multilayer Networks
 
-muxViz is a platform for the visualization and the analysis of interconnected multilayer networks. The current implementation exploits a Graphical User Interface (working with any browser) to provide access to many customizable graphic options to render networks. The great novelty of this version is the support for the analysis of multiplex data:
+muxViz is a platform for the visualization and the analysis of interconnected multilayer networks. The current implementation exploits a Graphical User Interface (working with any browser) to provide access to many customizable graphic options to render networks. The great novelty of this version is the support for the analysis of multilayer data:
 
 - Multilayer correlation analysis
 - Multilayer centrality analysis and annular representation
@@ -13,6 +13,12 @@ muxViz is a platform for the visualization and the analysis of interconnected mu
 - Animated visualization of dynamical processes and time-varying multilayer networks
 
 Support for data analysis is not mandatory and requires a working installation of GNU Octave 3.4.0 or above. 
+
+muxViz now supports the analysis and visualization of the following multilayer networks:
+![Multilayer networks supported in muxViz](www/img/network_type.png "Supported multilayer networks")
+
+and the following layer layouts:
+![Multilayer layouts supported in muxViz](www/img/layout_type.png "Supported multilayer layouts")
 
 #### Official Websites and Social Networks
 
@@ -28,7 +34,7 @@ Instead, if you create amazing visualizations using muxViz and you want to tweet
 
 If you use muxViz (or any part of muxViz, or images available in the gallery) for your multilayer analysis and visualization, you should cite the paper
 
-Manlio De Domenico, Mason A. Porter, Alex Arenas, Multilayer Analysis and Visualization of Networks, published in [Journal of Complex Networks](http://comnet.oxfordjournals.org/content/early/2014/10/12/comnet.cnu038.abstract) (Open Access)
+Manlio De Domenico, Mason A. Porter, Alex Arenas, Multilayer Analysis and Visualization of Networks, published in [Journal of Complex Networks 3, 159-176 (2015)](http://comnet.oxfordjournals.org/content/3/2/159) (Open Access)
 
 Please, note that muxViz is based on some algorithms developed in other studies. You should cite the original paper(s) every time that you use those algorithms. 
 
@@ -87,10 +93,10 @@ If you use a Linux (Ubuntu-like) distribution, you are very lucky, because the f
     
     #install R
     sudo apt-get build-dep r-base-core
-    sudo mv R-3.0.3.tar.gz ~
+    sudo mv R-3.2.0.tar.gz ~
     cd ~
-    tar xvf R-3.0.3.tar.gz
-    cd R-3.0.3
+    tar xvf R-3.2.0.tar.gz
+    cd R-3.2.0
     ./configure
     make
     sudo make install
@@ -114,8 +120,9 @@ If you find a smart solution to an installation/usage issue, feel free to send m
 ### Gallery
 
 Here there are a few multilayer networks rendered by muxViz.
-	
+
 ![Network with community structure](gallery/muxViz_community3.png "Network with community structure")
+![General multilayer network](gallery/muxviz_general_multilayer.png "General multilayer network")
 ![Air transportation network](gallery/muxViz_airports_osm6e.png "Air transportation network")
 ![Real collaboration network](gallery/muxViz_16Layers_Real2.png "Collaboration network")
 
@@ -131,6 +138,8 @@ Please, also note that after a proper set up it is possible to use muxVizGUI als
 
 ##### Format of an input file
 
+###### Edge-colored networks
+
 The configuration file is a ASCII file including the list of layers to be included in a multiplex, the corresponding labels and the possible layout file to define node properties (e.g., ID, labels, geographic coordinates, etc).
 
 Format of a configuration file:
@@ -142,6 +151,25 @@ where
 - path_layer_X: [mandatory] specify the path and the filename to the edges list to be used as layer
 - label_layer_X: [optional] specify the label to be used in the rendering for that layer
 - layout_layer_X: [optional] specify the path and the filename to the file containing information about nodes
+
+Each line in the configuration file indicates one layer, and the network format for each layer will be "standard edges list" (see below).
+
+###### Non-edge-colored networks
+
+If the multilayer is not edge-colored (i.e., inter-links are allowed), only one line is specified in the configuration file, with format:
+
+	path_multilayer;path_to_layers_info;path_to_layers_layout
+
+where 
+
+- path_multilayer: [mandatory] specify the path and the filename to the extended edges list to be used
+- path_to_layers_info: [mandatory] specify the path and the filename to the file containing information about layers
+- path_to_layers_layout: [mandatory] specify the path and the filename to the file containing information about nodes
+
+In this case the network format will be "extended edges list" (see below).
+
+
+##### Standard edges list
 
 A typical edges list is expected to be a file with at most three columns, giving the list of edges from a node (first column) to other nodes (second column), possibly weighted by an integer or floating number (third column). For instance:
 
@@ -159,15 +187,27 @@ IDs of nodes are expected to be sequential integers (starting from 0 or 1, up to
 	...
 	john david 0.1
 
-In this specific case, it is mandatory to provide a layout file (see next section) reporting the sequential node ID (field nodeID) to be assigned to each node label (field nodeLabel). This would look like
+In this specific case, it is mandatory to provide a layout file (see next section) reporting each node label (field nodeLabel). This would look like
 
-	nodeID nodeLabel
-	1 alice
-	2 bob
-	3 john
-	4 david
+	nodeLabel
+	alice
+	bob
+	john
+	david
 	...
-    
+
+##### Extended edges list
+
+An extended edges list is a new format that allows to specify all possible types of links, intra- and inter-layer. Each line specifies the source node (first column) and the source layer (second column), the destination node (third column) and the destination layer (fourth column), possibly weighted by an integer or floating number (fifth column). For instance:
+
+	1 1 2 1 0.5
+	1 1 3 1 1.4
+	...
+	18 2 124 2 0.1
+
+is a typical weighted extended edges list. For label-based extended edges lists, the same rules of the standard edges lists apply
+
+
 ##### Format of a layout file
 
 
@@ -185,6 +225,15 @@ If nodeLat and nodeLong are specified, they will be automatically converted to C
 
 The properties of each node in the multilayer must be specified or default values will be used (i.e., automatic labeling and layouting). If the number of nodes in the network is different from the number of nodes provided in the layout file, it will be assumed that something is wrong with the layout file and default values will be used.
 
+##### Format of a layer-info file
+
+
+The first line of the file must specify the name of the correponding layer attributes. Allowed attributes:
+
+- layerID:      [mandatory] numerical integer id to identify each layer
+- layerLabel: [optional] string specifying the label attribute
+
+The order of the columns should not be relevant.
 
 ##### Format of a timeline file
 

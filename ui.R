@@ -18,8 +18,8 @@ paletteWeb <- "<a href='http://www.colorschemer.com/online.html' target='_blank'
 #http://www.statsblogs.com/2013/12/15/visualization-of-2012-crime-rates-of-different-states-in-the-us-using-rcharts/
 
 paletteChoiceArray <- sort(row.names(brewer.pal.info[1]))
-muxVizVersion <- "0.3.0"
-muxVizUpdate <- "2 Jul 2015"
+muxVizVersion <- "1.0.0"
+muxVizUpdate <- "13 Sep 2015"
 
 octaveCheck <- function(){
     res <- system("octave -v", ignore.stdout = F, ignore.stderr = F, intern=F)
@@ -128,6 +128,9 @@ shinyUI(bootstrapPage(
 #        sidebarPanel(
 #        )
     tags$head(tags$link(rel='stylesheet', type='text/css', href='styles.css')),
+    # Load D3.js
+    tags$head(tags$script(src = 'http://d3js.org/d3.v3.min.js')),
+    tags$head(tags$title("muxViz")),
     #headerPanel("muxViz Graphical User Interface"),
 
     navbarPage("",
@@ -164,7 +167,17 @@ shinyUI(bootstrapPage(
                         '<li>Give a name to your analysis (or use the default name)</li>',
                         '<li>In the "Config file" tab, select and open the configuration file</li>',
                         '<li>Use the "Import networks" tab, to import the networks found in your configuration file</li>',
-                        '</ul>'
+                        '</ul>',
+                        '<h4>Network models</h4>',
+                        '<span>Edge-colored:</span> Intra-layer edges are colored; any pair of layers has at least one node in common; inter-layer links are missing.',
+                        '<br><br>',
+                        '<span>Interconnected:</span> Intra-layer edges are colored; any pair of layers has at least one node in common; inter-layer links connect the replicas of each node across layers.',
+                        '<br><br>',
+                        '<span>Interdependent:</span> Nodes are colored; any pair of layers has no nodes in common; inter-layer links connect nodes of different type across layers.',
+                        '<br><br>',
+                        '<span>General:</span> Nodes are colored; some pair of layers can have no nodes in common; inter-layer links can connect node replicas or different nodes across layers.',
+                        '<br><br>',
+                        'Note that input format is different for each model (to exploit available information and reduce memory). See the help for details about each format.'
                             ))
                         )
                     ),
@@ -180,6 +193,18 @@ shinyUI(bootstrapPage(
                                 )
                             ),
                         tabPanel("Config file", 
+                            myBox("Network model", "basic",
+                                HTML("<img src='img/network_type.png' width='100%' alt=''/>"),
+                                radioButtons('radMultiplexModel', '',
+                                            c(Edge_Colored='MULTIPLEX_IS_EDGECOLORED',
+                                                Interconnected_Multiplex='MULTIPLEX_IS_INTERCONNECTED',
+                                                Interdependent_Multiplex='MULTIPLEX_IS_INTERDEPENDENT',
+                                                General_Multilayer='MULTIPLEX_IS_MULTILAYER'
+                                                ),
+                                                selected='MULTIPLEX_IS_EDGECOLORED',
+                                                inline=T
+                                            )
+                                ),
                             fluidRow(
                                 column(width = 5,
                                     myBox("Configuration", "basic",
@@ -229,7 +254,7 @@ shinyUI(bootstrapPage(
                                     htmlWidgetOutput(
                                         outputId = 'projectSummaryHTML',
                                         HTML(paste(
-                                        'Layers in the multiplex: <span id="sumLayers"></span><br>',
+                                        'Layers: <span id="sumLayers"></span><br>',
                                         'Type of layer: <span id="sumLayerType"></span><br><br>',
                                         'Number of nodes: <span id="sumNodes"></span><br>',
                                         '&nbsp;&nbsp;&nbsp;&nbsp;Minimum ID: <span id="sumMinNodeID"></span><br>',
@@ -304,7 +329,7 @@ shinyUI(bootstrapPage(
                         htmlWidgetOutput(
                             outputId = 'projectGlobalDiagnosticsMuxSetUp',
                             HTML(paste(
-                            'Use this tab to set up your multiplex network. Specify the type (ordinal, like in the case of temporal networks, or categorical, like in the case of fully interconnected layers) and the strength of inter-layer links (it will be the same for all inter-links).'
+                            'Use this tab to set up your multilayer network. Specify the type (ordinal, like in the case of temporal networks, or categorical, like in the case of fully interconnected layers) and the strength of inter-layer links (it will be the same for all inter-links).'
                                 ))
                             )
                         ),
@@ -314,7 +339,7 @@ shinyUI(bootstrapPage(
                             outputId = 'projectGlobalDiagnosticsAnnularViz',
                             HTML(paste(
                             '<h5>Annular Plot</h5>',
-                            HTML("BE CAREFUL: this module is supposed to work *AFTER* you calculated diagnostics in the multiplex, using the tensorial formulation. If you try to use this module without calculating multiplex centralities, an error will be generated.</font><br><br>")
+                            HTML("BE CAREFUL: this module is supposed to work *AFTER* you calculated diagnostics in the multilayer, using the tensorial formulation. If you try to use this module without calculating multilayer centralities, an error will be generated.</font><br><br>")
                                 ))
                             )
                         ),                        
@@ -326,18 +351,36 @@ shinyUI(bootstrapPage(
                                 '<h5>Node Versatility</h5>',
                                 'This module calculates <a href="http://en.wikipedia.org/wiki/Centrality" target="_blank">centrality</a> of nodes in the network.',
                                 '<br><br>',
-                                'The diagnostics for single-layer networks are widely described in the literature: see <a href="http://en.wikipedia.org/wiki/http://en.wikipedia.org/wiki/Degree_(graph_theory)" target="_blank">Degree centrality</a>, <a href="http://en.wikipedia.org/wiki/PageRank" target="_blank">PageRank centrality</a>, <a href="http://en.wikipedia.org/wiki/Centrality#Eigenvector_centrality" target="_blank">Eigenvector centrality</a>, <a href="http://en.wikipedia.org/wiki/HITS_algorithm" target="_blank">Hub centrality</a>, <a href="http://en.wikipedia.org/wiki/HITS_algorithm" target="_blank">Authority centrality</a> and <a href="http://en.wikipedia.org/wiki/Katz_centrality" target="_blank">Katz centrality</a> for further information.',
+                                'The diagnostics for single-layer networks are widely described in the literature: see <a href="http://en.wikipedia.org/wiki/http://en.wikipedia.org/wiki/Degree_(graph_theory)" target="_blank">Degree centrality</a>, <a href="http://en.wikipedia.org/wiki/PageRank" target="_blank">PageRank centrality</a>, <a href="http://en.wikipedia.org/wiki/Centrality#Eigenvector_centrality" target="_blank">Eigenvector centrality</a>, <a href="http://en.wikipedia.org/wiki/HITS_algorithm" target="_blank">Hub centrality</a>, <a href="http://en.wikipedia.org/wiki/HITS_algorithm" target="_blank">Authority centrality</a>, <a href="http://en.wikipedia.org/wiki/Katz_centrality" target="_blank">Katz centrality</a> and <a href="https://en.wikipedia.org/wiki/Degeneracy_(graph_theory)" target="_blank">K-coreness</a> for further information. Multiplexity is defined by the fraction of layers where node exists (note that it is not defined for the aggregate network).',
                                 '<br><br>',
                                 '<hr>',
                                 '<strong>References</strong>:',
                                 '<ul>',
                                 '<li> M. De Domenico et al, <i>Mathematical Formulation of Multilayer Networks</i>, Phys. Rev. X 3, 041022 (2013) [<a href="http://prx.aps.org/abstract/PRX/v3/i4/e041022" target="_blank">Open</a>]',
                                 '<li> M. De Domenico et al, <i>Ranking in interconnected multilayer networks reveals versatile nodes</i>, Nature Communications 6, 6868 (2015) [<a href="http://www.nature.com/ncomms/2015/150423/ncomms7868/full/ncomms7868.html" target="_blank">View</a>]',
+                                '<li> N. Azimi-Tafreshi, J. Gomez-Gardenes, and S. N. Dorogovtsev, <i>k−core percolation on multiplex networks</i>, Phys. Rev. E 90, 032816 (2014) [<a href="http://journals.aps.org/pre/abstract/10.1103/PhysRevE.90.032816" target="_blank">View</a>]',
                                 '</ul>',
                                 '<br>'
                                 ))
                             )
                         ),
+                    conditionalPanel(condition="input.tabsetDiagnostics=='Network of layers'",
+                        HTML("<h3>Quick help</h3>"),
+                        htmlWidgetOutput(
+                            outputId = 'projectGlobalDiagnosticsNetworkLayers',
+                                HTML(paste(
+                                '<h5>Network of layers</h5>',
+                                'This module calculates the network of layers induced by a multilayer network. Visualizing the network of layers allows to understand how each layer depends on other layers. In the case of edge-colored multigraphs it is not calculated because the result would be a network of isolated nodes.',
+                                '<br><br>',
+                                '<hr>',
+                                '<strong>References</strong>:',
+                                '<ul>',
+                                '<li> M. De Domenico et al, <i>Mathematical Formulation of Multilayer Networks</i>, Phys. Rev. X 3, 041022 (2013) [<a href="http://prx.aps.org/abstract/PRX/v3/i4/e041022" target="_blank">Open</a>]',
+                                '</ul>',
+                                '<br>'
+                                ))
+                            )
+                        ),       
                     conditionalPanel(condition="input.tabsetDiagnostics=='Correlation'",
                         HTML("<h3>Quick help</h3>"),
                         htmlWidgetOutput(
@@ -374,11 +417,13 @@ shinyUI(bootstrapPage(
                                 '<li> P. Mucha et al, <i>Community Structure in Time-Dependent, Multiscale, and Multiplex Networks</i>, Science 328, 876 (2010) [<a href="http://www.sciencemag.org/content/328/5980/876" target="_blank">Open</a>]',
                                 '</ul>',
                                 '<h5>Infomap</h5>',
-                                'This method performs community detection in each layer separately using the Infomap algorithm proposed by <a href="http://www.pnas.org/content/105/4/1118" target="_blank">Rosvall and Bergstrom</a>. The community structure is found by <a href="http://en.wikipedia.org/wiki/Minimum_description_length" target="_blank">minimizing the expected description length</a> of a <a href="http://en.wikipedia.org/wiki/Random_walk" target="_blank">random walker</a> trajectory in each network. See <a href="http://igraph.sourceforge.net/doc/R/walktrap.community.html" target="_blank">igraph doc</a> for further details.',
+                                'This method performs community detection in each layer separately using the Infomap algorithm proposed by <a href="http://www.pnas.org/content/105/4/1118" target="_blank">Rosvall and Bergstrom</a>. The community structure is found by <a href="http://en.wikipedia.org/wiki/Minimum_description_length" target="_blank">minimizing the expected description length</a> of a <a href="http://en.wikipedia.org/wiki/Random_walk" target="_blank">random walker</a> trajectory in each network. See <a href="http://igraph.org/r/doc/" target="_blank">igraph doc</a> for further details.',
+                                '<h5>Louvain</h5>',
+                                'This method performs community detection in each layer separately using the Louvain multi-level algorithm proposed by <a href="http://iopscience.iop.org/1742-5468/2008/10/P10008" target="_blank">Blondel et al</a>. The community structure is found by a heuristic method that is based on modularity optimization. See <a href="http://igraph.org/r/doc/" target="_blank">igraph doc</a> for further details.',
                                 '<h5>Random Walk Trap</h5>',
-                                'This method performs community detection in each layer separately using the Walktrap algorithm proposed by <a href="http://link.springer.com/chapter/10.1007%2F11569596_31" target="_blank">Pons and Latapy</a>. The community structure is found by trying to identify densely connected subgraphs via <a href="http://en.wikipedia.org/wiki/Random_walk" target="_blank">random walks</a> (exploiting the fact that random walks tend to stay within the same community). See <a href="http://igraph.sourceforge.net/doc/R/infomap.html" target="_blank">igraph doc</a> for further details.',
+                                'This method performs community detection in each layer separately using the Walktrap algorithm proposed by <a href="http://link.springer.com/chapter/10.1007%2F11569596_31" target="_blank">Pons and Latapy</a>. The community structure is found by trying to identify densely connected subgraphs via <a href="http://en.wikipedia.org/wiki/Random_walk" target="_blank">random walks</a> (exploiting the fact that random walks tend to stay within the same community). See <a href="http://igraph.org/r/doc/" target="_blank">igraph doc</a> for further details.',
                                 '<h5>Edge Betweenness</h5>',
-                                'This method performs community detection in each layer separately using the Edge Betweenness algorithm proposed by <a href="http://pre.aps.org/abstract/PRE/v69/i2/e026113" target="_blank">Newman and Girvan</a>. The community structure is found by exploiting the fact that edges connecting different communities are traversed by a larger number of shortest paths, i.e., all the ones from a module to another: gradually removing edges with highest edge-betweenness will provide the modular structure in each network. See <a href="http://igraph.sourceforge.net/doc/R/community.edge.betweenness.html" target="_blank">igraph doc</a> for further details.',
+                                'This method performs community detection in each layer separately using the Edge Betweenness algorithm proposed by <a href="http://pre.aps.org/abstract/PRE/v69/i2/e026113" target="_blank">Newman and Girvan</a>. The community structure is found by exploiting the fact that edges connecting different communities are traversed by a larger number of shortest paths, i.e., all the ones from a module to another: gradually removing edges with highest edge-betweenness will provide the modular structure in each network. See <a href="http://igraph.org/r/doc/" target="_blank">igraph doc</a> for further details.',
                                 '<br>'
                                 ))
                             )    
@@ -387,143 +432,233 @@ shinyUI(bootstrapPage(
                 mainPanel(
                     tabsetPanel(id="tabsetDiagnostics",
                         tabPanel("Mux Set up",
-                            fluidRow(
-                                column(width = 5,
-                                    myBox("Multiplex Type", "basic",
-                                        helpText(HTML('Multiplex networks can be <strong>ORDINAL</strong> (interconnections exist only between pairs of adjacent layers) or <strong>CATEGORICAL</strong> (interconnections exist between all pairs of layers). Select the option below:')),
-                                        radioButtons('radMultiplexType', '',
-                                            c(Ordinal='MULTIPLEX_IS_ORDERED',
-                                                Categorical='MULTIPLEX_IS_CATEGORICAL'),
-                                                selected='MULTIPLEX_IS_CATEGORICAL'
+                            conditionalPanel(condition="input.radMultiplexModel=='MULTIPLEX_IS_EDGECOLORED'",
+                                fluidRow(
+                                    column(width = 5,
+                                        myBox("Multiplex Type", "basic",
+                                            helpText(HTML('Multiplex networks can be <strong>ORDINAL</strong> (interconnections exist only between pairs of adjacent layers) or <strong>CATEGORICAL</strong> (interconnections exist between all pairs of layers). Select the option below:')),
+                                            radioButtons('radMultiplexType', '',
+                                                c(Ordinal='MULTIPLEX_IS_ORDERED',
+                                                    Categorical='MULTIPLEX_IS_CATEGORICAL'),
+                                                    selected='MULTIPLEX_IS_CATEGORICAL'
+                                                )
                                             )
+                                        ),
+                                    column(width=5,
+                                        myBox("Parameters", "basic",
+                                            textInput("txtOmega", label=HTML("Strength of inter-layer connections:"), "0"),
+                                            helpText("This does not affect the analysis if you work with Interconnected Multiplex or Interdependent Network models (where the inter-layer weight is explicitly specified for each link from the input). If your network is an interconnected multiplex with the same weight for all inter-layer links, you might import as Edge-Colored Network and assign here a value larger than zero.")
                                         )
-                                    ),
-                                column(width=5,
-                                    myBox("Parameters", "basic",
-                                        textInput("txtOmega", label=HTML("Strength of inter-layer connections:"), "1")
                                     )
                                 )
+                            ),
+                            conditionalPanel(condition="input.radMultiplexModel!='MULTIPLEX_IS_EDGECOLORED'",
+                                helpText("No options to set up for non-edge-colored network models.")
                             )
                         ),
                         tabPanel("Correlation",
-                            fluidRow(
-                                column(width = 5,
-                                    myBox("Inter-layer Correlation", "basic",
-                                        #HTML('<h4>General diagnostics</h4>'),
-                                       checkboxInput('chkMULTIPLEX_OVERLAPPING', 'Mean global overlapping', TRUE),                
-                                        checkboxInput('chkMULTIPLEX_INTERASSORTATIVITY_PEARSON', 'Inter-layer assortativity (Pearson correlation)', TRUE),
-                                    checkboxInput('chkMULTIPLEX_INTERASSORTATIVITY_SPEARMAN', 'Inter-layer assortativity (Spearman correlation)', TRUE),
-                                    selectInput("selAssortativityType", HTML("Assortativity type (T=Total, I=In-going, O=Out-going):"), 
-                                        choices = c("TT", "II", "OO", "IO", "OI"))
+                            conditionalPanel(condition="input.radMultiplexModel=='MULTIPLEX_IS_INTERDEPENDENT'",
+                                helpText("No options to set up for interdependent network models.")
+                            ),
+                            conditionalPanel(condition="input.radMultiplexModel!='MULTIPLEX_IS_INTERDEPENDENT'",
+                                fluidRow(
+                                    column(width = 5,
+                                        myBox("Inter-layer Correlation", "basic",
+                                            #HTML('<h4>General diagnostics</h4>'),
+                                           checkboxInput('chkMULTIPLEX_OVERLAPPING', 'Mean global overlapping', TRUE),                
+                                            checkboxInput('chkMULTIPLEX_INTERASSORTATIVITY_PEARSON', 'Inter-layer assortativity (Pearson correlation)', TRUE),
+                                        checkboxInput('chkMULTIPLEX_INTERASSORTATIVITY_SPEARMAN', 'Inter-layer assortativity (Spearman correlation)', TRUE),
+                                        selectInput("selAssortativityType", HTML("Assortativity type (T=Total, I=In-going, O=Out-going):"), 
+                                            choices = c("TT", "II", "OO", "IO", "OI"))
+                                            )
+                                        ),
+                                    column(width=5,
+                                        myBox("Graphical Options","basic",
+                                            checkboxInput('chkEXPORT_MATRIX_PLOT', HTML('Export each layer as an image (<font color="red">slow for larger networks</font>)'), FALSE),
+                                            selectInput("selAssortativityTypeColorPalette", HTML("Color palette to use (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
+                                                choices = paletteChoiceArray)
+                                            ),
+                                        HTML("<center>"),
+                                        actionButton("btnCalculateCorrelationDiagnostics", "Calculate Correlation Diagnostics"),
+                                        HTML("</center>")
                                         )
                                     ),
-                                column(width=5,
-                                    myBox("Graphical Options","basic",
-                                        checkboxInput('chkEXPORT_MATRIX_PLOT', HTML('Export each layer as an image (<font color="red">slow for larger networks</font>)'), FALSE),
-                                        selectInput("selAssortativityTypeColorPalette", HTML("Color palette to use (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
-                                            choices = paletteChoiceArray)
+                                tags$hr(),
+                                HTML('<h4>Global diagnostics</h4>'),
+                                conditionalPanel(condition="input.btnCalculateCorrelationDiagnostics>0 && input.chkMULTIPLEX_OVERLAPPING",
+                                    htmlWidgetOutput(
+                                                outputId = 'globalDiagnosticsOverlapping',
+                                                HTML(paste(
+                                                '<h5>Overlapping</h5>',
+                                                'Mean Global Overlapping: <span id="sumAvgGlobalOverlapping"></span><br>',
+                                                '<br>'
+                                                ))
                                         ),
-                                    HTML("<center>"),
-                                    actionButton("btnCalculateCorrelationDiagnostics", "Calculate Correlation Diagnostics"),
-                                    HTML("</center>")
-                                    )
-                                ),
-                            tags$hr(),
-                            HTML('<h4>Global diagnostics</h4>'),
-                            conditionalPanel(condition="input.btnCalculateCorrelationDiagnostics>0 && input.chkMULTIPLEX_OVERLAPPING",
-                                htmlWidgetOutput(
-                                            outputId = 'globalDiagnosticsOverlapping',
-                                            HTML(paste(
-                                            '<h5>Overlapping</h5>',
-                                            'Mean Global Overlapping: <span id="sumAvgGlobalOverlapping"></span><br>',
-                                            '<br>'
-                                            ))
-                                    ),
-                                    imageOutput("overlappingSummaryImage"),
-                                    htmlOutput("overlappingSummaryTable"),                                    
+                                        imageOutput("overlappingSummaryImage"),
+                                        htmlOutput("overlappingSummaryTable"),    
+                                        downloadButton('downOverlappingSummaryTable', 'Export'),
+                                        tags$hr()
+                                    ),                                
+                                conditionalPanel(condition="input.btnCalculateCorrelationDiagnostics>0 && input.chkMULTIPLEX_INTERASSORTATIVITY_PEARSON",
+                                    helpText(HTML("<h5>Inter-layer Assortativity: Pearson</h5>")),
+                                    imageOutput("interPearsonSummaryImage"),
+                                    htmlOutput("interPearsonSummaryTable"),
+                                    downloadButton('downInterPearsonSummaryTable', 'Export'),
                                     tags$hr()
-                                ),                                
-                            conditionalPanel(condition="input.btnCalculateCorrelationDiagnostics>0 && input.chkMULTIPLEX_INTERASSORTATIVITY_PEARSON",
-                                helpText(HTML("<h5>Inter-layer Assortativity: Pearson</h5>")),
-                                imageOutput("interPearsonSummaryImage"),
-                                htmlOutput("interPearsonSummaryTable"),
-                                tags$hr()
-                                ),                                
-                            conditionalPanel(condition="input.btnCalculateCorrelationDiagnostics>0 && input.chkMULTIPLEX_INTERASSORTATIVITY_SPEARMAN",
-                                helpText(HTML("<h5>Inter-layer Assortativity: Spearman</h5>")),
-                                imageOutput("interSpearmanSummaryImage"),
-                                htmlOutput("interSpearmanSummaryTable")
+                                    ),                                
+                                conditionalPanel(condition="input.btnCalculateCorrelationDiagnostics>0 && input.chkMULTIPLEX_INTERASSORTATIVITY_SPEARMAN",
+                                    helpText(HTML("<h5>Inter-layer Assortativity: Spearman</h5>")),
+                                    imageOutput("interSpearmanSummaryImage"),
+                                    htmlOutput("interSpearmanSummaryTable"),
+                                    downloadButton('downInterSpearmanSummaryTable', 'Export')
+                                    )
                                 )
                             ),
                         tabPanel("Centrality",
-                            fluidRow(
-                                column(width = 5,
-                                    myBox("Framework", "basic",
-                                        checkboxInput("chkNODE_CENTRALITY_MULTIPLEX","Use tensorial calculation (uncheck this for calculation in each layer separately)",TRUE)
-                                    ),
-                                    HTML("<center>"),
-                                    actionButton("btnCalculateCentralityDiagnostics", "Calculate Centrality Diagnostics"),
-                                    HTML("</center>")
-                                ),
-                                column(width = 5,
-                                    myBox("Descriptors", "basic",
-                                        #HTML('<h4>Centrality</h4>'),
-                                        checkboxInput("chkNODE_CENTRALITY_STRENGTH","Degree (strength for weighted networks; in-going, out-going and total)",TRUE),
-                                        checkboxInput("chkNODE_CENTRALITY_PAGERANK","PageRank",F),
-                                        checkboxInput("chkNODE_CENTRALITY_EIGENVECTOR","Eigenvector",F),
-                                        checkboxInput("chkNODE_CENTRALITY_HUB","Hub",F),
-                                        checkboxInput("chkNODE_CENTRALITY_AUTHORITY","Authority",F),
-                                        checkboxInput("chkNODE_CENTRALITY_KATZ","Katz",F)
-                                        )
-                                    )
-                                ),
-                            tags$hr(),
-                            HTML('<h4>Centrality diagnostics</h4>'),
-                            conditionalPanel(condition="input.btnCalculateCentralityDiagnostics>0",
-                                checkboxInput(inputId = "centralityTablePageable", label = "Pageable", TRUE),
-                                conditionalPanel("input.centralityTablePageable==true",
-                                        uiOutput("numOutputCentralityTableNodesPerPage")
+                            conditionalPanel(condition="input.radMultiplexModel=='MULTIPLEX_IS_INTERDEPENDENT'",
+                                helpText("No options to set up for interdependent network models.")
+                            ),
+                            conditionalPanel(condition="input.radMultiplexModel!='MULTIPLEX_IS_INTERDEPENDENT'",
+                                fluidRow(
+                                    column(width = 5,
+                                        myBox("Framework", "basic",
+                                            checkboxInput("chkNODE_CENTRALITY_MULTIPLEX","Use tensorial calculation (uncheck this for calculation in each layer separately)",TRUE)
                                         ),
-                                htmlOutput("centralityTable")
+                                        HTML("<center>"),
+                                        actionButton("btnCalculateCentralityDiagnostics", "Calculate Centrality Diagnostics"),
+                                        HTML("</center>")
+                                    ),
+                                    column(width = 5,
+                                        myBox("Descriptors", "basic",
+                                            #HTML('<h4>Centrality</h4>'),
+                                            checkboxInput("chkNODE_CENTRALITY_STRENGTH","Degree (strength for weighted networks; in-going, out-going and total)",TRUE),
+                                            checkboxInput("chkNODE_CENTRALITY_PAGERANK","PageRank",F),
+                                            checkboxInput("chkNODE_CENTRALITY_EIGENVECTOR","Eigenvector",F),
+                                            checkboxInput("chkNODE_CENTRALITY_HUB","Hub",F),
+                                            checkboxInput("chkNODE_CENTRALITY_AUTHORITY","Authority",F),
+                                            checkboxInput("chkNODE_CENTRALITY_KATZ","Katz",F),
+                                            checkboxInput("chkNODE_CENTRALITY_KCORE","K-core",F),
+                                            checkboxInput("chkNODE_CENTRALITY_MULTIPLEXITY","Multiplexity",F)
+                                            )
+                                        )
+                                    ),
+                                tags$hr(),
+                                HTML('<h4>Centrality diagnostics</h4>'),
+                                conditionalPanel(condition="input.btnCalculateCentralityDiagnostics>0",
+                                    checkboxInput(inputId = "centralityTablePageable", label = "Pageable", TRUE),
+                                    conditionalPanel("input.centralityTablePageable==true",
+                                            uiOutput("numOutputCentralityTableNodesPerPage")
+                                        ),
+                                    htmlOutput("centralityTable"),
+                                    downloadButton('downCentralityTable', 'Export'),
+                                    tags$hr(),
+                                    fluidRow(
+                                        column(width = 4,
+                                            myBox("Diagnostics analysis", "basic",
+                                                uiOutput("selDiagnosticsCentralityVizOutputID"),
+                                                radioButtons('radDiagnosticsCentralityType', 'Analysis',
+                                                    c(TopRanked='DIAGNOSTICS_ANALYSIS_TOPRANKED',
+                                                        Distribution='DIAGNOSTICS_ANALYSIS_DISTRIBUTION',
+                                                        Scatter='DIAGNOSTICS_ANALYSIS_SCATTER'),
+                                                        selected='DIAGNOSTICS_ANALYSIS_TOPRANKED'
+                                                    ),
+                                                HTML("<strong>Networks to include:</strong>:"),
+                                                checkboxInput(inputId = "chkCentralityAnalysisStructureMultiplex", label = "Multilayer", T),
+                                                checkboxInput(inputId = "chkCentralityAnalysisStructureLayer", label = "Layer(s)", F),
+                                                conditionalPanel(condition="input.chkCentralityAnalysisStructureLayer",
+                                                    textInput("txtDiagnosticsCentralityStructureLayer", label=HTML("<strong>Use the following layer (eg 1,3,7 to use more than one layer):</strong>"), "1")
+                                                    ), 
+                                                checkboxInput(inputId = "chkCentralityAnalysisStructureAggregate", label = "Aggregate", T),
+                                                conditionalPanel(condition="input.radDiagnosticsCentralityType == 'DIAGNOSTICS_ANALYSIS_DISTRIBUTION'",
+                                                    textInput("txtDiagnosticsCentralityDistributionBins", label=HTML("<strong>Number of bins:</strong>"), "30"),
+                                                    checkboxInput(inputId = "centralityAnalysisDistributionLogx", label = "Log x", F),
+                                                    checkboxInput(inputId = "centralityAnalysisDistributionLogy", label = "Log y", F)
+                                                    ),
+                                                conditionalPanel(condition="input.radDiagnosticsCentralityType == 'DIAGNOSTICS_ANALYSIS_TOPRANKED'",
+                                                    textInput("txtDiagnosticsCentralityTopRankedBins", label=HTML("<strong>Show the top:</strong>"), "20"),
+                                                    checkboxInput(inputId = "centralityAnalysisTopRankedLog", label = "Log", F)
+                                                    ),
+                                                conditionalPanel(condition="input.radDiagnosticsCentralityType == 'DIAGNOSTICS_ANALYSIS_SCATTER'",
+                                                    uiOutput("selDiagnosticsCentralityVizScatterOutputID"),
+                                                    textInput('txtDiagnosticsCentralityVizScatterColorTransparency', label='Circle transparency (from 0 to 1; 1 means full color):', "0.7"),
+                                                    uiOutput("selDiagnosticsCentralityVizScatterSizeOutputID"),
+                                                    checkboxInput(inputId = "centralityAnalysisScatterLogx", label = "Log x", F),
+                                                    checkboxInput(inputId = "centralityAnalysisScatterLogy", label = "Log y", F),
+                                                    checkboxInput(inputId = "centralityAnalysisScatterLogRadius", label = "Log Radius", F)
+                                                    ),
+                                                HTML("<center>"),
+                                                actionButton("btnCentralityDiagnosticsAnalysis", "Plot"),
+                                                HTML("</center>")
+                                                )
+                                            ),
+                                        column(width=6,
+                                            showOutput("centralityAnalysisPlot","nvd3")                                        
+                                            )
+                                        ),
+                                    tags$hr()
+                                    )
                                 )
                             ),
                         tabPanel("Community",
-                            fluidRow(
-                                column(width = 5,
-                                    myBox("Algorithm", "basic",
-                                        #HTML('<h4>Algorithm to be used for Community Detection</h4>'),
-                                        radioButtons('radCommunityAlgorithm', '',
-                                            c(Multiplex='COMMUNITY_MULTIPLEX',
-                                                Infomap='COMMUNITY_INFOMAP',
-                                                Random_Walk_Trap='COMMUNITY_RANDOM_WALK_TRAP',
-                                                Edge_Betweenness='COMMUNITY_EDGE_BETWEENNESS'),
-                                                selected='COMMUNITY_MULTIPLEX'
+                            conditionalPanel(condition="input.radMultiplexModel=='MULTIPLEX_IS_INTERDEPENDENT'",
+                                helpText("No options to set up for interdependent network models.")
+                            ),
+                            conditionalPanel(condition="input.radMultiplexModel!='MULTIPLEX_IS_INTERDEPENDENT'",
+                                fluidRow(
+                                    column(width = 5,
+                                        myBox("Algorithm", "basic",
+                                            #HTML('<h4>Algorithm to be used for Community Detection</h4>'),
+                                            conditionalPanel(condition="input.radMultiplexModel=='MULTIPLEX_IS_EDGECOLORED'",
+                                                radioButtons('radCommunityAlgorithm', '',
+                                                    c(Multiplex='COMMUNITY_MULTIPLEX',
+                                                        Infomap='COMMUNITY_INFOMAP',
+                                                        Louvain='COMMUNITY_LOUVAIN',
+                                                        Random_Walk_Trap='COMMUNITY_RANDOM_WALK_TRAP',
+                                                        Edge_Betweenness='COMMUNITY_EDGE_BETWEENNESS'),
+                                                        selected='COMMUNITY_MULTIPLEX'
+                                                    )
+                                                ),
+                                            conditionalPanel(condition="input.radMultiplexModel!='MULTIPLEX_IS_EDGECOLORED'",
+                                                radioButtons('radCommunityAlgorithm', '',
+                                                    c(Infomap='COMMUNITY_INFOMAP',
+                                                        Louvain='COMMUNITY_LOUVAIN',
+                                                        Random_Walk_Trap='COMMUNITY_RANDOM_WALK_TRAP',
+                                                        Edge_Betweenness='COMMUNITY_EDGE_BETWEENNESS'),
+                                                        selected='COMMUNITY_INFOMAP'
+                                                    )
+                                                ),
+                                            uiOutput("communityParameters")                                            
                                             ),
-                                        uiOutput("communityParameters")
-                                        ),
-                                    HTML("<center>"),
-                                    actionButton("btnCalculateCommunityDiagnostics", "Calculate Community Structure"),
-                                    HTML("</center>")
-                                    ),
-                                column(width=5,
-                                    myBox("Graphical Options", "basic",
-                                        textInput("txtCOMMUNITY_MIN_SIZE",label="Color-code with the same RGB all nodes in communities smaller than (useful for evidencing larger communities, not valid for the multiplex):","1"),
-                                        selectInput("selCommunityColorPalette", HTML("Color palette for coloring communities (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
-                                            choices = append(as.vector(paletteChoiceArray),"random"))
+                                        HTML("<center>"),
+                                        actionButton("btnCalculateCommunityDiagnostics", "Calculate Community Structure"),
+                                        HTML("</center>")
                                         )
-                                    )
-                                ),
-                            tags$hr(),
-                            HTML('<h4>Communities</h4>'),
-                            conditionalPanel(condition="input.btnCalculateCommunityDiagnostics>0",
-                                imageOutput("matCommunitySummaryImage"),
-                                htmlOutput("communitySummaryTable"),
+                                    ),
                                 tags$hr(),
-                                checkboxInput(inputId = "communityTablePageable", label = "Pageable", TRUE),
-                                conditionalPanel("input.communityTablePageable==true",
-                                    uiOutput("numOutputCommunityTableNodesPerPage")
-                                    ),  
-                                htmlOutput("communityTable")
+                                HTML('<h4>Communities</h4>'),
+                                conditionalPanel(condition="input.btnCalculateCommunityDiagnostics>0",
+                                    imageOutput("matCommunitySummaryImage"),
+                                    htmlOutput("communitySummaryTable"),
+                                    downloadButton('downCommunitySummaryTable', 'Export'),
+                                    tags$hr(),
+                                    checkboxInput(inputId = "communityTablePageable", label = "Pageable", TRUE),
+                                    conditionalPanel("input.communityTablePageable==true",
+                                        uiOutput("numOutputCommunityTableNodesPerPage")
+                                        ),  
+                                    htmlOutput("communityTable"),
+                                    downloadButton('downCommunityTable', 'Export')
+                                    )
+                                )  
+                            ),
+                        tabPanel("Network of layers",
+                            conditionalPanel(condition="input.radMultiplexModel!='MULTIPLEX_IS_EDGECOLORED'",
+                                HTML("<center>"),
+                                tags$br(),
+                                actionButton("btnRenderNetworkOfLayers", "Render the network of layers"),
+                                HTML("</center>"),
+                                HTML("<center>"),
+                                htmlOutput('networkOfLayersPlot'),
+                                HTML("</center>")
                                 )
                             ),
                         #tabPanel("Components",
@@ -542,50 +677,55 @@ shinyUI(bootstrapPage(
                           #  tags$hr()
                          #   ),
                         tabPanel("Annular Viz",
-                            fluidRow(
-                                column(width = 5,
-                                    myBox("Metric", "basic",
-                                        #HTML('<h4>Annular representation</h4>'),
-                                        radioButtons('radAnularVizCorrelationMethod', 'Correlation method for ring ordering:',
-                                            c(Spearman='ANULAR_VIZ_CORRELATION_SPEARMAN',
-                                                Pearson='ANULAR_VIZ_CORRELATION_PEARSON',
-                                                Jensen_Shannon_Divergence='ANULAR_VIZ_CORRELATION_JSD'),
-                                                selected='ANULAR_VIZ_CORRELATION_SPEARMAN'
+                            conditionalPanel(condition="input.radMultiplexModel=='MULTIPLEX_IS_INTERDEPENDENT'",
+                                helpText("No options to set up for interdependent network models.")
+                            ),
+                            conditionalPanel(condition="input.radMultiplexModel!='MULTIPLEX_IS_INTERDEPENDENT'",
+                                fluidRow(
+                                    column(width = 5,
+                                        myBox("Metric", "basic",
+                                            #HTML('<h4>Annular representation</h4>'),
+                                            radioButtons('radAnularVizCorrelationMethod', 'Correlation method for ring ordering:',
+                                                c(Spearman='ANULAR_VIZ_CORRELATION_SPEARMAN',
+                                                    Pearson='ANULAR_VIZ_CORRELATION_PEARSON',
+                                                    Jensen_Shannon_Divergence='ANULAR_VIZ_CORRELATION_JSD'),
+                                                    selected='ANULAR_VIZ_CORRELATION_SPEARMAN'
+                                                ),
+                                            textInput("txtANULAR_VIZ_BINS",label="Number of bins (tune the colors)","50"),
+                                            checkboxInput("chkANULAR_VIZ_LOG","Logarithmic binning",FALSE)
                                             ),
-                                        textInput("txtANULAR_VIZ_BINS",label="Number of bins (tune the colors)","50"),
-                                        checkboxInput("chkANULAR_VIZ_LOG","Logarithmic binning",FALSE)
+                                        HTML("<center>"),
+                                        actionButton("btnAnularViz", "Render Annular Plot"),
+                                        HTML("</center>")
                                         ),
-                                    HTML("<center>"),
-                                    actionButton("btnAnularViz", "Render Annular Plot"),
-                                    HTML("</center>")
-                                    ),
-                                column(width=5,
-                                    myBox("Graphical Options","basic",                                        
-                                        uiOutput("selAnularVizOutputFeatureID"),
-                                        uiOutput("selAnularVizOutputLayerID"),
-                                        textInput("txtANULAR_VIZ_RCORE",label="Radius of the core","0.3"),
-                                        textInput("txtANULAR_VIZ_RING_DISPLACEMENT",label="Distance between rings","0.01"),
-                                        checkboxInput("chkANULAR_VIZ_CELL_BORDER","Show cell border",FALSE),
-                                        checkboxInput("chkANULAR_VIZ_SHOW_NODE_LABEL","Show node IDs around the annular representation",FALSE),
-                                        textInput("txtANULAR_VIZ_FONT_SIZE",label="Font size:","1.5"),
-                                        selectInput("selAnularColorPalette", HTML("Color palette to use (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
-                                            choices = paletteChoiceArray)
+                                    column(width=5,
+                                        myBox("Graphical Options","basic",                                        
+                                            uiOutput("selAnularVizOutputFeatureID"),
+                                            uiOutput("selAnularVizOutputLayerID"),
+                                            textInput("txtANULAR_VIZ_RCORE",label="Radius of the core","0.3"),
+                                            textInput("txtANULAR_VIZ_RING_DISPLACEMENT",label="Distance between rings","0.01"),
+                                            checkboxInput("chkANULAR_VIZ_CELL_BORDER","Show cell border",FALSE),
+                                            checkboxInput("chkANULAR_VIZ_SHOW_NODE_LABEL","Show node IDs around the annular representation",FALSE),
+                                            textInput("txtANULAR_VIZ_FONT_SIZE",label="Font size:","1.5"),
+                                            selectInput("selAnularColorPalette", HTML("Color palette to use (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
+                                                choices = paletteChoiceArray)
+                                            )
                                         )
-                                    )
-                                ),
-                            tags$hr(),
-                            conditionalPanel(condition="input.btnAnularViz>0 && input.btnCalculateCentralityDiagnostics>0",
-                                helpText(HTML("<h5>Multiplex</h5>")),
-                                helpText("Each ring represents a descriptor. Each cell corresponds to a node, with cells following the same radial trajectory corresponding to the same node. Colors code the membership of the node in each ring. The thickness of a ring is proportional to its information entropy."),
-                                imageOutput("anularVizSummaryMuxImage",width = "100%", height = "600px"),
+                                    ),
                                 tags$hr(),
-                                
-                                helpText(HTML("<h5>Comparison per centrality</h5>")),
-                                helpText("Each ring represents a layer. Each cell corresponds to a node, with cells following the same radial trajectory corresponding to the same node. Colors code the membership of the node in each ring. The thickness of a ring is proportional to its information entropy."),
-                                uiOutput("outputAnularVizImages"),
-                                tags$hr()                                                  
-                                ),
-                            tags$hr()
+                                conditionalPanel(condition="input.btnAnularViz>0 && input.btnCalculateCentralityDiagnostics>0",
+                                    helpText(HTML("<h5>Multiplex</h5>")),
+                                    helpText("Each ring represents a descriptor. Each cell corresponds to a node, with cells following the same radial trajectory corresponding to the same node. Colors code the membership of the node in each ring. The thickness of a ring is proportional to its information entropy."),
+                                    imageOutput("anularVizSummaryMuxImage",width = "100%", height = "600px"),
+                                    tags$hr(),
+                                    
+                                    helpText(HTML("<h5>Comparison per centrality</h5>")),
+                                    helpText("Each ring represents a layer. Each cell corresponds to a node, with cells following the same radial trajectory corresponding to the same node. Colors code the membership of the node in each ring. The thickness of a ring is proportional to its information entropy."),
+                                    uiOutput("outputAnularVizImages"),
+                                    tags$hr()                                                  
+                                    ),
+                                tags$hr()
+                                )
                             )
                         )
                     )
@@ -605,7 +745,7 @@ shinyUI(bootstrapPage(
                     htmlWidgetOutput(
                         outputId = 'projectLayout',
                         HTML(paste(
-                        '<strong>Suggestions for layout (see <a href="http://igraph.sourceforge.net/doc/R/layout.html" target="_blank">igraph layout doc</a> for further details):</strong><br>',
+                        '<strong>Suggestions for layout of each layer (see <a href="http://igraph.org/r/doc/" target="_blank">igraph layout doc</a> for further details):</strong><br>',
                         '<ul>',
                         '<li> <span>Fruchterman-Reingold</span> for networks with less than 1000 nodes',
                         '<li> <span>Large graph layout (LGL)</span> for networks with more than 1000 nodes',
@@ -633,9 +773,37 @@ shinyUI(bootstrapPage(
                 mainPanel(
                     tabsetPanel(
                         tabPanel("Layout",
+                            myBox("Layout Algorithm (Network of Layers)", "basic",
+                                HTML("<img src='img/layout_type.png' width='100%' alt=''/>"),
+                                radioButtons('radNetworkOfLayersLayoutType', '',
+                                            c(One_line='NETWORK_LAYERS_LAYOUT_ONELINE',
+                                                Multi_line='NETWORK_LAYERS_LAYOUT_MULTILINE',
+                                                Force_directed='NETWORK_LAYERS_LAYOUT_FORCEDIRECTED',
+                                                Matrix='NETWORK_LAYERS_LAYOUT_MATRIX'
+                                                ),
+                                                selected='NETWORK_LAYERS_LAYOUT_ONELINE',
+                                                inline=T
+                                            ),
+                                    conditionalPanel(condition="input.radNetworkOfLayersLayoutType == 'NETWORK_LAYERS_LAYOUT_MULTILINE'",
+                                        textInputRow("txtNetworkLayersMultilineRows", label="Number of rows:", 2),
+                                        textInputRow("txtNetworkLayersMultilineCols", label="Number of columns:", 2),
+                                        helpText("Note: this layout will not show the aggregate network.")
+                                    ),
+                                    conditionalPanel(condition="input.radNetworkOfLayersLayoutType == 'NETWORK_LAYERS_LAYOUT_MATRIX'",
+                                        textInputRow("txtNetworkLayersMatrixRows", label="Number of rows:", 2),
+                                        textInputRow("txtNetworkLayersMatrixCols", label="Number of columns:", 2),
+                                        helpText("Note: this layout will not show the aggregate network.")
+                                    ),
+                                    conditionalPanel(condition="input.radNetworkOfLayersLayoutType == 'NETWORK_LAYERS_LAYOUT_FORCEDIRECTED'",
+                                        HTML("<font color='red'>Very experimental. Not working yet.</font>"),#todo
+                                        #HTML("<font color='red'>Very experimental. Layers could overlap in some cases.</font>"),
+                                        helpText("Note: this layout will not show the aggregate network.")
+                                    )
+                                ),
+
                             fluidRow(
                                 column(width=5,
-                                    myBox("Layout Algorithm", "basic",
+                                    myBox("Layout Algorithm (Layer)", "basic",
                                         #HTML('<h4>Algorithm to be used to visualize nodes in the multiplex network</h4>'),
                                         radioButtons('radLayoutAlgorithm', '',
                                             c(Fruchterman_Reingold='LAYOUT_FRUCHTERMAN_REINGOLD',
@@ -647,12 +815,14 @@ shinyUI(bootstrapPage(
                                                 Combined='LAYOUT_COMBINED'),
                                                 selected='LAYOUT_COMBINED'
                                             ),
-                                        radioButtons('radLayoutDimension', '',
-                                            c(Two_Dimensional='LAYOUT_DIMENSION_2D',
-                                                Three_Dimensional='LAYOUT_DIMENSION_3D'),
-                                                selected='LAYOUT_DIMENSION_2D'
-                                            ),
-                                            checkboxInput("chkPLOT_AS_EDGE_COLORED",HTML("Visualize as edge-colored multigraph (<font color='red'>Very experimental! Works only with centrality/community in the multiplex.</font>)"),FALSE)
+                                        conditionalPanel(condition="input.radNetworkOfLayersLayoutType == 'NETWORK_LAYERS_LAYOUT_ONELINE'",
+                                            radioButtons('radLayoutDimension', '',
+                                                c(Two_Dimensional='LAYOUT_DIMENSION_2D',
+                                                    Three_Dimensional='LAYOUT_DIMENSION_3D'),
+                                                    selected='LAYOUT_DIMENSION_2D'
+                                                ),
+                                                checkboxInput("chkPLOT_AS_EDGE_COLORED",HTML("Visualize as edge-colored multigraph (<font color='red'>Very experimental! Works only with centrality/community in the multiplex.</font>)"),FALSE)
+                                            )
                                         )
                                     ),
                                 column(width=5,
@@ -689,11 +859,16 @@ shinyUI(bootstrapPage(
                                     myBox("Light Options","basic",
                                         checkboxInput("chkPLOT_LIGHT","Add a light to the plot (to improve visualization):",FALSE),
                                         textInput('txtPLOT_LIGHT_PHI', label='Phi coordinate (deg):', "20"),
-                                        textInput('txtPLOT_LIGHT_THETA', label='Theta coordinate (deg):', "30")
+                                        textInput('txtPLOT_LIGHT_THETA', label='Theta coordinate (deg):', "30"),
+                                        HTML("<center>"),
+                                        actionButton("btnResetLights", "Reset"),
+                                        HTML("</center>"),
+                                        helpText("It could be necessary to close the rgl window before rendering again.")
                                         )
                                     ),
                                 column(5,
                                     myBox("3D Options", "basic",    
+                                        checkboxInput('chkPLOT_AXES3D', label='Show axes', F),
                                         textInput('txtPLOT_FOV', label='Default field of view (degrees):', "20"),
                                         textInput('txtLAYER_SHIFT', label=HTML('Shift layers (along horizontal axis to improve perspective, <font color="red">must apply the layout again</font>) by:'), "0.8"),
                                         textInput('txtLAYER_SCALE', label=HTML('Scale layers (<font color="red">must apply the layout again</font>) by:'), "4"),
@@ -704,17 +879,22 @@ shinyUI(bootstrapPage(
                                 )
                             ),
                         tabPanel("Multiplex",
-                            fluidRow(
-                                column(5,
-                                    myBox("Inter-link Options","basic",
-                                        checkboxInput("chkINTERLINK_SHOW",HTML("Show inter-links (<font color='red'>resource consuming</font>, recommended for small networks):"),FALSE),
-                                        textInput('txtINTERLINK_SHOW_FRACTION', label='Show only this random fraction of inter-links (from 0 to 1):', "0.2"),
-                                        textInput('txtINTERLINK_COLOR', label='Inter-link color (any valid R type):', "black"),
-                                        textInput('txtINTERLINK_TYPE', label='Inter-link line style (any valid R type):', "dotted"),
-                                        textInput('txtINTERLINK_WIDTH', label='Inter-link width:', "1"),
-                                        textInput('txtINTERLINK_TRANSP', label='Inter-link transparency (from 0 to 1; 1 means full color):', "0.2")
+                            conditionalPanel(condition="input.radMultiplexModel!='MULTIPLEX_IS_EDGECOLORED'",
+                                fluidRow(
+                                    column(5,
+                                        myBox("Inter-link Options","basic",
+                                            checkboxInput("chkINTERLINK_SHOW",HTML("Show inter-links (<font color='red'>resource consuming</font>, recommended for small networks):"),TRUE),
+                                            #textInput('txtINTERLINK_SHOW_FRACTION', label='Show only this random fraction of inter-links (from 0 to 1):', "0.2"),
+                                            textInput('txtINTERLINK_COLOR', label='Inter-link color (any valid R type):', "#D8D8D8"),
+                                            textInput('txtINTERLINK_TYPE', label='Inter-link line style (any valid R type):', "dotted"),
+                                            textInput('txtINTERLINK_WIDTH', label='Inter-link width:', "0.4"),
+                                            textInput('txtINTERLINK_TRANSP', label='Inter-link transparency (from 0 to 1; 1 means full color):', "0.2")
+                                            )
                                         )
                                     )
+                                ),
+                                conditionalPanel(condition="input.radMultiplexModel=='MULTIPLEX_IS_EDGECOLORED'",
+                                    helpText("No options to set up for edge-colored network models.")
                                 )
                             ),
                         tabPanel("Layers",
@@ -723,8 +903,8 @@ shinyUI(bootstrapPage(
                                     myBox("Layer Options", "basic",
                                         checkboxInput("chkLAYER_SHOW","Show layers:",TRUE),
                                         textInput('txtLAYER_LABEL_PREFIX', label='Layer label prefix (overwritten by label, if any, provided with the config file):', "L"),
-                                        textInput('txtLAYER_COLOR', label='Layer color (any valid R type):', "gray"),
-                                        textInput('txtLAYER_TRANSP', label='Layer transparency (from 0 to 1; 1 means full color):', "0.08"),
+                                        textInput('txtLAYER_COLOR', label='Layer color (any valid R type; use commas to indicate a color for each layer):', "gray"),
+                                        textInput('txtLAYER_TRANSP', label='Layer transparency (from 0 to 1; 1 means full color; use commas to indicate a value for each layer):', "0.08"),
                                         checkboxInput("chkLAYER_ID_SHOW_TOPLEFT","Show labels on top-left:",FALSE),
                                         checkboxInput("chkLAYER_ID_SHOW_BOTTOMLEFT","Show labels on bottom-left:",TRUE),
                                         checkboxInput("chkLAYER_ID_SHOW_TOPRIGHT","Show labels on top-right:",FALSE),
@@ -738,6 +918,9 @@ shinyUI(bootstrapPage(
                                         textInput('txtLAYER_AGGREGATE_LABEL_PREFIX', label='Aggregate layer label:', "Aggregate"),
                                         textInput('txtLAYER_AGGREGATE_COLOR', label='Aggregate layer color (any valid R type):', "blue"),
                                         textInput('txtLAYER_AGGREGATE_TRANSP', label='Aggregate layer transparency (from 0 to 1; 1 means full color):', "0.08")
+                                        ),
+                                    myBox("Inactive Layers","basic",
+                                        textInput("txtLAYERS_ACTIVE", label="Deactivate the following layer(s) from the visualization (keep it blank to keep all layers active; use commas to indicate more than one layer, eg 1,2,5):")
                                         )
                                     )
                                 ),
@@ -760,16 +943,15 @@ shinyUI(bootstrapPage(
                         tabPanel("Nodes",
                             fluidRow(
                                 column(5,
-                                    myBox("Node Size", "basic",                                        
-                                        radioButtons('radNodeSizeType', 'Node size proportional to:',
-                                            c(Uniform='NODE_SIZE_PROPORTIONAL_TO_UNIFORM',
-                                                Strength='NODE_SIZE_PROPORTIONAL_TO_STRENGTH',
-                                                PageRank='NODE_SIZE_PROPORTIONAL_TO_PAGERANK',
-                                                Eigenvector='NODE_SIZE_PROPORTIONAL_TO_EIGENVECTOR',
-                                                Hub='NODE_SIZE_PROPORTIONAL_TO_HUB',
-                                                Authority='NODE_SIZE_PROPORTIONAL_TO_AUTHORITY',
-                                                Katz='NODE_SIZE_PROPORTIONAL_TO_KATZ'),
-                                                selected='NODE_SIZE_PROPORTIONAL_TO_STRENGTH'
+                                    myBox("Node Size", "basic",              
+                                        conditionalPanel(condition="input.btnCalculateCentralityDiagnostics==0",
+                                            radioButtons('radNodeSizeType', 'Node size proportional to:',
+                                                c(Uniform='NODE_SIZE_PROPORTIONAL_TO_UNIFORM'),
+                                                    selected='NODE_SIZE_PROPORTIONAL_TO_UNIFORM'
+                                                )
+                                            ),
+                                        conditionalPanel(condition="input.btnCalculateCentralityDiagnostics>0",
+                                            uiOutput("selVizNodeSizeOutputID")
                                             ),
                                         radioButtons('radNodeSizeType2', 'Type of proportionality:',
                                             c(Constant='NODE_SIZE_PROPORTIONAL_TYPE_NORMAL',
@@ -777,41 +959,67 @@ shinyUI(bootstrapPage(
                                                 LogLog='NODE_SIZE_PROPORTIONAL_TYPE_LOGLOG'),
                                                 selected='NODE_SIZE_PROPORTIONAL_TYPE_LOGLOG'
                                             ),
-                                        textInput('txtNODE_DEFAULT_SIZE', label='Default size (used for fine tuning of Uniform, Log and LogLog option):', "15")
+                                        textInput('txtNODE_DEFAULT_SIZE', label='Default size (used for fine tuning of Uniform, Log and LogLog option):', "10")
                                         )
                                     ),
-                                column(5,
-                                    myBox("Other Options", "basic", 
-                                        checkboxInput("chkNODE_ISOLATED_HIDE","Exclude isolated nodes from the visualization",TRUE),
-                                        textInput('txtNODE_TRANSP', label='Node transparency (from 0 to 1; 1 means full color):', "0.2"),
-                                        checkboxInput("chkNODE_LABELS_SHOW","Show nodes labels (recommended only for small networks):",FALSE),
-                                        textInput('txtNODE_LABELS_DISTANCE', label='Distance of labels from nodes:', "0.5"),
-                                        textInput('txtNODE_LABELS_FONT_SIZE', label='Size of nodes labels :', "1.5"),
-                                        textInput('txtNODE_LABELS_FONT_COLOR', label='Color of nodes labels (any valid R type):', "#2F2F2F")
-                                        )
-                                    )
-                                ),
-                            fluidRow(
                                 column(5,
                                     myBox("Node Color", "basic",
                                         radioButtons('radNodeColor', 'Node color:',
                                             c(Random='NODE_COLOR_RANDOM',
                                                 Community='NODE_COLOR_COMMUNITY',
                                                 #Component='NODE_COLOR_COMPONENT',
-                                                TopRank='NODE_COLOR_TOPRANK'),
-                                                selected='NODE_COLOR_COMMUNITY'
+                                                Centrality='NODE_COLOR_CENTRALITY',
+                                                TopRank='NODE_COLOR_TOPRANK',
+                                                Uniform='NODE_COLOR_UNIFORM'),
+                                                selected='NODE_COLOR_UNIFORM'
                                             ),
                                         hr(),
-                                        p("If Random is selected:"),
-                                        selectInput("selMultiplexColorPalette", HTML("Color palette for nodes' default color (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
-                                            choices = append(as.vector(paletteChoiceArray),"random")),
-                                        hr(),
-                                        p("If TopRank is selected:"),
-                                        textInput('txtNODE_COLOR_TOP', label='Number of top-ranked nodes to consider:', "5"),
-                                        textInput('txtNODE_COLOR_TOP_COLOR_TOP', label='Color of top-ranked nodes (any valid R type):', "#FF0000"),
-                                        textInput('txtNODE_COLOR_TOP_COLOR_OTHERS', label='Color of the other nodes and all edges (any valid R type):', "#F2F2F2"),         
-                                        checkboxInput("chkNODE_LABELS_SHOW_ONLY_TOP","Show nodes labels only for top-ranked nodes:",TRUE),                   
-                                        textInput('txtNODE_COLOR_TOP_LABELS_FONT_COLOR', label='Color of nodes labels (any valid R type):', "#000000")
+                                        conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_CENTRALITY' && input.btnCalculateCentralityDiagnostics>0",
+                                            uiOutput("selVizNodeColorOutputID"),
+                                            radioButtons('radNodeColorType2', 'Type of proportionality:',
+                                                c(Constant='NODE_COLOR_PROPORTIONAL_TYPE_NORMAL',
+                                                    Log='NODE_COLOR_PROPORTIONAL_TYPE_LOG',
+                                                    LogLog='NODE_COLOR_PROPORTIONAL_TYPE_LOGLOG'),
+                                                    selected='NODE_COLOR_PROPORTIONAL_TYPE_NORMAL'
+                                                ),
+                                            selectInput("selCentralityColorPalette", HTML("Color palette for coloring by centrality (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
+                                                choices = as.vector(paletteChoiceArray)),
+                                            textInputRow("txtNODE_COLOR_CENTRALITY_BINS", label="Bins:", "30")
+                                            ),
+                                        conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_CENTRALITY' && input.btnCalculateCentralityDiagnostics==0",
+                                            helpText("You need to calculate diagnostics before using this option.")
+                                            ),                                            
+                                        conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_RANDOM'",
+                                            selectInput("selMultiplexColorPalette", HTML("Color palette for nodes' default color (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
+                                                choices = append(as.vector(paletteChoiceArray),"random"))
+                                            ),
+                                        conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_UNIFORM'",
+                                            textInput('txtNODE_COLOR_UNIFORM_COLOR', label='Color (any valid R type):', "#F2F2F2")
+                                            ),
+                                        conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_TOPRANK'",    
+                                            textInput('txtNODE_COLOR_TOP', label='Number of top-ranked nodes to consider:', "5"),
+                                            textInput('txtNODE_COLOR_TOP_COLOR_TOP', label='Color of top-ranked nodes (any valid R type):', "#FF0000"),
+                                            textInput('txtNODE_COLOR_TOP_COLOR_OTHERS', label='Color of the other nodes and all edges (any valid R type):', "#F2F2F2"),         
+                                            checkboxInput("chkNODE_LABELS_SHOW_ONLY_TOP","Show nodes labels only for top-ranked nodes:",TRUE),                   
+                                            textInput('txtNODE_COLOR_TOP_LABELS_FONT_COLOR', label='Color of nodes labels (any valid R type):', "#000000")
+                                            ),
+                                        conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_COMMUNITY'",    
+                                            textInput("txtCOMMUNITY_MIN_SIZE",label="Color-code with the same RGB all nodes in communities smaller than (useful for evidencing larger communities, not valid for the multiplex):","1"),
+                                            selectInput("selCommunityColorPalette", HTML("Color palette for coloring communities (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
+                                                choices = append(as.vector(paletteChoiceArray),"random"))
+                                            )                                            
+                                        )
+                                    )
+                                ),
+                            fluidRow(
+                                column(5,
+                                    myBox("Other Options", "basic", 
+                                        checkboxInput("chkNODE_ISOLATED_HIDE","Exclude isolated nodes from the visualization",TRUE),
+                                        textInput('txtNODE_TRANSP', label='Node transparency (from 0 to 1; 1 means full color):', "0.2"),
+                                        checkboxInput("chkNODE_LABELS_SHOW","Show nodes labels (recommended only for small networks):",FALSE),
+                                        textInput('txtNODE_LABELS_DISTANCE', label='Distance of labels from nodes:', "1."),
+                                        textInput('txtNODE_LABELS_FONT_SIZE', label='Size of nodes labels :', "0.5"),
+                                        textInput('txtNODE_LABELS_FONT_COLOR', label='Color of nodes labels (any valid R type):', "#2F2F2F")
                                         )
                                     )
                                 )
@@ -848,7 +1056,8 @@ shinyUI(bootstrapPage(
                             br(),
                             HTML("<center>"),
                             actionButton("btnExportRendering","Export PNG"),
-                            actionButton("btnExportRenderingWeb","Export for Web"),
+                            actionButton("btnExportRenderingPDF","Export PDF"),
+                            actionButton("btnExportRenderingWeb","Export webGL"),
                             HTML("</center>")
                             )
                         ),
@@ -857,58 +1066,63 @@ shinyUI(bootstrapPage(
                 )
             ),
         tabPanel("Reducibility",
-            sidebarLayout(position="right",
-                sidebarPanel(
-                    HTML("<h3>Quick help</h3>"),
-                    htmlWidgetOutput(
-                        outputId = 'projectReducibilityCorrelation',
-                        HTML(paste(
-                        'An information-theoretical approach is adopted to reduce the dimensionality of the multiplex network, while minimizing information loss. This method allows to describe the network using a smaller number of layers, by aggregating the redundant ones.<br>',
-                        'The metric distance is calculated by means of the <a href="http://en.wikipedia.org/wiki/Jensen%E2%80%93Shannon_divergence" target="_blank">Jensen-Shannon divergence</a> and <a href="http://en.wikipedia.org/wiki/Hierarchical_clustering" target="_blank">hierarchical clustering</a> of layers is employed according to the algorithm defined by the user among those available.<br>',
-                        '<hr>',
-                        '<strong>References:</strong><br>',
-                        '<ul>',
-                        '<li> M. De Domenico, V. Nicosia, A. Arenas and V. Latora, <i>Structural reducibility of multilayer networks</i>, Nature Communications 6, 6864 (2015) [<a href="http://www.nature.com/ncomms/2015/150423/ncomms7864/full/ncomms7864.html" target="_blank">View</a>]',
-                        '</ul>'
-                            )
-                        ))
-                ),
-                mainPanel(
-                    fluidRow(
-                        column(5,
-                            myBox("Algorithms","basic",
-                                #HTML('<h4>Algorithms to be used to calculate the correlation between layers and clustering</h4>'),
-                                HTML("<h5>Layer correlation</h5>"),
-                                radioButtons('radReducibilityCorrelationMethod', '',
-c(Jensen_Shannon_Divergence='REDUCIBILITY_METHOD_CORRELATION_JENSEN_SHANNON'),
-                                    selected='REDUCIBILITY_METHOD_CORRELATION_JENSEN_SHANNON'),
-                                tags$hr(),
-                                HTML("<h5>Hierarchical clustering</h5>"),
-                                selectInput("selReducibilityClusterMethod", "", 
-                                    choices = c("ward","single","complete","average","mcquitty","median","centroid"))
+            conditionalPanel(condition="input.radMultiplexModel=='MULTIPLEX_IS_INTERDEPENDENT'",
+                helpText("No options to set up for interdependent network models.")
+            ),
+            conditionalPanel(condition="input.radMultiplexModel!='MULTIPLEX_IS_INTERDEPENDENT'",
+                sidebarLayout(position="right",
+                    sidebarPanel(
+                        HTML("<h3>Quick help</h3>"),
+                        htmlWidgetOutput(
+                            outputId = 'projectReducibilityCorrelation',
+                            HTML(paste(
+                            'An information-theoretical approach is adopted to reduce the dimensionality of the multiplex network, while minimizing information loss. This method allows to describe the network using a smaller number of layers, by aggregating the redundant ones.<br>',
+                            'The metric distance is calculated by means of the <a href="http://en.wikipedia.org/wiki/Jensen%E2%80%93Shannon_divergence" target="_blank">Jensen-Shannon divergence</a> and <a href="http://en.wikipedia.org/wiki/Hierarchical_clustering" target="_blank">hierarchical clustering</a> of layers is employed according to the algorithm defined by the user among those available.<br>',
+                            '<hr>',
+                            '<strong>References:</strong><br>',
+                            '<ul>',
+                            '<li> M. De Domenico, V. Nicosia, A. Arenas and V. Latora, <i>Structural reducibility of multilayer networks</i>, Nature Communications 6, 6864 (2015) [<a href="http://www.nature.com/ncomms/2015/150423/ncomms7864/full/ncomms7864.html" target="_blank">View</a>]',
+                            '</ul>'
+                                )
+                            ))
+                    ),
+                    mainPanel(
+                        fluidRow(
+                            column(5,
+                                myBox("Algorithms","basic",
+                                    #HTML('<h4>Algorithms to be used to calculate the correlation between layers and clustering</h4>'),
+                                    HTML("<h5>Layer correlation</h5>"),
+                                    radioButtons('radReducibilityCorrelationMethod', '',
+    c(Jensen_Shannon_Divergence='REDUCIBILITY_METHOD_CORRELATION_JENSEN_SHANNON'),
+                                        selected='REDUCIBILITY_METHOD_CORRELATION_JENSEN_SHANNON'),
+                                    tags$hr(),
+                                    HTML("<h5>Hierarchical clustering</h5>"),
+                                    selectInput("selReducibilityClusterMethod", "", 
+                                        choices = c("ward","single","complete","average","mcquitty","median","centroid"))
+                                    )
+                                ),
+                            column(5,
+                                myBox("Graphical Options", "basic",
+                                    selectInput("selReducibilityColorPalette", HTML("Color palette to use (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
+                                        choices = paletteChoiceArray),
+                                    textInput("txtREDUCIBILITY_HEATMAP_FONT_SIZE",label="Font size:","1.5")
+                                    ),
+                                HTML("<center>"),
+                                actionButton("btnCalculateReducibility", "Calculate Reducibility"),
+                                HTML("</center>")
+                                #actionButton("btnExportReducibilityRendering","Export PNG"),
                                 )
                             ),
-                        column(5,
-                            myBox("Graphical Options", "basic",
-                                selectInput("selReducibilityColorPalette", HTML("Color palette to use (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
-                                    choices = paletteChoiceArray),
-                                textInput("txtREDUCIBILITY_HEATMAP_FONT_SIZE",label="Font size:","1.5")
-                                ),
-                            HTML("<center>"),
-                            actionButton("btnCalculateReducibility", "Calculate Reducibility"),
-                            HTML("</center>")
-                            #actionButton("btnExportReducibilityRendering","Export PNG"),
+                            tags$hr(),
+                            
+                            HTML('<h4>Structural reducibility</h4>'),
+                            conditionalPanel(condition="input.btnCalculateReducibility>0",
+                                imageOutput("jsdMatrixSummaryImage",width = "100%", height = "700px"),
+                                imageOutput("reducibilityDendrogramSummaryImage",width = "100%", height = "700px"),
+                                HTML('<center><h5>Quality function</h5></center>'),
+                                showOutput("reducibilityQualityFunction","nvd3"),
+                                tags$hr()
                             )
-                        ),
-                        tags$hr(),
-                        
-                        HTML('<h4>Structural reducibility</h4>'),
-                        conditionalPanel(condition="input.btnCalculateReducibility>0",
-                            imageOutput("jsdMatrixSummaryImage",width = "100%", height = "700px"),
-                            imageOutput("reducibilityDendrogramSummaryImage",width = "100%", height = "700px"),
-                            HTML('<center><h5>Quality function</h5></center>'),
-                            showOutput("reducibilityQualityFunction","nvd3"),
-                            tags$hr()
                         )
                     )
                 )
@@ -989,6 +1203,7 @@ c(Jensen_Shannon_Divergence='REDUCIBILITY_METHOD_CORRELATION_JENSEN_SHANNON'),
                             #dataTableOutput('motifsTable'),
                             plotOutput("motifsColorLegend"),
                             htmlOutput('motifsGvisTable'),
+                            downloadButton('downMotifsTable', 'Export'),
                             tags$hr()
                         )
                     )
@@ -1031,7 +1246,7 @@ c(Jensen_Shannon_Divergence='REDUCIBILITY_METHOD_CORRELATION_JENSEN_SHANNON'),
                             ),
                         column(5,
                             myBox("Graphical Options", "basic",
-                                textInput("txtTimelineDefaultNodesSize", label=HTML("Default size of all nodes (leave this blank to use the Rendering setup):"), "20"),
+                                textInput("txtTimelineDefaultNodesSize", label=HTML("Default size of all nodes (leave this blank to use the Rendering setup):"), "10"),
                                 textInput("txtTimelineDefaultNodesColor", label=HTML("Default color of all nodes (any valid R type; leave this blank to use the Rendering setup):"), "#959595"),
                                 textInput("txtTimelineDefaultEdgesSize", label=HTML("Default size of all edges (leave this blank to use the Rendering setup):"), "1"),
                                 textInput("txtTimelineDefaultEdgesColor", label=HTML("Default color of all edges (any valid R type; leave this blank to use the Rendering setup):"), "#959595")
@@ -1082,6 +1297,7 @@ c(Jensen_Shannon_Divergence='REDUCIBILITY_METHOD_CORRELATION_JENSEN_SHANNON'),
                             HTML("<img src='img/logo_small.jpg' alt=''/>"),
                             HTML(paste("<h4>Import</h4>",
                             "<strong>'Import' tab/'Config file' tab to select and open the configuration file.</strong><br>",
+                            "<h5>Edge-colored networks</h5>",
                             "The configuration file is a ASCII file including the list of layers to be included in a multiplex, the corresponding labels and the possible layout file to define node properties (e.g., ID, labels, geographical coordinates, etc).<br><br>",
                             "<u>Format of a configuration file:</u> (<a href='example_config.txt' target='_blank'>click here</a> to open an example)<br>",
                             "<pre>path_layer_X;label_layer_X;path_layout_layer_X</pre>",
@@ -1091,6 +1307,45 @@ c(Jensen_Shannon_Divergence='REDUCIBILITY_METHOD_CORRELATION_JENSEN_SHANNON'),
                             "<li> <strong>label_layer_X</strong>: [optional] specify the label to be used in the rendering for that layer",
                             "<li> <strong>path_layout_layer_X</strong>: [optional] specify the path and the filename to the file containing information about nodes",
                             "</ul>",
+                            "Each line in the configuration file indicates one layer, and the network format for each layer will be \"standard edges list\" (see below).",
+                            "<h5>Non edge-colored networks</h5>",
+                            "If the multilayer is not edge-colored (i.e., inter-links are allowed), only one line is specified in the configuration file, with format:",
+                            "<pre>path_multilayer;path_to_layers_info;path_to_layers_layout</pre>",
+                            "where<br>", 
+                            "<ul>",
+                            "<li> <strong>path_multilayer</strong>: [mandatory] specify the path and the filename to the extended edges list to be used",
+                            "<li> <strong>path_to_layers_info</strong>: [mandatory] specify the path and the filename to the file containing information about layers",
+                            "<li> <strong>path_to_layers_layout</strong>: [mandatory] specify the path and the filename to the file containing information about nodes",
+                            "</ul>",
+                            "In this case the network format will be \"extended edges list\" (see below).",
+                            "<h5>Standard edges list</h5>",
+                            "A typical edges list is expected to be a file with at most three columns, giving the list of edges from a node (first column) to other nodes (second column), possibly weighted by an integer or floating number (third column). For instance:",
+                            "<br>",
+                            "<pre>",
+                            "	1 2 0.5<br>",
+                            "	1 3 1.4<br>",
+                            "	...<br>",
+                            "	18 124 0.1<br>",
+                            "</pre>",
+                            "is a typical weighted edges list. Non-sequential integer IDs can be used by checking the appropriate box before importing the networks. In this second case, it is mandatory to provide a layout file (see next section) reporting each node label (field nodeLabel). This would look like",
+                            "<pre>",
+                            "	nodeLabel<br>",
+                            "	alice<br>",
+                            "	bob<br>",
+                            "	john<br>",
+                            "	david<br>",
+                            "	...<br>",
+                            "</pre>",
+                            "<h5>Extended edges list</h5>",
+                            "An extended edges list is a new format that allows to specify all possible types of links, intra- and inter-layer. Each line specifies the source node (first column) and the source layer (second column), the destination node (third column) and the destination layer (fourth column), possibly weighted by an integer or floating number (fifth column). For instance:",
+                            "<pre>",
+                            "	1 1 2 1 0.5<br>",
+                            "	1 1 3 1 1.4<br>",
+                            "	...<br>",
+                            "	18 2 124 2 0.1<br>",
+                            "</pre>",
+                            "is a typical weighted extended edges list. For label-based extended edges lists, the same rules of the standard edges lists apply.",
+                            "<br><br>",
                             "<u>Format of a layout file:</u> (<a href='example_layout.txt' target='_blank'>click here</a> to open an example)<br>",
                             "The first line of the file must specify the name of the correponding node attributes. Allowed attributes:",
                             "<ul>",
@@ -1102,15 +1357,25 @@ c(Jensen_Shannon_Divergence='REDUCIBILITY_METHOD_CORRELATION_JENSEN_SHANNON'),
                             "<li> <strong>nodeLong</strong>: [optional] float value specifying the longitude for the geographical layout",
                             "</ul>",
                             "The order of the columns is not relevant. If nodeLat and nodeLong are specified, they will be automatically converted to Cartesian coordinates (through Mercator projection).<br>",
-                            "The properties of each node in the multilayer must be specified or default values will be used (i.e., automatic labeling and layouting). If the number of nodes in the network is different from the number of nodes provided in the layout file, it will be assumed that something is wrong with the layout file and default values will be used.",                 
+                            "The properties of each node in the multilayer must be specified or default values will be used (i.e., automatic labeling and layouting). If the number of nodes in the network is different from the number of nodes provided in the layout file, it will be assumed that something is wrong with the layout file and default values will be used.",
+                            "<br><br>",
+                            "<u>Format of a layer-info file:</u> (<a href='example_layer.txt' target='_blank'>click here</a> to open an example)<br>",
+                            "The first line of the file must specify the name of the correponding layer attributes. Allowed attributes:",
+                            "<ul>",
+                            "<li> <strong>layerID</strong>: [mandatory] numerical integer id to identify each layer",
+                            "<li> <strong>layerLabel</strong>: [optional] string specifying the label attribute",
+                            "</ul>",
+                            "The order of the columns should not be relevant.",
                             "<br><br>",
                             "<strong>'Import' tab/'Import' tab to import the networks in your configuration file.</strong><br>",
-                            "The network files are expected to be in edges list format, one file for each layer with format <br>",
+                            "The network files are expected to be in edges list format. For edge-colored networks, one file for each layer with format <br>",
                             "<pre>nodeID1 nodeID2</pre>",
                             "in the case of unweighted edges list, or<br>",
                             "<pre>nodeID1 nodeID2 weight</pre>",
                             "in the case of weighted edge list.<br>",
                             "The nodes ID are expected to refer to the same node in each layer. For instance, the ID 1234 with label 'myNode' is expected to indicate the same entity in all layers.",
+                            "<br>",
+                            "The case of non-edge-colored network is a generalization of the above rules.",
                             "<hr>",
                             "<h4>Diagnostics: calculation and representation</h4>",
                             "<strong>'Diagnostics' tab to set up and start the calculation.</strong><br>",
@@ -1121,13 +1386,13 @@ c(Jensen_Shannon_Divergence='REDUCIBILITY_METHOD_CORRELATION_JENSEN_SHANNON'),
                             "<li> <strong>Centrality</strong>: calculate several descriptors of influence/importance in the network. It is possible to choose to perform calculations in each layer separately or accounting for the whole multiplex structure;",
                             "<li> <strong>Community</strong>: unveil the community structure according to different methods. It is possible to choose to perform calculations in each layer separately or accounting for the whole multiplex structure.",
                             "</ul>",
-                            "The results of each analysis will be reported/displayed in the 'Results/Tables' sub-tab. Annular visualization of centrality descriptors is allowed and accessible through the 'Annular Viz' tab. It is worth remarking that annular visualization is possible only <u>after centrality diagnostics have been calculated</u>.",
+                            "The results can be analyzed using interactive analytic tools. Annular visualization of centrality descriptors is allowed and accessible through the 'Annular Viz' tab. It is worth remarking that annular visualization is possible only <u>after centrality diagnostics have been calculated</u>.",
                             "<br>",
                             "<hr>",                            
                             "<h4>Visualization</h4>",
                             "<strong>'Visualization' tab to set up the visualization.</strong><br>",
                             "Several sub-tabs are present, each one allowing to set up particular graphic options.<br>",
-                            "The 'Layout' sub-tab controls the algorithms responsible for the position of nodes in the network. The 'Graphics' sub-tab controls graphic options such as the shift between layers, the lights for the openGL rendering, the plot title, and so on. Note that changing some of those options might require the layout to be re-applied. Options requiring re-application of layout are highlighted.<br>",
+                            "The 'Layout' sub-tab controls the algorithms responsible for the position of nodes and layers in the network. The 'Graphics' sub-tab controls graphic options such as the shift between layers, the lights for the openGL rendering, the plot title, and so on. Note that changing some of those options might require the layout to be re-applied. Options requiring re-application of layout are highlighted.<br>",
                             "The remaining sub-tabs control the appearance of 'Multiplex', 'Layers', 'Nodes' and 'Edges'.<br>",
                             "Once the set up is completed, click on the 'Render Network / Apply Viz Options' button.<br><br>",
                             "Note that it is possible to export the visualization either to a png or to a web page, by means of export buttons available in 'Export' sub-tab.<br><br>",
@@ -1178,8 +1443,8 @@ c(Jensen_Shannon_Divergence='REDUCIBILITY_METHOD_CORRELATION_JENSEN_SHANNON'),
                         HTML("<img src='img/logo_small.jpg' alt=''/>"),
                         HTML("<h3>muxViz Project</h3>"),
                         
-                        HTML("Software released under <a href='http://www.gnu.org/licenses/gpl-3.0.html  target='_blank'>GPLv3</a><br>"),
-                        HTML("Developed by <a href='http://deim.urv.cat/~manlio.dedomenico/index.php target='_blank'>Manlio De Domenico</a><br><a href='http://deim.urv.cat' target='_blank'>School of Computer Science and Mathematics</a>, <a href='http://www.urv.cat' target='_blank'>Universitat Rovira i Virgili</a><br><br>"),
+                        HTML("Software released under <a href='http://www.gnu.org/licenses/gpl-3.0.html'  target='_blank'>GPLv3</a><br>"),
+                        HTML("Developed by <a href='http://deim.urv.cat/~manlio.dedomenico/index.php' target='_blank'>Manlio De Domenico</a><br><a href='http://deim.urv.cat' target='_blank'>School of Computer Science and Mathematics</a>, <a href='http://www.urv.cat' target='_blank'>Universitat Rovira i Virgili</a><br><br>"),
                         HTML("Visit the <a href='http://deim.urv.cat/~manlio.dedomenico/muxviz.php' target='_blank'>project page</a> or the <a href='https://github.com/manlius/muxViz' target='_blank'>Github repo</a>"),
                         HTML(paste(
                         '<h3>Credits</h3>',

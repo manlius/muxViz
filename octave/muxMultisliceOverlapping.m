@@ -9,11 +9,16 @@ muxOctaveConfig;
 
 NodesTensor = {}; 
 Layers = 0;
-[NodesTensor,Layers,Nodes] = BuildMultiplexFromFileList(LayersList,Flags,MaxNodes,FirstNodeLabel);
+SupraAdjacencyMatrix = 0;
 
-LayersTensor = BuildLayersTensor(Layers,Nodes,OmegaParameter,MultisliceType);
-        
-SupraAdjacencyMatrix = BuildSupraAdjacencyMatrix(NodesTensor,LayersTensor,Layers,Nodes);
+if isExtendedEdgesList
+    [SupraAdjacencyMatrix,Layers,Nodes] = BuildSupraAdjacencyMatrixFromFile(MultiLayerEdgesListFile,Flags,MaxNodes,FirstNodeLabel);
+    NodesTensor = SupraAdjacencyToNodesTensor(SupraAdjacencyMatrix,Layers,Nodes);
+else
+    [NodesTensor,Layers,Nodes] = BuildMultiplexFromFileList(LayersList,Flags,MaxNodes,FirstNodeLabel);         
+    LayersTensor = BuildLayersTensor(Layers,Nodes,OmegaParameter,MultisliceType);
+    SupraAdjacencyMatrix = BuildSupraAdjacencyMatrix(NodesTensor,LayersTensor,Layers,Nodes);
+endif
 
 if Layers > 1    
     Overlapping = GetAverageGlobalOverlapping(SupraAdjacencyMatrix,Layers,Nodes);

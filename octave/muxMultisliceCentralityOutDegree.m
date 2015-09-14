@@ -9,11 +9,17 @@ muxOctaveConfig;
 
 NodesTensor = {}; 
 Layers = 0;
-[NodesTensor,Layers,Nodes] = BuildMultiplexFromFileList(LayersList,Flags,MaxNodes,FirstNodeLabel);
-                
-LayersTensor = BuildLayersTensor(Layers,Nodes,OmegaParameter,MultisliceType);
-        
-SupraAdjacencyMatrix = BuildSupraAdjacencyMatrix(NodesTensor,LayersTensor,Layers,Nodes);
+SupraAdjacencyMatrix = 0;
+
+if isExtendedEdgesList
+    [SupraAdjacencyMatrix,Layers,Nodes] = BuildSupraAdjacencyMatrixFromFile(MultiLayerEdgesListFile,Flags,MaxNodes,FirstNodeLabel);
+    NodesTensor = SupraAdjacencyToNodesTensor(SupraAdjacencyMatrix,Layers,Nodes);
+else
+    [NodesTensor,Layers,Nodes] = BuildMultiplexFromFileList(LayersList,Flags,MaxNodes,FirstNodeLabel);         
+    LayersTensor = BuildLayersTensor(Layers,Nodes,OmegaParameter,MultisliceType);
+    SupraAdjacencyMatrix = BuildSupraAdjacencyMatrix(NodesTensor,LayersTensor,Layers,Nodes);
+endif
+
 
 % Calculate the centralities
 

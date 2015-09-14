@@ -1,0 +1,6 @@
+layerID layerLabel
+1 Direct_Interaction
+2 Physical_Interaction
+3 Colocalization
+4 Suppressive_Interaction
+5 Additive_Interaction

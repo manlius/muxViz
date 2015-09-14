@@ -1,11 +1,10 @@
-AnalysisName = "muxViz_08-05-2014_162718";
-LayersList{1}="/Users/manlio/Dropbox/Github/muxVizGUI_tmp/data/bdw14/bdw14_reply_net_id.edges";
-LayersList{2}="/Users/manlio/Dropbox/Github/muxVizGUI_tmp/data/bdw14/bdw14_mention_net_id.edges";
-LayersList{3}="/Users/manlio/Dropbox/Github/muxVizGUI_tmp/data/bdw14/bdw14_retweet_net_id.edges";
-Flags = "DW";
-MaxNodes =  1787 ;
+AnalysisName = "muxViz_14-09-2015_155740";
+isExtendedEdgesList = 1;
+MultiLayerEdgesListFile = "/Users/manlio/Dropbox/Github/muxViz/data/general_multilayer/general_multilayer.edges";
+Flags = "D";
+MaxNodes =  20 ;
 FirstNodeLabel =  1 ;
 GammaParameter =  1 ;
-OmegaParameter =  1 ;
+OmegaParameter =  0 ;
 InterAssortativityType = "TT";
 MultisliceType = "categorical";

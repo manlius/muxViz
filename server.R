@@ -18,6 +18,7 @@ library(clue)
 library(gplots)
 library(rCharts)
 library(ggplot2)
+library(d3Network)
 
 
 ##################################################
@@ -28,6 +29,7 @@ library(ggplot2)
 btnCalculateMotifsValue <- 0
 btnCalculateCorrelationDiagnosticsValue <- 0
 btnCalculateCentralityDiagnosticsValue <- 0
+btnCentralityDiagnosticsAnalysisValue <- 0
 btnCalculateCommunityDiagnosticsValue <- 0
 btnImportNetworksValue <- 0
 btnImportTimelineValue <- 0
@@ -36,28 +38,44 @@ btnRenderDynamicsSnapshotsValue <- 0
 btnApplyLayoutValue <- 0
 btnRenderNetworksValue <- 0
 btnExportRenderingValue <- 0
+btnExportRenderingPDFValue <- 0
 btnExportRenderingWebValue <- 0
 btnAnularVizValue <- 0
 btnCalculateReducibilityValue <- 0
 btnSaveSessionValue <- 0
+btnResetLightsValue <- 0
+btnRenderNetworkOfLayersValue <- 0
 
 #Other variables
 fileInput <- NULL
 LAYERS <- 0
+multilayerEdges <- NULL
 layerEdges <- vector("list",LAYERS+1)
 fileName <- vector("list",LAYERS)
 layerLabel <- vector("list",LAYERS+1)
+layerColor <- vector("list",LAYERS)
+layerColorAlpha <- vector("list",LAYERS)
 layerLayoutFile <- vector("list",LAYERS)
 layerLayout <- vector("list",LAYERS+1)
 nodesLabel <- vector("list",LAYERS+1)
 layerTable <- NULL
 g <- vector("list",LAYERS+1)
+g.multi <- NULL
+layout.multi <- NULL
+AdjMatrix.multi <- NULL
 layouts <- vector("list",LAYERS+1)
 AdjMatrix <- vector("list",LAYERS+1)
 
 listDiagnosticsSingleLayer <- data.frame()
 listDiagnostics <- data.frame()
 listCommunities <- data.frame()
+listDiagnosticsMerge <- data.frame()
+sumCommunitiesMerge <- data.frame()
+listCommunitiesMerge <- data.frame()
+listInterPearson <- data.frame()
+listInterSpearman <- data.frame()
+listOverlap <- data.frame()
+listMotifs <- data.frame()
 
 #the timeline for visualization of dynamical processes
 dfTimeline <- data.frame()
@@ -105,8 +123,8 @@ communityOK <- F
 
 
 welcomeFunction <- function(){
-    muxVizVersion <- "0.3.0"
-    muxVizUpdate <- "2 Jul 2015"
+    muxVizVersion <- "1.0.0"
+    muxVizUpdate <- "13 Sep 2015"
 
     cat("\n")    
     cat(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n")
@@ -179,7 +197,7 @@ shinyServer(function(input, output, session) {
 
         output$communityParameters <- renderUI({
             #control the parameters to show while choosing a community detection method
-            if(input$radCommunityAlgorithm == "COMMUNITY_MULTIPLEX"){
+            if(input$radCommunityAlgorithm == "COMMUNITY_MULTIPLEX" && input$radMultiplexModel=='MULTIPLEX_IS_EDGECOLORED'){
                 textInput("txtGamma", label=HTML("Resolution parameter (for multislice community detection):"), "1")
             }
         })
@@ -256,8 +274,69 @@ shinyServer(function(input, output, session) {
             rplot$chart(size = '#! function(d){return d.logLayers} !#')
             rplot$chart(tooltipContent = "#! function(key, x, y, e){ return  '<h3>Network:</h3> ' + e.point.Name + '<br><b>Category:</b> ' + key + '<br><b>Ref:</b> ' + e.point.Reference } !#")
             rplot$chart(forceY=c(floor(min(data$logEdges)),floor(max(data$logEdges))+1), 
-                              forceX=c(floor(min(data$logNodes)),floor(max(data$logNodes))+1))
+                                forceX=c(floor(min(data$logNodes)),floor(max(data$logNodes))+1))
             return(rplot)
+        })
+        
+      	################################################
+      	# Network of layers
+      	################################################
+
+        observe({
+            #input$btnRenderNetworkOfLayers
+            #print(multilayerEdges)
+            if(nrow(multilayerEdges)==0 || LAYERS<=0) return()
+                
+            if(btnRenderNetworkOfLayersValue==input$btnRenderNetworkOfLayers) return()
+
+            progress <- shiny::Progress$new(session)
+            on.exit(progress$close())
+            progress$set(message = 'Building the network...', value = 0.2)
+            Sys.sleep(1)
+
+
+            #this is not the optimal approach.. but for the networks handled by muxViz shoudl be enough
+            #alternatively: use igraph to create the weighted network, then convert again to data.frame
+            #see http://lists.nongnu.org/archive/html/igraph-help/2013-02/msg00079.html
+            dfNoN <- data.frame()
+            
+            sub.multi <- multilayerEdges#multilayerEdges[ multilayerEdges[,2]!=multilayerEdges[,4], ]
+            sub.multi$V1 <- NULL
+            sub.multi$V3 <- NULL
+            #print(sub.multi)
+            
+            colnames(sub.multi) <- c("from", "to", "weight")
+            g.non <- graph.data.frame(sub.multi, directed=DIRECTED)
+            g.non <- simplify(g.non, edge.attr.comb="sum")
+            
+            dfNoN <- as.data.frame( cbind( get.edgelist(g.non) , E(g.non)$weight) )
+            colnames(dfNoN) <- c("from", "to", "weight")
+            dfNoN$from <- as.numeric(dfNoN$from) - 1
+            dfNoN$to <- as.numeric(dfNoN$to) - 1
+            dfNoN$weight <- log(1+as.numeric(dfNoN$weight))
+
+            if(nrow(dfNoN)>0){
+                comm.non <- as.numeric(membership(multilevel.community(as.undirected(g.non))))
+                dfNodes <- data.frame(ID=1:LAYERS, name=unlist(layerLabel)[1:LAYERS], group=comm.non)
+                #print(dfNodes)
+                output$networkOfLayersPlot <- renderPrint({
+                    return(d3ForceNetwork(Nodes = dfNodes,
+                                    Links = dfNoN,
+                                    Source = "from", Target = "to",
+                                    Value = "weight", NodeID = "name",
+                                    Group = "group", width = 600, height = 600,
+                                    opacity = 0.8, standAlone = FALSE, zoom=TRUE,
+                                    parentElement = '#networkOfLayersPlot'))
+                })
+            }else{
+                progress$set(message = 'No network of layers from the data...', value = 0.5)
+                Sys.sleep(1)
+            }
+
+            btnRenderNetworkOfLayersValue <<- input$btnRenderNetworkOfLayers
+
+            progress$set(detail = 'Done!', value = 1)
+            Sys.sleep(2)
         })
 
       	################################################
@@ -279,91 +358,260 @@ shinyServer(function(input, output, session) {
                 }
                 fileInput <<- readLines(input$project_file$datapath)
 
-                LAYERS <<- length(fileInput)
+                LAYERS <<- 0
+
+                #By default the input is undirected and unweighted, check only variations from this assumption
+                if(input$selEdgeListType == "Directed"){
+                    DIRECTED <<- TRUE
+                }else{
+                    DIRECTED <<- FALSE
+                }
+                if(input$chkEdgeListWeighted){
+                    WEIGHTED <<- TRUE
+                }else{
+                    WEIGHTED <<- FALSE
+                }
+
+                if(input$radMultiplexModel=="MULTIPLEX_IS_EDGECOLORED"){
+                    print("Network model is edge-colored. Expecting one edges list per layer.")
+                    #the number of lines in the config equals the number of layers
+                    LAYERS <<- length(fileInput)
+                }else{
+                    print("Network model is not edge-colored. Expecting one multilayer edges list in extended format.")
+                    #only one line in the config, must calculate from attributes (ie, LayerInfoPath file)
+                    layer.info.file <- strsplit(fileInput[1],';')[[1]][2]
+
+                    if(!file.exists(layer.info.file)){
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
+                        progress$set(message = paste('ERROR! File',layer.info.file,'does not exist.'), value = 0.01)
+                        Sys.sleep(10)
+                        return(NULL)
+                    }                    
+
+                    layer.info <- read.table(layer.info.file, header=T, sep=as.character(input$txtEdgeListFileSep))
+                    LAYERS <<- nrow(layer.info)
+                }
+                
                 layerEdges <<- vector("list",LAYERS+1)
                 fileName <<- vector("list",LAYERS)
                 layerLabel <<- vector("list",LAYERS+1)
                 layerLayoutFile <<- vector("list",LAYERS)
                 layerLayout <<- vector("list",LAYERS+1)
                 nodesLabel <<- vector("list",LAYERS+1)
+
+
+                print(paste("Expected layers:", LAYERS))
+
+                if(input$radMultiplexModel=="MULTIPLEX_IS_EDGECOLORED"){
+                    for(l in 1:LAYERS){
+                        fileName[l] <<- strsplit(fileInput[l],';')[[1]][1]
     
-                for(l in 1:LAYERS){
-                    fileName[l] <<- strsplit(fileInput[l],';')[[1]][1]
-
-                    if(!file.exists(fileName[[l]][1])){
-                        progress <- shiny::Progress$new(session)
-                        on.exit(progress$close())
-                        progress$set(message = paste('ERROR! File',fileName[[l]][1],'does not exist.'), value = 0.01)
-                        Sys.sleep(10)
-                        return(NULL)
-                    }                    
-                    
-                    layerLabel[l] <<- strsplit(fileInput[l],';')[[1]][2]
-                    layerLayoutFile[l] <<- strsplit(fileInput[l],';')[[1]][3]
-
-                    if(!file.exists(layerLayoutFile[[l]][1])){
-                        progress <- shiny::Progress$new(session)
-                        on.exit(progress$close())
-                        progress$set(message = paste('ERROR! File',layerLayoutFile[[l]][1],'does not exist.'), value = 0.01)
-                        Sys.sleep(10)
-                        return(NULL)
-                    }                    
-                    
-                    print(paste("file",fileName[[l]][1]))
-                    layerEdges[[l]] <<-  read.table(fileName[[l]][1], header=input$chkEdgeListFileHeader, sep=as.character(input$txtEdgeListFileSep))
-                    
-                    if(input$chkEdgeListLabel){
-                        #edges list are with labeled nodes instead of sequential integer IDs, we transform it
-                        #according to the layout file
-                        print("  Input is label-based: converting to sequential integer IDs...")
+                        if(!file.exists(fileName[[l]][1])){
+                            progress <- shiny::Progress$new(session)
+                            on.exit(progress$close())
+                            progress$set(message = paste('ERROR! File',fileName[[l]][1],'does not exist.'), value = 0.01)
+                            Sys.sleep(10)
+                            return(NULL)
+                        }                    
                         
-                        if(layerLayoutFile[[l]][1] !="" && (!is.na(layerLayoutFile[[l]][1])) && file.exists(layerLayoutFile[[l]][1])){
-                            layerTable <- read.table(layerLayoutFile[[l]][1], header=T, sep=as.character(input$txtEdgeListFileSep))
-
-                            if("nodeLabel" %in% colnames(layerTable)){
-                                layerTable$nodeID <- 1:nrow(layerTable)
-                                convTable = setNames(layerTable$nodeID, as.character(layerTable$nodeLabel))
-                                for(i in 1:2) layerEdges[[l]][,i] <<- convTable[ as.character(unlist(layerEdges[[l]][,i])) ]
-                                
-                                write.table(layerEdges[[l]], paste(fileName[[l]][1],".rel",sep=""), quote=F, row.names=F, col.names=F)
-                                
-                                print("  Done!")
+                        layerLabel[l] <<- strsplit(fileInput[l],';')[[1]][2]
+                        layerLayoutFile[l] <<- strsplit(fileInput[l],';')[[1]][3]
+    
+                        if(!file.exists(layerLayoutFile[[l]][1])){
+                            progress <- shiny::Progress$new(session)
+                            on.exit(progress$close())
+                            progress$set(message = paste('ERROR! File',layerLayoutFile[[l]][1],'does not exist.'), value = 0.01)
+                            Sys.sleep(10)
+                            return(NULL)
+                        }                    
+                        
+                        print(paste("file",fileName[[l]][1]))
+                        layerEdges[[l]] <<-  read.table(fileName[[l]][1], header=input$chkEdgeListFileHeader, sep=as.character(input$txtEdgeListFileSep))
+                        print("  Edges list imported...")
+                        #print(layerEdges[[l]][1:3,])
+                        
+                        if(input$chkEdgeListLabel){
+                            #edges list are with labeled nodes instead of sequential integer IDs, we transform it
+                            #according to the layout file
+                            print("  Input is label-based: converting to sequential integer IDs...")
+                            
+                            if(layerLayoutFile[[l]][1] !="" && (!is.na(layerLayoutFile[[l]][1])) && file.exists(layerLayoutFile[[l]][1])){
+                                layerTable <- read.table(layerLayoutFile[[l]][1], header=T, sep=as.character(input$txtEdgeListFileSep))
+    
+                                if("nodeLabel" %in% colnames(layerTable)){
+                                    layerTable$nodeID <- 1:nrow(layerTable)
+                                    convTable = setNames(layerTable$nodeID, as.character(layerTable$nodeLabel))
+                                    for(i in 1:2) layerEdges[[l]][,i] <<- convTable[ as.character(unlist(layerEdges[[l]][,i])) ]
+                                    
+                                    write.table(layerEdges[[l]], paste(fileName[[l]][1],".rel",sep=""), quote=F, row.names=F, col.names=F)
+                                    
+                                    print("  Done!")
+                                }else{
+                                    progress <- shiny::Progress$new(session)
+                                    on.exit(progress$close())
+                                    progress$set(message = paste('ERROR! Layout file',layerLayoutFile[[l]][1],'is not in a valid format (missing nodeLabel column). This format is required when edges lists use labeled nodes instead of sequential integer IDs.'), value = 0.01)
+                                    print("  Error: invalid layout format")
+                                    Sys.sleep(20)
+                                    return(NULL)
+                                }                            
                             }else{
                                 progress <- shiny::Progress$new(session)
                                 on.exit(progress$close())
-                                progress$set(message = paste('ERROR! Layout file',layerLayoutFile[[l]][1],'is not in a valid format (missing nodeLabel column). This format is required when edges lists use labeled nodes instead of sequential integer IDs.'), value = 0.01)
-                                print("  Error: invalid layout format")
-                                Sys.sleep(20)
-                                return(NULL)
-                            }                            
-                        }else{
-                            progress <- shiny::Progress$new(session)
-                            on.exit(progress$close())
-                            progress$set(message = paste('ERROR! Layout file',layerLayoutFile[[l]][1],'is not specified or does not exist. This file is required when edges lists use labeled nodes instead of sequential integer IDs.'), value = 0.01)
-                            print("  Error: invalid layout file")
-                            Sys.sleep(20)
-                            return(NULL)
-                        }
-                    }else{
-                        #check if the input is numeric, as expected, or raise errors:
-                        for(i in 1:ncol(layerEdges[[l]])){
-                            if( !is.numeric(layerEdges[[l]][,i]) ){
-                                progress <- shiny::Progress$new(session)
-                                on.exit(progress$close())
-                                progress$set(message = paste('ERROR! Edges list (',fileName[[l]][1],') is not specified by nodes with sequential integer IDs or weights (if any) are not numeric. If you use labels instead of sequential integer IDs you have to check the corresponding box before importing the networks.'), value = 0.01)
-                                print("  Error: invalid edges list file")
+                                progress$set(message = paste('ERROR! Layout file',layerLayoutFile[[l]][1],'is not specified or does not exist. This file is required when edges lists use labeled nodes instead of sequential integer IDs.'), value = 0.01)
+                                print("  Error: invalid layout file")
                                 Sys.sleep(20)
                                 return(NULL)
                             }
+                        }else{
+                            #check if the input is numeric, as expected, or raise errors:
+                            for(i in 1:ncol(layerEdges[[l]])){
+                                if( !is.numeric(layerEdges[[l]][,i]) ){
+                                    progress <- shiny::Progress$new(session)
+                                    on.exit(progress$close())
+                                    progress$set(message = paste('ERROR! Edges list (',fileName[[l]][1],') is not specified by nodes with sequential integer IDs or weights (if any) are not numeric. If you use labels instead of sequential integer IDs you have to check the corresponding box before importing the networks.'), value = 0.01)
+                                    print("  Error: invalid edges list file")
+                                    Sys.sleep(20)
+                                    return(NULL)
+                                }
+                            }
+                        }
+                        
+                        if(layerLabel[[l]][1]=="" || is.na(layerLabel[[l]][1])){
+                            layerLabel[[l]][1] <<- as.character(paste(input$txtLAYER_LABEL_PREFIX, l))
+                        }
+                        
+                        print("  Basic safety checks passed!")                        
+                    }
+                }else{
+                    #model is not edge-colored, one line expected
+                    
+                    for(l in 1:LAYERS){
+                        #assign same file name to all layers, for compatibility. We will not use a lot this vector
+                        fileName[l] <<- strsplit(fileInput[1],';')[[1]][1]
+                    }
+                    if(!file.exists(fileName[[1]][1])){
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
+                        progress$set(message = paste('ERROR! File',fileName[[1]][1],'does not exist.'), value = 0.01)
+                        Sys.sleep(10)
+                        return(NULL)
+                    }
+
+                    layer.info.file <- strsplit(fileInput[1],';')[[1]][2]
+                    layer.info <- read.table(layer.info.file, header=T, sep=as.character(input$txtEdgeListFileSep))
+                    multilayerEdges <<- read.table(fileName[[1]][1], header=input$chkEdgeListFileHeader, sep=as.character(input$txtEdgeListFileSep))
+     
+                    if(ncol(multilayerEdges)==4){ 
+                        multilayerEdges$V5 <<- rep(1, nrow(multilayerEdges)) 
+                    }else{                    
+                        if(!WEIGHTED){
+                            multilayerEdges$V5 <<- rep(1, nrow(multilayerEdges))
                         }
                     }
-                    
-                    if(layerLabel[[l]][1]=="" || is.na(layerLabel[[l]][1])){
-                        layerLabel[[l]][1] <<- as.character(paste(input$txtLAYER_LABEL_PREFIX, l))
+                    #format: node layer node layer [weight]
+
+                    for(l in 1:LAYERS){
+                        layerLayoutFile[l] <<- strsplit(fileInput[1],';')[[1]][3]
+
+                        if(!file.exists(layerLayoutFile[[l]][1])){
+                            progress <- shiny::Progress$new(session)
+                            on.exit(progress$close())
+                            progress$set(message = paste('ERROR! File',layerLayoutFile[[l]][1],'does not exist.'), value = 0.01)
+                            Sys.sleep(10)
+                            return(NULL)
+                        }                    
+
+                        print(paste("file",fileName[[l]][1]))
+                        
+                        if(input$chkEdgeListLabel){
+                            #edges list are with labeled nodes instead of sequential integer IDs, we transform it
+                            #according to the layout file
+                            print("  Input is label-based: converting to sequential integer IDs...")
+                            
+                            if(layerLayoutFile[[l]][1] !="" && (!is.na(layerLayoutFile[[l]][1])) && file.exists(layerLayoutFile[[l]][1])){
+                                layerTable <- read.table(layerLayoutFile[[l]][1], header=T, sep=as.character(input$txtEdgeListFileSep))
+    
+                                if("nodeLabel" %in% colnames(layerTable)){
+                                    if("layerLabel" %in% colnames(layer.info)){
+                                        #convert nodes
+                                        layerTable <- read.table(layerLayoutFile[[l]][1], header=T, sep=as.character(input$txtEdgeListFileSep))                                    
+                                        layerTable$nodeID <- 1:nrow(layerTable)
+                                        convTable = setNames(layerTable$nodeID, as.character(layerTable$nodeLabel))
+
+                                        #convert layers, do this only one time, no need for each layer
+                                        if(l==1){            
+                                            #print(multilayerEdges)                        
+                                            layer.info$layerID <- 1:nrow(layer.info)
+                                            convLayerTable = setNames(layer.info$layerID, as.character(layer.info$layerLabel))
+                                            multilayerEdges[,1] <<- as.numeric(convTable[ as.character(unlist(multilayerEdges[,1])) ])
+                                            multilayerEdges[,3] <<- as.numeric(convTable[ as.character(unlist(multilayerEdges[,3])) ])
+                                            multilayerEdges[,2] <<- as.numeric(convLayerTable[ as.character(unlist(multilayerEdges[,2])) ])
+                                            multilayerEdges[,4] <<- as.numeric(convLayerTable[ as.character(unlist(multilayerEdges[,4])) ])
+                                                                                        
+                                            write.table(multilayerEdges, paste0(fileName[[l]][1],".rel"), quote=F, row.names=F, col.names=F)
+                                            #print(multilayerEdges)
+                                        }                                        
+                                        
+                                        layerEdges[[l]] <<- multilayerEdges[ multilayerEdges[,2]==l & multilayerEdges[,4]==l, c(1,3,5)]                                        
+                                        write.table(layerEdges[[l]], paste0(fileName[[l]][1],"_layer",l,".rel"), quote=F, row.names=F, col.names=F)
+                                       # print(paste("Edge list for layer",l))
+                                        #print(layerEdges[[l]])
+                                        print("  Done!")
+                                    }else{
+                                        progress <- shiny::Progress$new(session)
+                                        on.exit(progress$close())
+                                        progress$set(message = paste('ERROR! Layer info file',layer.info.file,'is not in a valid format (missing layerLabel column). This format is required when edges lists use labeled layers instead of sequential integer IDs.'), value = 0.01)
+                                        print("  Error: invalid layer info format")
+                                        Sys.sleep(20)
+                                        return(NULL)                                        
+                                    }
+                                }else{
+                                    progress <- shiny::Progress$new(session)
+                                    on.exit(progress$close())
+                                    progress$set(message = paste('ERROR! Layout file',layerLayoutFile[[l]][1],'is not in a valid format (missing nodeLabel column). This format is required when edges lists use labeled nodes instead of sequential integer IDs.'), value = 0.01)
+                                    print("  Error: invalid layout format")
+                                    Sys.sleep(20)
+                                    return(NULL)
+                                }                            
+                            }else{
+                                progress <- shiny::Progress$new(session)
+                                on.exit(progress$close())
+                                progress$set(message = paste('ERROR! Layout file',layerLayoutFile[[l]][1],'is not specified or does not exist. This file is required when edges lists use labeled nodes instead of sequential integer IDs.'), value = 0.01)
+                                print("  Error: invalid layout file")
+                                Sys.sleep(20)
+                                return(NULL)
+                            }
+                        }else{
+                            #check if the input is numeric, as expected, or raise errors:
+                            for(i in 1:ncol(multilayerEdges)){
+                                if( !is.numeric(multilayerEdges[,i]) ){
+                                    progress <- shiny::Progress$new(session)
+                                    on.exit(progress$close())
+                                    progress$set(message = paste('ERROR! Edges list (',fileName[[l]][1],') is not specified by nodes/layers with sequential integer IDs or weights (if any) are not numeric. If you use labels instead of sequential integer IDs you have to check the corresponding box before importing the networks.'), value = 0.01)
+                                    print("  Error: invalid edges list file")
+                                    Sys.sleep(20)
+                                    return(NULL)
+                                }
+                            }
+                            
+                            layerEdges[[l]] <<- multilayerEdges[ multilayerEdges[,2]==l & multilayerEdges[,4]==l, c(1,3,5)]
+                        }
+
+                        #it could be done more efficiently, but to mantain compatibility with existing structure I need this.
+                        #for the size of networks muxViz can deal, this is perfectly fine
+                        if("layerLabel" %in% colnames(layer.info)){
+                            layerLabel[l] <<- as.character(layer.info[ as.numeric(layer.info$layerID)==l, ]$layerLabel)
+                        }
+                        
+                        if(layerLabel[[l]][1]=="" || is.na(layerLabel[[l]][1])){
+                            layerLabel[[l]][1] <<- as.character(paste(input$txtLAYER_LABEL_PREFIX, l))
+                        }
                     }
                 }
                 
                 layerLabel[[LAYERS+1]][1] <<- input$txtLAYER_AGGREGATE_LABEL_PREFIX
+
                 
                 #Find the minimum and maximum node ID in the multiplex
                 idmin <- 1e100
@@ -371,15 +619,23 @@ shinyServer(function(input, output, session) {
                 offset <- 0
                 cntEdges <- 0
                 
-                for(l in 1:LAYERS){
-                    if( min(layerEdges[[l]][,1:2],na.rm=T) < idmin) idmin <- min(layerEdges[[l]][,1:2],na.rm=T)
-                    if( max(layerEdges[[l]][,1:2],na.rm=T) > idmax) idmax <- max(layerEdges[[l]][,1:2],na.rm=T)
-    
-                    cntEdges <- cntEdges + nrow(layerEdges[[l]])
+                if(input$radMultiplexModel=="MULTIPLEX_IS_EDGECOLORED"){
+                    for(l in 1:LAYERS){
+                        if( min(layerEdges[[l]][,1:2],na.rm=T) < idmin) idmin <- min(layerEdges[[l]][,1:2],na.rm=T)
+                        if( max(layerEdges[[l]][,1:2],na.rm=T) > idmax) idmax <- max(layerEdges[[l]][,1:2],na.rm=T)
+        
+                        cntEdges <- cntEdges + nrow(layerEdges[[l]])
+                    }
+                    
+                    Edges <<- cntEdges
+                }else{
+                    idmin <- min( min(multilayerEdges[,1], na.rm=T), min(multilayerEdges[,3], na.rm=T) )
+                    idmax <- max( max(multilayerEdges[,1], na.rm=T), max(multilayerEdges[,3], na.rm=T) )
+                    
+                    Edges <<- nrow(multilayerEdges)
                 }
                 
-                Edges <<- cntEdges
-                
+                                
                 if(idmin == 0) offset <- 1
     
                 Nodes <<- idmax + offset
@@ -397,18 +653,6 @@ shinyServer(function(input, output, session) {
                 listCommunities <<- data.frame()
 
                 
-                #By default the input is undirected and unweighted, check only variations from this assumption
-                if(input$selEdgeListType == "Directed"){
-                    DIRECTED <<- TRUE
-                }else{
-                    DIRECTED <<- FALSE
-                }
-                if(input$chkEdgeListWeighted){
-                    WEIGHTED <<- TRUE
-                }else{
-                    WEIGHTED <<- FALSE
-                }
-                
                 #External layouts. Check if all external layouts have been provided:
                 LAYOUT_EXTERNAL <<- !is.na(all(layerLayoutFile != "")) 
                 GEOGRAPHIC_LAYOUT <<- LAYOUT_EXTERNAL
@@ -422,16 +666,91 @@ shinyServer(function(input, output, session) {
                 LATMAX <<- -1e10
                 LONGMIN <<- 1e10
                 LATMIN <<- 1e10
-    
-                #If each layout is specified correctly
-                for(l in 1:LAYERS){
+                
+                print("Network properties set up")
+                print("Verifying external layout...")
+
+                if(input$radMultiplexModel=="MULTIPLEX_IS_EDGECOLORED"){
+                    #If each layout is specified correctly
+                    for(l in 1:LAYERS){
+                        if(layerLayoutFile[[l]][1] !="" && (!is.na(layerLayoutFile[[l]][1]))){
+                            layerTable <- read.table(layerLayoutFile[[l]][1], header=T, sep=as.character(input$txtEdgeListFileSep))
+                            if(input$chkEdgeListLabel) layerTable$nodeID <- 1:nrow(layerTable)
+                            layerLayout[[l]] <<- matrix(c(1),nrow=Nodes,ncol=2)
+                            
+                            if(length(layerTable$nodeLat)==Nodes && length(layerTable$nodeLong)==Nodes){
+                                print(paste("Layout for layer",l,"is geographic. Converting."))
+                                #Get boundaries
+                                longBounds = c(min(layerTable$nodeLong,na.rm=T),max(layerTable$nodeLong,na.rm=T))
+                                latBounds = c(min(layerTable$nodeLat,na.rm=T),max(layerTable$nodeLat,na.rm=T))
+                    
+                                if(min(layerTable$nodeLong,na.rm=T) < LONGMIN) LONGMIN <<- min(layerTable$nodeLong,na.rm=T)
+                                if(min(layerTable$nodeLat,na.rm=T) < LATMIN) LATMIN <<- min(layerTable$nodeLat,na.rm=T)
+                                if(max(layerTable$nodeLong,na.rm=T) > LONGMAX) LONGMAX <<- max(layerTable$nodeLong,na.rm=T)
+                                if(max(layerTable$nodeLat,na.rm=T) > LATMAX) LATMAX <<- max(layerTable$nodeLat,na.rm=T)
+                                                                                
+                                print(paste("  Latitude boundaries: ",LATMIN,LATMAX))
+                                print(paste("  Longitude boundaries: ",LONGMIN,LONGMAX))
+                                
+                                #The input layout is geographic, we must convert it to cartesian
+                                sphCoordinates <- list()
+                                sphCoordinates$x <- layerTable$nodeLong
+                                sphCoordinates$y <- layerTable$nodeLat
+                                cartCoordinates <- mapproject(sphCoordinates,proj="mercator")
+                                
+                                layerTable$nodeX <- cartCoordinates$x
+                                layerTable$nodeY <- cartCoordinates$y
+                            }else{
+                                #layout is not geographic
+                                GEOGRAPHIC_LAYOUT <<- F
+                            }
+                            
+                            if(length(layerTable$nodeX)==Nodes && length(layerTable$nodeY)==Nodes){
+                                layerLayout[[l]][layerTable$nodeID + offsetNode,1:2] <<- cbind(layerTable$nodeX,layerTable$nodeY)
+                    
+                                if(min(layerTable$nodeX,na.rm=T) < XMIN) XMIN <<- min(layerTable$nodeX,na.rm=T)
+                                if(min(layerTable$nodeY,na.rm=T) < YMIN) YMIN <<- min(layerTable$nodeY,na.rm=T)
+                                if(max(layerTable$nodeX,na.rm=T) > XMAX) XMAX <<- max(layerTable$nodeX,na.rm=T)
+                                if(max(layerTable$nodeY,na.rm=T) > YMAX) YMAX <<- max(layerTable$nodeY,na.rm=T)
+                                
+                                GEOGRAPHIC_LAYOUT <<- GEOGRAPHIC_LAYOUT && T
+                                print(paste("Layout for layer",l,"specified correctly from external file",layerLayoutFile[[l]][1]))
+                            }else{
+                                print(paste("Layout for layer",l,"not specified correctly. Proceeding with automatic layouting."))
+                                LAYOUT_EXTERNAL <<- F
+                                GEOGRAPHIC_LAYOUT <<- F
+                            }
+                    
+                            if(length(layerTable$nodeLabel)==Nodes){
+                                print(paste("Nodes' labels for layer",l,"specified correctly from external file",layerLayoutFile[[l]][1]))            
+                                #Assign labels to nodes
+                                nodesLabel[[l]][layerTable$nodeID + offsetNode] <<- as.character(layerTable$nodeLabel)
+                                print("Assigned labels.")
+                            }else{
+                                print(paste("Nodes' labels for layer",l,"not specified correctly. Proceeding with automatic labeling."))
+                                nodesLabel[[l]] <<- 1:Nodes
+                            }
+                        }else{
+                            print(paste("Layout for layer",l,"not specified correctly. Proceeding with automatic layouting."))
+                            LAYOUT_EXTERNAL <<- F
+                            GEOGRAPHIC_LAYOUT <<- F
+                    
+                            print(paste("Nodes' labels for layer",l,"not specified correctly. Proceeding with automatic labeling."))
+                            #Assign labels to nodes
+                            nodesLabel[[l]] <<- 1:Nodes
+                        }
+                    }
+                }else{                    
+                    #just one layout file, let's fix l and work with that
+                    l <- 1
                     if(layerLayoutFile[[l]][1] !="" && (!is.na(layerLayoutFile[[l]][1]))){
                         layerTable <- read.table(layerLayoutFile[[l]][1], header=T, sep=as.character(input$txtEdgeListFileSep))
                         if(input$chkEdgeListLabel) layerTable$nodeID <- 1:nrow(layerTable)
+                            
                         layerLayout[[l]] <<- matrix(c(1),nrow=Nodes,ncol=2)
                         
                         if(length(layerTable$nodeLat)==Nodes && length(layerTable$nodeLong)==Nodes){
-                            print(paste("Layout for layer",l,"is geographic. Converting."))
+                            print(paste("Layout for is geographic. Converting."))
                             #Get boundaries
                             longBounds = c(min(layerTable$nodeLong,na.rm=T),max(layerTable$nodeLong,na.rm=T))
                             latBounds = c(min(layerTable$nodeLat,na.rm=T),max(layerTable$nodeLat,na.rm=T))
@@ -452,6 +771,8 @@ shinyServer(function(input, output, session) {
                             
                             layerTable$nodeX <- cartCoordinates$x
                             layerTable$nodeY <- cartCoordinates$y
+                        }else{
+                            GEOGRAPHIC_LAYOUT <<- F
                         }
                         
                         if(length(layerTable$nodeX)==Nodes && length(layerTable$nodeY)==Nodes){
@@ -463,33 +784,38 @@ shinyServer(function(input, output, session) {
                             if(max(layerTable$nodeY,na.rm=T) > YMAX) YMAX <<- max(layerTable$nodeY,na.rm=T)
                             
                             GEOGRAPHIC_LAYOUT <<- GEOGRAPHIC_LAYOUT && T
-                            print(paste("Layout for layer",l,"specified correctly from external file",layerLayoutFile[[l]][1]))
+                            print(paste("Layout specified correctly from external file",layerLayoutFile[[l]][1]))
                         }else{
-                            print(paste("Layout for layer",l,"not specified correctly. Proceeding with automatic layouting."))
+                            print(paste("Layout not specified correctly. Proceeding with automatic layouting."))
                             LAYOUT_EXTERNAL <<- F
                             GEOGRAPHIC_LAYOUT <<- F
                         }
                 
                         if(length(layerTable$nodeLabel)==Nodes){
-                            print(paste("Nodes' labels for layer",l,"specified correctly from external file",layerLayoutFile[[l]][1]))            
+                            print(paste("Nodes' labels specified correctly from external file",layerLayoutFile[[l]][1]))            
                             #Assign labels to nodes
                             nodesLabel[[l]][layerTable$nodeID + offsetNode] <<- as.character(layerTable$nodeLabel)
                             print("Assigned labels.")
                         }else{
-                            print(paste("Nodes' labels for layer",l,"not specified correctly. Proceeding with automatic labeling."))
+                            print(paste("Nodes' labels not specified correctly. Proceeding with automatic labeling."))
                             nodesLabel[[l]] <<- 1:Nodes
                         }
                     }else{
-                        print(paste("Layout for layer",l,"not specified correctly. Proceeding with automatic layouting."))
+                        print(paste("Layout not specified correctly. Proceeding with automatic layouting."))
                         LAYOUT_EXTERNAL <<- F
                         GEOGRAPHIC_LAYOUT <<- F
                 
-                        print(paste("Nodes' labels for layer",l,"not specified correctly. Proceeding with automatic labeling."))
+                        print(paste("Nodes' labels not specified correctly. Proceeding with automatic labeling."))
                         #Assign labels to nodes
                         nodesLabel[[l]] <<- 1:Nodes
                     }
+                    
+                    for(l in 2:LAYERS){
+                        nodesLabel[[l]] <<- nodesLabel[[1]]
+                        layerLayout[[l]] <<- layerLayout[[1]]
+                    }
                 }
-                
+                                
                 #giving the layout of the aggregate from external file makes no sense if it is different from other layers
                 #and it is also annoying to be constrained to specify the aggregate, if one does not want to show it.
                 #Therefore, here I prefer to assign manually the layout of the first layer to the aggregate.
@@ -538,6 +864,38 @@ shinyServer(function(input, output, session) {
                 choices = tmpChoice
                 )
         })
+
+        #Dynamically create the selectInput after the diagnostics have been calculated
+        output$selVizNodeSizeOutputID <- renderUI({
+            if (input$btnImportNetworks == 0 || input$btnCalculateCentralityDiagnostics == 0 || length(input$project_file)==0)
+                return(NULL)
+    
+            tmpChoice <- "Uniform"
+            
+            for( attrib in attributes(listDiagnostics[[1]])$names ){        
+                if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+            }
+            
+            selectInput("selVizNodeSizeID", HTML("Node size proportional to:"), 
+                choices = tmpChoice
+                )
+        })
+
+        #Dynamically create the selectInput after the diagnostics have been calculated
+        output$selVizNodeColorOutputID <- renderUI({
+            if (input$btnImportNetworks == 0 || input$btnCalculateCentralityDiagnostics == 0 || length(input$project_file)==0)
+                return(NULL)
+    
+            tmpChoice <- NULL
+            
+            for( attrib in attributes(listDiagnostics[[1]])$names ){        
+                if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+            }
+            
+            selectInput("selVizNodeColorID", HTML("Node color proportional to:"), 
+                choices = tmpChoice
+                )
+        })
     
         #Dynamically create the selectInput after the diagnostics have been calculated
         output$selAnularVizOutputFeatureID <- renderUI({
@@ -554,7 +912,54 @@ shinyServer(function(input, output, session) {
                 choices = tmpChoice
                 )
         })
-                
+
+        #Dynamically create the selectInput after the diagnostics have been calculated
+        output$selDiagnosticsCentralityVizOutputID <- renderUI({
+            if (input$btnImportNetworks == 0 || input$btnCalculateCentralityDiagnostics == 0 || length(input$project_file)==0)
+                return(NULL)
+    
+            tmpChoice <- NULL
+            
+            for( attrib in attributes(listDiagnostics[[1]])$names ){        
+                if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+            }
+            
+            selectInput("selDiagnosticsCentralityVizID", HTML("Select the centrality descriptor to analyze:"), 
+                choices = tmpChoice
+                )
+        })
+
+        output$selDiagnosticsCentralityVizScatterOutputID <- renderUI({
+            if (input$btnImportNetworks == 0 || input$btnCalculateCentralityDiagnostics == 0 || length(input$project_file)==0)
+                return(NULL)
+    
+            tmpChoice <- NULL
+            
+            for( attrib in attributes(listDiagnostics[[1]])$names ){        
+                if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+            }
+            
+            selectInput("selDiagnosticsCentralityVizScatterID", HTML("Select the centrality descriptor to analyze:"), 
+                choices = tmpChoice
+                )
+        })
+
+
+        output$selDiagnosticsCentralityVizScatterSizeOutputID <- renderUI({
+            if (input$btnImportNetworks == 0 || input$btnCalculateCentralityDiagnostics == 0 || length(input$project_file)==0)
+                return(NULL)
+    
+            tmpChoice <- "Uniform"
+            
+            for( attrib in attributes(listDiagnostics[[1]])$names ){        
+                if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+            }
+            
+            selectInput("selDiagnosticsCentralityVizScatterSizeID", HTML("Circle radius proportional to:"), 
+                choices = tmpChoice
+                )
+        })
+                        
         #Create a summary of the config file and the networks, when the Import button is pushed
         output$projectSummaryHTML <- reactive({
             if (input$btnImportNetworks == 0 || length(input$project_file)==0)
@@ -602,7 +1007,13 @@ shinyServer(function(input, output, session) {
                 return(NULL)
     
             tmplayerTable <- read.csv(inFile$datapath, header=input$chkConfigFileHeader, sep=input$txtConfigFileSep)
-            colnames(tmplayerTable) <- c("EdgeListPath", "Label", "LayoutPath")   
+            
+            if(input$radMultiplexModel=="MULTIPLEX_IS_EDGECOLORED"){
+                colnames(tmplayerTable) <- c("EdgeListPath", "Label", "LayoutPath")
+            }else{
+                colnames(tmplayerTable) <- c("EdgeListPath", "LayerInfoPath", "LayoutPath")   
+            }
+            
             return(tmplayerTable)
         })
     
@@ -626,9 +1037,10 @@ shinyServer(function(input, output, session) {
         
         #This should be called AFTER importNetworksFromConfigurationFile, where the 
         #relevant variables are filled with the data
+
         buildNetworks <- function(){
             if (input$btnImportNetworks == 0 || LAYERS<=0) return(NULL)
-    
+              
             g <<- vector("list",LAYERS+1)
             AdjMatrix <<- vector("list",LAYERS+1)
             
@@ -636,91 +1048,95 @@ shinyServer(function(input, output, session) {
             AdjMatrix[[LAYERS+1]] <<- matrix(0,ncol=Nodes,nrow=Nodes)
             
             for(l in 1:LAYERS){    
-                #create an undirected edges list (both directions specified) if requested
-                if(!DIRECTED){
+                #account for the possibility of having layers with no intra-links
+                if(nrow(layerEdges[[l]])==0){
+                    if(ncol(layerEdges[[l]])==2){ colnames(layerEdges[[l]]) <<- c("from","to") }                
+                    if(ncol(layerEdges[[l]])==3){ colnames(layerEdges[[l]]) <<- c("from","to","weight") }
+                    if(ncol(layerEdges[[l]])>3){
+                        print("ERROR! More than 3 columns whereas equal or smaller than 3 expected.")
+                        return(NULL)
+                    }                
+                    #generate the network object
+                    g[[l]] <<- graph.empty(directed=DIRECTED, n=Nodes)
+                    AdjMatrix[[l]] <<- get.adjacency(g[[l]]) #I use this to avoid class incompatibility 
+                }else{
+                    if(ncol(layerEdges[[l]])==2){
+                        layerEdges[[l]] <<- cbind(layerEdges[[l]], rep(1, nrow(layerEdges[[l]])))
+                        colnames(layerEdges[[l]]) <<- c("from","to")
+                    }                
                     if(ncol(layerEdges[[l]])==3){
-                        #swap columns
-                        tmpedges <- layerEdges[[l]][,c(2,1,3)]
-                        #change the name of the columns, or merge will not work
-                        colnames(tmpedges) <- c("V1","V2","V3")
-                        #merge
-                        layerEdges[[l]] <<- merge(layerEdges[[l]],tmpedges,all=T)
-                    }else{
-                        #swap columns
-                        tmpedges <- layerEdges[[l]][,c(2,1)]
-                        #change the name of the columns, or merge will not work
-                        colnames(tmpedges) <- c("V1","V2")
-                        #merge
-                        layerEdges[[l]] <<- merge(layerEdges[[l]],tmpedges,all=T)
+                        colnames(layerEdges[[l]]) <<- c("from","to","weight")
                     }
-                }
+                    if(ncol(layerEdges[[l]])>3){
+                        print("ERROR! More than 3 columns whereas equal or smaller than 3 expected.")
+                        return(NULL)
+                    }                
+                    
+                    if(offsetNode>0){
+                        layerEdges[[l]][,1] <<- layerEdges[[l]][,1] + offsetNode
+                        layerEdges[[l]][,2] <<- layerEdges[[l]][,2] + offsetNode
+                    }
                 
-                if(offsetNode>0){
-                    layerEdges[[l]][,1] <<- layerEdges[[l]][,1] + offsetNode
-                    layerEdges[[l]][,2] <<- layerEdges[[l]][,2] + offsetNode
-                }
-            
-                #todo: here the code for cutting/threshold, if any
-            
-                if(WEIGHTED){
-                    if(input$chkRESCALE_WEIGHT){
-                        if(ncol(layerEdges[[l]])==3){
-                            print("Rescaling weights...")
-                            layerEdges[[l]][,3] <<- layerEdges[[l]][,3]/min(layerEdges[[l]][,3],na.rm=T)
-                        }
-                    }
-                }
-            
-    
-                #We need the (weighted) adjacency matrix to build the aggregate network    
-                A_layer <- matrix(0,ncol=Nodes,nrow=Nodes)
-            
-                #For weighted network, and for our requirements this should be done
-                if(ncol(layerEdges[[l]])==3){
+                    #todo: here the code for cutting/threshold, if any
+                
                     if(WEIGHTED){
-                        for(i in 1:nrow(layerEdges[[l]])) A_layer[ layerEdges[[l]][i,1], layerEdges[[l]][i,2] ] <- layerEdges[[l]][i,3]
-                        
-                        if(!DIRECTED){
-                            for(i in 1:nrow(layerEdges[[l]])) A_layer[ layerEdges[[l]][i,2], layerEdges[[l]][i,1] ] <- layerEdges[[l]][i,3]
-                        }
-                    }else{
-                        for(i in 1:nrow(layerEdges[[l]])) A_layer[ layerEdges[[l]][i,1], layerEdges[[l]][i,2] ] <- 1
-                        if(!DIRECTED){
-                            for(i in 1:nrow(layerEdges[[l]])) A_layer[ layerEdges[[l]][i,2], layerEdges[[l]][i,1] ] <- 1
+                        if(input$chkRESCALE_WEIGHT){
+                            if(ncol(layerEdges[[l]])==3){
+                                print("Rescaling weights...")
+                                layerEdges[[l]][,3] <<- layerEdges[[l]][,3]/min(layerEdges[[l]][,3],na.rm=T)
+                            }
                         }
                     }
-                }else{
-                    for(i in 1:nrow(layerEdges[[l]])) A_layer[ layerEdges[[l]][i,1], layerEdges[[l]][i,2] ] <- 1
-                    if(!DIRECTED){
-                        for(i in 1:nrow(layerEdges[[l]])) A_layer[ layerEdges[[l]][i,2], layerEdges[[l]][i,1] ] <- 1
-                    }
-                }
+                
+                    #generate the network object
+                    g[[l]] <<- graph.data.frame(layerEdges[[l]], directed=DIRECTED, vertices=1:Nodes)
+                    AdjMatrix[[l]] <<- get.adjacency(g[[l]], attr="weight")
     
-                if(DIRECTED){
-                    g[[l]] <<- graph.adjacency(A_layer,weighted=T,mode="directed")
-                }else{
-                    g[[l]] <<- graph.adjacency(A_layer,weighted=T,mode="undirected")                
+                    #update the aggregate
+                    AdjMatrix[[LAYERS+1]] <<- AdjMatrix[[LAYERS+1]] + AdjMatrix[[l]]
                 }
                 
-                #if(WEIGHTED){
-                #    g[[l]] <<- graph.adjacency(A_layer,weighted=WEIGHTED)
-                #}else{
-                #    g[[l]] <<- graph.adjacency(A_layer,weighted=NULL)   
-                #}
-    
-                AdjMatrix[[l]] <<- A_layer
-                AdjMatrix[[LAYERS+1]] <<- AdjMatrix[[LAYERS+1]] + A_layer
-                #Adj_aggr <- Adj_aggr + A_layer
-    
                 print(paste("Layer ",l,": ",fileName[[l]][1],"   Name:",layerLabel[[l]][1]))
                 print(paste("Layer ",l," Directed: ",DIRECTED))
                 print(paste("Layer ",l," Weighted: ",WEIGHTED))
-                print(paste(nrow(layerEdges[[l]]),"Edges in layer: ",l))
+                print(paste(nrow(layerEdges[[l]]),"Edges in layer (excluding inter-links): ",l))
             }
             
             #the aggregate
-            #AdjMatrix[[LAYERS+1]] <<- Adj_aggr
-            g[[LAYERS+1]] <<- graph.adjacency(AdjMatrix[[LAYERS+1]],weighted=T)
+            
+            #only if the network is interdependent
+            if(input$radMultiplexModel=="MULTIPLEX_IS_INTERDEPENDENT"){
+                #in this case the aggregate is just the input network itself
+                g[[LAYERS+1]] <<- graph.data.frame( data.frame(from=multilayerEdges[,1], to=multilayerEdges[,3], weight=multilayerEdges[,5]) , directed=DIRECTED, vertices=1:Nodes)
+            }else{
+                g[[LAYERS+1]] <<- graph.adjacency(AdjMatrix[[LAYERS+1]],weighted=T)
+            }
+
+            #if the network is non-edge colored (ie, there are interlinks)
+            if(input$radMultiplexModel!="MULTIPLEX_IS_EDGECOLORED"){
+                #the trick is to build a huge network where the number of nodes is NxL
+
+                #For interdependent networks we will apply the layout to each layer separately
+                #For interconnected multiplex and general multilayer we will apply the layout to the aggregate
+                #Finally, we will assign nodes and edges properties to their corresponding elements in the huge network
+                #and we will use that for plotting
+                
+                multilayerEdges.tmp <- multilayerEdges
+                
+                #the idea is to relabel nodes from 1 to NL
+                multilayerEdges.tmp[,1] <- multilayerEdges.tmp[,1] + Nodes*(multilayerEdges.tmp[,2]-1)
+                multilayerEdges.tmp[,3] <- multilayerEdges.tmp[,3] + Nodes*(multilayerEdges.tmp[,4]-1)
+                multilayerEdges.tmp[,2] <- NULL
+                multilayerEdges.tmp[,4] <- NULL
+                colnames(multilayerEdges.tmp) <- c("from", "to", "weight")
+                
+                g.multi <<- graph.data.frame(multilayerEdges.tmp, directed=DIRECTED, vertices=1:(Nodes*LAYERS))
+                
+                #print(V(g.multi))
+                #print(E(g.multi))
+                
+                multilayerEdges.tmp <- NULL
+            }
     
             btnImportNetworksValue <<- input$btnImportNetworks
         }
@@ -752,16 +1168,21 @@ shinyServer(function(input, output, session) {
         
                     progress$set(detail = 'Creating tables...', value = 0.9)
                     #Sys.sleep(2)
-            
+
                     listEdgelistMerge <- NULL
-                    for(l in 1:LAYERS){
-                        thisEdge <- cbind(get.edgelist(g[[l]]), E(g[[l]])$weight)
-                        for(n in 1:nrow(thisEdge)){
-                            listEdgelistMerge <- rbind(listEdgelistMerge,data.frame(cbind(Layer = l, nodeID1 = thisEdge[n,1],nodeID2 = thisEdge[n,2], Node1 = nodesLabel[[l]][thisEdge[n,1]], Node2 = nodesLabel[[l]][thisEdge[n,2]], Weight = thisEdge[n,3])))
+                    if(input$radMultiplexModel=="MULTIPLEX_IS_EDGECOLORED"){
+                        for(l in 1:LAYERS){
+                            thisEdge <- cbind(get.edgelist(g[[l]]), E(g[[l]])$weight)
+                            for(n in 1:nrow(thisEdge)){
+                                listEdgelistMerge <- rbind(listEdgelistMerge,data.frame(cbind(Layer = l, nodeID1 = thisEdge[n,1],nodeID2 = thisEdge[n,2], Node1 = nodesLabel[[l]][thisEdge[n,1]], Node2 = nodesLabel[[l]][thisEdge[n,2]], Weight = thisEdge[n,3])))
+                            }
                         }
+                        #print(listEdgelistMerge)
+                    }else{
+                        listEdgelistMerge <- multilayerEdges
+                        colnames(listEdgelistMerge) <- c("Node1", "Layer1", "Node2", "Layer2", "Weight")
                     }
-                    #print(listEdgelistMerge)
-        
+
                     gvisTable(listEdgelistMerge,options=googleVisEdgelistTableOptions())
                 })   
         
@@ -772,6 +1193,36 @@ shinyServer(function(input, output, session) {
             })
         })
 
+        observe({
+            if(input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
+                
+            if(btnResetLightsValue==input$btnResetLights) return()
+
+            progress <- shiny::Progress$new(session)
+            on.exit(progress$close())
+            progress$set(message = 'Resetting lights...', value = 0.2)
+            Sys.sleep(1)
+
+            flag <- F
+            while(!flag){
+                tryCatch({
+                    print("Popping lights...")
+                    rgl.pop("lights")},
+                    error=function(e){
+                        print("Warning: no more lights to pop")
+                        },
+                    finally={flag=T}
+                    )
+            }
+            #rgl.light(theta = 0, phi = 0, viewpoint.rel = TRUE, ambient = "#FFFFFF", 
+            #            diffuse = "#FFFFFF", specular = "#FFFFFF")
+                        
+            btnResetLightsValue <<- input$btnResetLights
+
+            progress$set(detail = 'Done!', value = 1)
+            Sys.sleep(2)
+        })
+        
         observe({
             if(input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
                 
@@ -866,6 +1317,24 @@ shinyServer(function(input, output, session) {
                     for(l in 1:(LAYERS+1)) V(g[[l]])$size <- defaultVsize[[l]]
                 }
 
+                if(!input$chkNODE_LABELS_SHOW){
+                    for(l in 1:(LAYERS+1)) V(g[[l]])$label <- ""
+                }else{
+                    for(l in 1:(LAYERS+1)) V(g[[l]])$label <- ""
+                    #for(l in 1:(LAYERS+1)) V(g[[l]])$label <- nodesLabel[[l]]
+                    #I add the labels as text3d in FinalizeRendering..
+                }
+
+                if(input$chkNODE_ISOLATED_HIDE){
+                    #this piece of code must be executed after the above one, to change the size of isolated
+                    #nodes to zero, and also their label to ""
+                    for(l in 1:(LAYERS+1)){
+                        arrayStrength <- graph.strength(g[[l]],mode="total")
+                        V(g[[l]])[arrayStrength==0.]$size <- 0
+                        V(g[[l]])[arrayStrength==0.]$label <- ""
+                    }
+                }
+
                 if(length(input$txtTimelineDefaultEdgesColor)>0){
                     for(l in 1:(LAYERS+1)) E(g[[l]])$color <- input$txtTimelineDefaultEdgesColor
                 }else{
@@ -940,10 +1409,16 @@ shinyServer(function(input, output, session) {
                     }else{
                         #no changes in the state of the edges
                     }
-                    
-                    
+
+                    vecInactiveLayers <- as.numeric(strsplit(input$txtLAYERS_ACTIVE, ",")[[1]])
+
                     #now render the network
                     for(l in 1:(LAYERS+1)){
+                        if( l %in% vecInactiveLayers ){
+                            #skip layers set to be inactive
+                            next
+                        }
+
                         #progress$set(message = paste('Layer',l,'...'), value = 0.05 + 0.85*l/(LAYERS+1))
         
                         if(l==(LAYERS+1)){
@@ -962,9 +1437,9 @@ shinyServer(function(input, output, session) {
                         print("      openGL phase...")
                         #plot the graph with openGL    
                         #print(layouts[[l]])
-                        V(g[[l]])$label <- ""
-                                                
-                        rglplot.igraph(g[[l]], layout=layouts[[l]],
+                        #V(g[[l]])$label <- ""
+
+                        rglplot(g[[l]], layout=layouts[[l]],
                                             vertex.size=V(g[[l]])$size, 
                                             vertex.color=V(g[[l]])$color,
                                             vertex.label=V(g[[l]])$label,
@@ -981,15 +1456,55 @@ shinyServer(function(input, output, session) {
                                                                 
                         print(paste("    Layout of layer: finished."))
                     }
-                    
+
+                    if(input$chkINTERLINK_SHOW && LAYERS>1){
+                        if(input$radMultiplexModel!="MULTIPLEX_IS_EDGECOLORED"){
+                            print("Adding interlayer links.")
+    
+                            #set to 0 the width of intra-layer links
+                            E(g.multi)$width <- as.numeric(input$txtINTERLINK_WIDTH)*E(g.multi)$weight
+                            E(g.multi)[which(multilayerEdges[,2]==multilayerEdges[,4])]$width <- 0
+                            
+                            #the same for interlinks from and to inactive layers 
+                            for(l in vecInactiveLayers){
+                                E(g.multi)[which(multilayerEdges[,2]==l | multilayerEdges[,4]==l)]$width <- 0
+                            }
+                            
+                            #setup the layout for g.multi by merging the layout of each layer, in order
+                            layout.multi <<- matrix(0, ncol=3, nrow=Nodes*LAYERS)
+
+                            for(l in 1:LAYERS){
+                                layout.multi[ (1 + (l-1)*Nodes):(l*Nodes), 1] <<- layouts[[l]][, 1]
+                                layout.multi[ (1 + (l-1)*Nodes):(l*Nodes), 2] <<- layouts[[l]][, 2]
+                                layout.multi[ (1 + (l-1)*Nodes):(l*Nodes), 3] <<- layouts[[l]][, 3]
+                            }
+        
+                            #Print the interlinks by superimposing the g.multi
+                            rglplot(g.multi, layout=layout.multi,
+                                                vertex.size=0, 
+                                                vertex.label="",
+                                                edge.width=E(g.multi)$width, 
+                                                edge.color=input$txtINTERLINK_COLOR, 
+                                                edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
+                                                edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
+                                                edge.curved=as.numeric(input$txtEDGE_BENDING),
+                                                edge.lty = input$txtINTERLINK_TYPE,
+                                                rescale=F)
+                            #edge/node transparancy not yet supported by rglplot
+                            #alpha=as.numeric(input$txtINTERLINK_TRANSP))
+                        }                
+                    }                
+
                     #Call the visualization of other graphics
                     FinalizeRenderingMultiplex(progress)
 
-                    #assuming that all labels for this timestep are identical, as it should be..
-                    title3d(input$txtPLOT_TITLE, tmpdfTimeline$labelStep[1],'','','')
-
-                    print(paste("    Exporting snapshot",tmpdfTimeline$labelStep[1],"..."))
-                    
+                    if(!is.na(tmpdfTimeline$labelStep[1])){
+                        #assuming that all labels for this timestep are identical, as it should be..
+                        title3d(input$txtPLOT_TITLE, tmpdfTimeline$labelStep[1],'','','')
+    
+                        print(paste("    Exporting snapshot",tmpdfTimeline$labelStep[1],"..."))
+                    }
+                                        
                     timelineFolder <- concatenatePath( concatenatePath("export","timeline"), input$txtProjectName)
 
                     #create the folder if it does not exist
@@ -1025,9 +1540,7 @@ shinyServer(function(input, output, session) {
                 #to output full numbers
                 options(scipen=999)
                 
-                progress$set(message = 'Setting up the algorithms...', value = 0.2)
-                #todo: export file in fanmod format
-                
+                progress$set(message = 'Setting up the algorithms...', value = 0.2)                
                 inputFile <- paste(input$txtProjectName,"_fanmod.edges",sep="")
                 
                 #fanmod format assume 0-starting labeling for nodes, 1-starting for layers
@@ -1143,6 +1656,9 @@ shinyServer(function(input, output, session) {
 
                     motifsTable[r,]$Motif <- paste0("<img src='img/motifs/",motif_name,".png' width='128' height='128'>")
                 }
+
+                listMotifs <<- motifsTable
+                listMotifs$Motif <<- NULL
 
                 output$motifsColorLegend <- renderPlot({
                     mydf <- data.frame(layer=1:LAYERS, fake=1, color=rgb.palette)
@@ -1281,6 +1797,7 @@ shinyServer(function(input, output, session) {
     
                     overlapMatrix <- data.frame(overlapMatrix)
                     overlapMatrix <- cbind(data.frame(Layer),overlapMatrix)
+                    listOverlap <<- overlapMatrix
     
                     output$overlappingSummaryTable <- renderGvis({
                         if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
@@ -1329,7 +1846,8 @@ shinyServer(function(input, output, session) {
     
                     interPearson <- data.frame(interPearson)
                     interPearson <- cbind(data.frame(Layer),interPearson)
-    
+                    listInterPearson <<- interPearson
+                    
                     output$interPearsonSummaryTable <- renderGvis({
                         if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
                             return(NULL)
@@ -1376,7 +1894,8 @@ shinyServer(function(input, output, session) {
                     
                     interSpearman <- data.frame(interSpearman)
                     interSpearman <- cbind(data.frame(Layer),interSpearman)
-    
+                    listInterSpearman <<- interSpearman
+                    
                     output$interSpearmanSummaryTable <- renderGvis({
                         if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
                             return(NULL)
@@ -1405,17 +1924,16 @@ shinyServer(function(input, output, session) {
                 ###############
                 ## Centrality
                 ###############
-                if(input$chkNODE_CENTRALITY_STRENGTH || input$chkNODE_CENTRALITY_PAGERANK || input$chkNODE_CENTRALITY_EIGENVECTOR || input$chkNODE_CENTRALITY_HUB || input$chkNODE_CENTRALITY_AUTHORITY || input$chkNODE_CENTRALITY_KATZ){
+                if(input$chkNODE_CENTRALITY_STRENGTH || input$chkNODE_CENTRALITY_PAGERANK || input$chkNODE_CENTRALITY_EIGENVECTOR || input$chkNODE_CENTRALITY_HUB || input$chkNODE_CENTRALITY_AUTHORITY || input$chkNODE_CENTRALITY_KATZ || input$chkNODE_CENTRALITY_KCORE || input$chkNODE_CENTRALITY_MULTIPLEXITY){
     
                     progress$set(message = 'Calculating centrality...', value = 0.05)
                     listDiagnostics <<- NULL
                     diagnosticsOK <<- T
-                    listDiagnosticsMerge <- NULL
+                    listDiagnosticsMerge <<- NULL
                     
                     if(input$chkNODE_CENTRALITY_MULTIPLEX){
                         #calculation in the multiplex. For the moment the output is obtained calling octave.
                         #the output will be stored in [[l]] for the multiplex and [[LAYERS+1]] for the aggregated.
-                        
                         listDiagnostics <<- GetCentralityDataFrameArray("Multiplex") 
                         diagnosticsMultiplexOK <<- T
                     }else{
@@ -1428,7 +1946,7 @@ shinyServer(function(input, output, session) {
                     }
     
                     for(l in 1:(LAYERS+1)){
-                        listDiagnosticsMerge <- rbind(listDiagnosticsMerge,listDiagnostics[[l]])
+                        listDiagnosticsMerge <<- rbind(listDiagnosticsMerge,listDiagnostics[[l]])
                     }                            
     
                     progress$set(message = 'Creating tables...', value = 0.95)
@@ -1469,8 +1987,8 @@ shinyServer(function(input, output, session) {
                     print("  Detecting communities...")    
                     listCommunities <<- NULL
                     sumCommunities <- NULL
-                    listCommunitiesMerge <- NULL
-                    sumCommunitiesMerge <- NULL
+                    listCommunitiesMerge <<- NULL
+                    sumCommunitiesMerge <<- NULL
                     communityOK <<- T
     
                     if(input$radCommunityAlgorithm=="COMMUNITY_MULTIPLEX"){
@@ -1520,22 +2038,22 @@ shinyServer(function(input, output, session) {
     
                         for(l in 1:LAYERS){                                                                        
                             listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Community=wmemb_membership[,l]))
-                            listCommunitiesMerge <- rbind(listCommunitiesMerge,listCommunities[[l]])
+                            listCommunitiesMerge <<- rbind(listCommunitiesMerge,listCommunities[[l]])
                         }
                         listCommunities[[LAYERS+1]] <<- cbind(listCommunities[[LAYERS+1]],data.frame(Community=wmemb_membership_aggregate))
-                        listCommunitiesMerge <- rbind(listCommunitiesMerge,listCommunities[[LAYERS+1]])
+                        listCommunitiesMerge <<- rbind(listCommunitiesMerge,listCommunities[[LAYERS+1]])
                         #print(listCommunities)
     
                         #Multiplex
                         l <- 1
                         sumCommunities[[l]] <- cbind(sumCommunities[[l]],data.frame(Communities = numComms))                        
                         sumCommunities[[l]] <- cbind(sumCommunities[[l]],data.frame(Modularity = round(wtmod,3)))
-                        sumCommunitiesMerge <- rbind(sumCommunitiesMerge,sumCommunities[[l]])
+                        sumCommunitiesMerge <<- rbind(sumCommunitiesMerge,sumCommunities[[l]])
                         #Aggregate: change numcoms and modularity here
                         l <- 2
                         sumCommunities[[l]] <- cbind(sumCommunities[[l]],data.frame(Communities = numCommsAggr))                        
                         sumCommunities[[l]] <- cbind(sumCommunities[[l]],data.frame(Modularity = round(wtmod_aggregate,3)))
-                        sumCommunitiesMerge <- rbind(sumCommunitiesMerge,sumCommunities[[l]])
+                        sumCommunitiesMerge <<- rbind(sumCommunitiesMerge,sumCommunities[[l]])
     
                         #print(listCommunitiesMerge)
                     }else{                    
@@ -1557,7 +2075,22 @@ shinyServer(function(input, output, session) {
                         sumCommunities[[LAYERS+1]] <- data.frame(Layer = "Aggr")
                         
                         for(l in 1:(LAYERS+1)){
+                            if(input$radCommunityAlgorithm=="COMMUNITY_LOUVAIN"){
+                                #i need this trick to obtain a wmemb structure for this algorithm
+                                wt <- walktrap.community(g[[l]],modularity=TRUE)
+                                wmemb <- community.to.membership(g[[l]], wt$merges,steps=which.max(wt$modularity)-1)
+
+                                wt <- multilevel.community(as.undirected(g[[l]]))
+                                wmemb$membership <- membership(wt) - 1
+                                comList <- communities(wt)
+                                wmemb$csize <- numeric(length(comList))
+                                for(com in 1:length(wmemb$csize)){
+                                    wmemb$csize[com] <- length(comList[[com]])
+                                }                            
+                            }
+
                             if(input$radCommunityAlgorithm=="COMMUNITY_INFOMAP"){
+                                #i need this trick to obtain a wmemb structure for this algorithm
                                 wt <- walktrap.community(g[[l]],modularity=TRUE)
                                 wmemb <- community.to.membership(g[[l]], wt$merges,steps=which.max(wt$modularity)-1)
                                 
@@ -1614,8 +2147,8 @@ shinyServer(function(input, output, session) {
                         }
     
                         for(l in 1:(LAYERS+1)){
-                            listCommunitiesMerge <- rbind(listCommunitiesMerge,listCommunities[[l]])
-                            sumCommunitiesMerge <- rbind(sumCommunitiesMerge,sumCommunities[[l]])
+                            listCommunitiesMerge <<- rbind(listCommunitiesMerge,listCommunities[[l]])
+                            sumCommunitiesMerge <<- rbind(sumCommunitiesMerge,sumCommunities[[l]])
                         }
                         #print(listCommunitiesMerge)
                     }
@@ -1711,7 +2244,7 @@ shinyServer(function(input, output, session) {
                     diagnosticsSingleLayerOK <<- TRUE
                 }
                 monoxFeatureDataFrameArray <- listDiagnosticsSingleLayer
-                print(monoxFeatureDataFrameArray)
+                #print(monoxFeatureDataFrameArray)
 
                 if(!diagnosticsMultiplexOK){
                     print("  Calculation of multiplex descriptors...")
@@ -1994,7 +2527,376 @@ shinyServer(function(input, output, session) {
             })  
         })
     
+      	################################################
+      	# Diagnostics centralty plots
+      	################################################
+
+        observe({
+            if(input$btnCalculateCentralityDiagnostics == 0 || input$btnCentralityDiagnosticsAnalysis ==0 || input$btnImportNetworks == 0 ||  LAYERS==0)
+                return()
+            
+            if(btnCentralityDiagnosticsAnalysisValue==input$btnCentralityDiagnosticsAnalysis) return()
     
+            isolate({
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
+    
+                progress$set(message = 'Calculating...', value = 0.05)
+
+                this.descriptor <- input$selDiagnosticsCentralityVizID
+
+                featureDataFrameList <- NULL
+                layersToInclude <- as.numeric(strsplit(input$txtDiagnosticsCentralityStructureLayer,",")[[1]])
+
+                if(length(listDiagnosticsSingleLayer)>0 && length(listDiagnostics)>0){
+                    for( attrib in colnames(listDiagnostics[[1]]) ){
+
+                        if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") ){
+                            if( all(listDiagnosticsSingleLayer[[1]][,attrib]==rep("-",Nodes)) && all(listDiagnostics[[1]][,attrib]!=rep("-",Nodes)) ){
+                                print(listDiagnosticsSingleLayer[[1]][,attrib]) 
+                                print(listDiagnostics[[1]][,attrib])
+                                diagnosticsSingleLayerOK <<- FALSE
+                                break
+                            }
+                        }
+                    }
+                }
+
+                if(input$chkCentralityAnalysisStructureMultiplex){
+                    if(!diagnosticsMultiplexOK){
+                        print("  Calculation of multiplex descriptors...")
+                        listDiagnostics <<- GetCentralityDataFrameArray("Multiplex")
+                        diagnosticsMultiplexOK <<- TRUE
+                    }
+                    #same for all layers, just pick the 1
+                    featureDataFrameList[["Multi"]] <- listDiagnostics[[1]]
+                }
+
+                if(input$chkCentralityAnalysisStructureLayer){
+                    if(!diagnosticsSingleLayerOK){
+                        print("  Calculation of single-layer descriptors...")
+                        listDiagnosticsSingleLayer <<- GetCentralityDataFrameArray("SingleLayer")
+                        diagnosticsSingleLayerOK <<- TRUE
+                    }
+                    
+                    for(l in layersToInclude){
+                        featureDataFrameList[[ paste0("L",l) ]] <- listDiagnosticsSingleLayer[[ l ]]
+                    }
+                }
+    
+                if(input$chkCentralityAnalysisStructureAggregate){
+                    if(!diagnosticsMultiplexOK){
+                        print("  Calculation of multiplex descriptors...")
+                        listDiagnostics <<- GetCentralityDataFrameArray("Multiplex")
+                        diagnosticsMultiplexOK <<- TRUE
+                    }
+                    featureDataFrameList[["Aggr"]] <- listDiagnostics[[LAYERS+1]]
+                }
+                
+                if(input$radDiagnosticsCentralityType=="DIAGNOSTICS_ANALYSIS_TOPRANKED"){
+                    orderingIdx <- 1:Nodes
+                    X <- data.frame()
+                    Bins <- as.numeric(input$txtDiagnosticsCentralityTopRankedBins)
+
+                    if(input$chkCentralityAnalysisStructureMultiplex){
+                        v.x <- as.numeric(featureDataFrameList[["Multi"]][this.descriptor][,1])
+                        if(input$centralityAnalysisTopRankedLog){
+                            v.x <- log10(v.x)
+                            if( any(is.infinite(v.x)) ){
+                                v.x[is.infinite(v.x)] <- 0
+                            }
+                        }
+                        
+                        ordering <- sort(v.x, decreasing=T, index.return=T)
+                        v.x <- ordering$x
+                        orderingIdx <- ordering$ix
+                        X <- rbind(X, data.frame(Node=nodesLabel[[1]][orderingIdx[1:Bins]], Var1=v.x[1:Bins], Type="Multilayer"))
+                    }
+                    if(input$chkCentralityAnalysisStructureAggregate){
+                        v.x <- as.numeric(featureDataFrameList[["Aggr"]][this.descriptor][,1])
+                        if(input$centralityAnalysisTopRankedLog){
+                            v.x <- log10(v.x)
+                            if( any(is.infinite(v.x)) ){
+                                v.x[is.infinite(v.x)] <- 0
+                            }
+                        }
+
+                        v.x <- v.x[orderingIdx]
+                        X <- rbind(X, data.frame(Node=nodesLabel[[1]][orderingIdx[1:Bins]], Var1=v.x[1:Bins], Type="Aggregate"))
+                    }                    
+                    if(input$chkCentralityAnalysisStructureLayer){
+                        for(l in layersToInclude){
+                            v.x <- as.numeric(featureDataFrameList[[ paste0("L",l) ]][this.descriptor][,1])
+                            if(input$centralityAnalysisTopRankedLog){
+                                v.x <- log10(v.x)
+                                if( any(is.infinite(v.x)) ){
+                                    v.x[is.infinite(v.x)] <- 0
+                                }
+                            }
+                            v.x <- v.x[orderingIdx]
+                            X <- rbind(X, data.frame(Node=nodesLabel[[1]][orderingIdx[1:Bins]], Var1=v.x[1:Bins], Type=layerLabel[[l]]))
+                        }
+                    }                    
+                    
+                    #print(X)
+
+                    output$centralityAnalysisPlot <- renderChart2({
+                        rplot <- nPlot(Var1 ~ Node, 
+                                 group = "Type",
+                                 data = X, type = "multiBarHorizontalChart")
+
+                        rplot$xAxis(axisLabel="Node")
+
+                        if(input$centralityAnalysisTopRankedLog){
+                            rplot$yAxis(axisLabel=paste0("log10 ", this.descriptor))
+                        }else{
+                            rplot$yAxis(axisLabel=this.descriptor)
+                        }
+                        
+                        #rplot$chart(reduceXTicks = FALSE)
+                        #rplot$xAxis(staggerLabels = TRUE)
+
+                        return(rplot)
+                    })
+                }
+                
+                if(input$radDiagnosticsCentralityType=="DIAGNOSTICS_ANALYSIS_DISTRIBUTION"){
+
+                    X <- data.frame()
+                    Bins <- as.numeric(input$txtDiagnosticsCentralityDistributionBins)
+                    
+                    if(input$chkCentralityAnalysisStructureMultiplex){
+                        v.x <- as.numeric(featureDataFrameList[["Multi"]][this.descriptor][,1])
+                        if(input$centralityAnalysisDistributionLogx){
+                            v.x <- log10(v.x)
+                            if( any(is.infinite(v.x)) ){
+                                v.x[is.infinite(v.x)] <- 0
+                            }
+                        }
+                        x.min <- min(v.x,na.rm=T)
+                        x.max <- max(v.x,na.rm=T)
+                        x.step <- (x.max-x.min)/Bins
+                        freq <- as.data.frame(table(cut(v.x, breaks=seq(x.min,x.max,x.step))))
+                        if(input$centralityAnalysisDistributionLogy){
+                            freq$Freq <- log10(freq$Freq)
+                            if(any(is.infinite(freq$Freq))){
+                                freq[is.infinite(freq$Freq),]$Freq <- 0
+                            }
+                        }
+                        freq$Var1 <- seq(x.min,x.max,x.step)[1:Bins]
+                        freq$Type <- "Multilayer"
+                        X <- rbind(X, freq)
+                    }
+                    if(input$chkCentralityAnalysisStructureAggregate){
+                        v.x <- as.numeric(featureDataFrameList[["Aggr"]][this.descriptor][,1])
+                        if(input$centralityAnalysisDistributionLogx){
+                            v.x <- log10(v.x)
+                            if( any(is.infinite(v.x)) ){
+                                v.x[is.infinite(v.x)] <- 0
+                            }
+                        }
+                        x.min <- min(v.x,na.rm=T)
+                        x.max <- max(v.x,na.rm=T)
+                        x.step <- (x.max-x.min)/Bins
+                        freq <- as.data.frame(table(cut(v.x, breaks=seq(x.min,x.max,x.step))))
+                        if(input$centralityAnalysisDistributionLogy){
+                            freq$Freq <- log10(freq$Freq)
+                            if(any(is.infinite(freq$Freq))){
+                                freq[is.infinite(freq$Freq),]$Freq <- 0
+                            }
+                        }
+                        freq$Var1 <- seq(x.min,x.max,x.step)[1:Bins]
+                        freq$Type <- "Aggregate"
+                        X <- rbind(X, freq)
+                    }                    
+                    if(input$chkCentralityAnalysisStructureLayer){
+                        for(l in layersToInclude){
+                            v.x <- as.numeric(featureDataFrameList[[ paste0("L",l) ]][this.descriptor][,1])
+                            if(input$centralityAnalysisDistributionLogx){
+                                v.x <- log10(v.x)
+                                if( any(is.infinite(v.x)) ){
+                                    v.x[is.infinite(v.x)] <- 0
+                                }
+                            }
+                            x.min <- min(v.x,na.rm=T)
+                            x.max <- max(v.x,na.rm=T)
+                            x.step <- (x.max-x.min)/Bins
+                            freq <- as.data.frame(table(cut(v.x, breaks=seq(x.min,x.max,x.step))))
+                            if(input$centralityAnalysisDistributionLogy){
+                                freq$Freq <- log10(freq$Freq)
+                                if(any(is.infinite(freq$Freq))){
+                                    freq[is.infinite(freq$Freq),]$Freq <- 0
+                                }
+                            }
+                            freq$Var1 <- seq(x.min,x.max,x.step)[1:Bins]
+                            freq$Type <- layerLabel[[l]]
+                            X <- rbind(X, freq)    
+                        }
+                    }                    
+                    
+                    #print(X)
+            
+                    output$centralityAnalysisPlot <- renderChart2({
+                        rplot <- nPlot(Freq ~ Var1, 
+                                 group = "Type",
+                                 data = X, type = "multiBarChart")
+
+                        if(input$centralityAnalysisDistributionLogy){
+                            rplot$yAxis(axisLabel="log10 Counts")
+                        }else{
+                            rplot$yAxis(axisLabel="Counts")
+                        }
+                        if(input$centralityAnalysisDistributionLogx){
+                            rplot$xAxis(axisLabel=paste0("log10 ", this.descriptor))
+                        }else{
+                            rplot$xAxis(axisLabel=this.descriptor)
+                        }
+
+                        return(rplot)
+                    })
+
+                }
+                
+                if(input$radDiagnosticsCentralityType=="DIAGNOSTICS_ANALYSIS_SCATTER"){
+                    this.descriptor.x <- this.descriptor
+                    this.descriptor.y <- input$selDiagnosticsCentralityVizScatterID                    
+                    this.descriptor.color <- input$selDiagnosticsCentralityVizScatterColorID
+                    this.descriptor.size <- input$selDiagnosticsCentralityVizScatterSizeID
+                    X <- data.frame()
+                    if(input$chkCentralityAnalysisStructureMultiplex){
+                        v.x <- as.numeric(featureDataFrameList[["Multi"]][this.descriptor.x][,1])
+                        v.y <- as.numeric(featureDataFrameList[["Multi"]][this.descriptor.y][,1])
+
+                        if(input$centralityAnalysisScatterLogx){
+                            v.x <- log10(v.x)
+                            if( any(is.infinite(v.x)) ){
+                                v.x[is.infinite(v.x)] <- 0
+                            }
+                        }
+                        if(input$centralityAnalysisScatterLogy){
+                            v.y <- log10(v.y)
+                            if( any(is.infinite(v.y)) ){
+                                v.y[is.infinite(v.y)] <- 0
+                            }
+                        }
+
+                        v.radius <- 1
+                        if(input$selDiagnosticsCentralityVizScatterSizeID!="Uniform"){
+                            this.descriptor.radius <- input$selDiagnosticsCentralityVizScatterSizeID
+                            v.radius <- as.numeric(featureDataFrameList[["Multi"]][this.descriptor.radius][,1])
+    
+                            if(input$centralityAnalysisScatterLogRadius){
+                                v.radius <- log10(v.radius)
+                                if( any(is.infinite(v.radius)) ){
+                                    v.radius[is.infinite(v.radius)] <- 0
+                                }
+                            }
+                        }
+                        
+                        X <- rbind(X, data.frame(Node=nodesLabel[[1]], Var1=v.x, Var2=v.y, Radius=v.radius, Type="Multilayer"))
+                    }
+                    if(input$chkCentralityAnalysisStructureAggregate){
+                        v.x <- as.numeric(featureDataFrameList[["Aggr"]][this.descriptor.x][,1])
+                        v.y <- as.numeric(featureDataFrameList[["Aggr"]][this.descriptor.y][,1])
+
+                        if(input$centralityAnalysisScatterLogx){
+                            v.x <- log10(v.x)
+                            if( any(is.infinite(v.x)) ){
+                                v.x[is.infinite(v.x)] <- 0
+                            }
+                        }
+                        if(input$centralityAnalysisScatterLogy){
+                            v.y <- log10(v.y)
+                            if( any(is.infinite(v.y)) ){
+                                v.y[is.infinite(v.y)] <- 0
+                            }
+                        }
+
+                        v.radius <- 1
+                        if(input$selDiagnosticsCentralityVizScatterSizeID!="Uniform"){
+                            this.descriptor.radius <- input$selDiagnosticsCentralityVizScatterSizeID
+                            v.radius <- as.numeric(featureDataFrameList[["Aggr"]][this.descriptor.radius][,1])
+    
+                            if(input$centralityAnalysisScatterLogRadius){
+                                v.radius <- log10(v.radius)
+                                if( any(is.infinite(v.radius)) ){
+                                    v.radius[is.infinite(v.radius)] <- 0
+                                }
+                            }
+                        }
+                        
+                        X <- rbind(X, data.frame(Node=nodesLabel[[1]], Var1=v.x, Var2=v.y, Radius=v.radius, Type="Aggregate"))
+                    }
+                    if(input$chkCentralityAnalysisStructureLayer){
+                        for(l in layersToInclude){
+                            v.x <- as.numeric(featureDataFrameList[[ paste0("L",l) ]][this.descriptor.x][,1])
+                            v.y <- as.numeric(featureDataFrameList[[ paste0("L",l) ]][this.descriptor.y][,1])
+
+                            if(input$centralityAnalysisScatterLogx){
+                                v.x <- log10(v.x)
+                                if( any(is.infinite(v.x)) ){
+                                    v.x[is.infinite(v.x)] <- 0
+                                }
+                            }
+                            if(input$centralityAnalysisScatterLogy){
+                                v.y <- log10(v.y)
+                                if( any(is.infinite(v.y)) ){
+                                    v.y[is.infinite(v.y)] <- 0
+                                }
+                            }
+
+                            v.radius <- 1
+                            if(input$selDiagnosticsCentralityVizScatterSizeID!="Uniform"){
+                                this.descriptor.radius <- input$selDiagnosticsCentralityVizScatterSizeID
+                                v.radius <- as.numeric(featureDataFrameList[[ paste0("L",l) ]][this.descriptor.radius][,1])
+        
+                                if(input$centralityAnalysisScatterLogRadius){
+                                    v.radius <- log10(v.radius)
+                                    if( any(is.infinite(v.radius)) ){
+                                        v.radius[is.infinite(v.radius)] <- 0
+                                    }
+                                }
+                            }
+                            
+                            X <- rbind(X, data.frame(Node=nodesLabel[[1]], Var1=v.x, Var2=v.y, Radius=v.radius, Type=layerLabel[[l]]))
+                        }
+                    }
+
+        
+                    output$centralityAnalysisPlot <- renderChart2({
+                        rplot <- nPlot(Var2 ~ Var1, 
+                                 group = "Type", opacity=list(const=as.numeric(input$txtDiagnosticsCentralityVizScatterColorTransparency)), 
+                                 data = X, type = "scatterChart")
+
+                        if(input$centralityAnalysisScatterLogy){
+                            rplot$xyAxis(axisLabel=paste0("log10 ", this.descriptor.y))
+                        }else{
+                            rplot$yAxis(axisLabel=this.descriptor.y)
+                        }
+                        if(input$centralityAnalysisScatterLogx){
+                            rplot$xAxis(axisLabel=paste0("log10 ", this.descriptor.x))
+                        }else{
+                            rplot$xAxis(axisLabel=this.descriptor.x)
+                        }
+
+                        rplot$chart(size = '#! function(d){return d.Radius} !#')
+                        rplot$chart(tooltipContent = "#! function(key, x, y, e){ return  '<h3>' + e.point.Node + '</h3> ' + '<br><b>Type:</b> ' + key } !#")
+                        rplot$chart(forceY=c(0.9*floor(min(X$Var2)),1.1*floor(max(X$Var2))), 
+                                          forceX=c(0.9*floor(min(X$Var1)),1.1*floor(max(X$Var1))))
+                                          
+                        return(rplot)
+                    })
+
+                }
+                                
+                btnCentralityDiagnosticsAnalysisValue <<- input$btnCentralityDiagnosticsAnalysis
+    
+                progress$set(message = 'Diagnostics analysis Completed!', value = 1)
+                Sys.sleep(2)
+            })  
+        })
+
+                
       	################################################
       	# Reducibility
       	################################################
@@ -2245,6 +3147,9 @@ shinyServer(function(input, output, session) {
                     print("Layouting: external files.")
                     for(l in 1:LAYERS){
                         progress$set(message = paste('Layout for layer',l,"..."), value = 0.05 + 0.85* l / (LAYERS+1))
+                        #print(paste("DEBUG Layer",l))
+                        #print(Nodes)
+                                                
                         layouts[[l]] <<- matrix(c(1),nrow=Nodes,ncol=2)
                         layouts[[l]] <<- layerLayout[[l]]
                     }
@@ -2362,61 +3267,160 @@ shinyServer(function(input, output, session) {
 
                 print(paste("LIMITS:", XMIN, XMAX, YMIN, YMAX))
                             
-                #rescale the layout to allow superposition with shift along z-axis
                 progress$set(message = 'Normalizing coordinates...', value = 0.95)
     
                 print("  Normalizing coordinates...")    
     
-                for(l in 1:(LAYERS+1)){
-                    #not quite sure about this piece of code, waiting for empirical problems
-                    #deltaX <- min(layouts[[l]][,1],na.rm=T) - XMIN
-                    #if(XMIN > min(layouts[[l]][,1],na.rm=T)){
-                    #    deltaX <- -deltaX
-                    #}
-                    #deltaY <- min(layouts[[l]][,2],na.rm=T) - YMIN
-                    #if(YMIN > min(layouts[[l]][,2],na.rm=T)){
-                    #    deltaY <- -deltaY
-                    #}
-                    deltaX <- 0
-                    deltaY <- 0
-                    layouts[[l]][,1] <<- as.numeric(input$txtLAYER_SCALE)*(layouts[[l]][,1] - XMIN + deltaX)/(XMAX-XMIN) - 1 + (l-1)*as.numeric(input$txtLAYER_SHIFT)
-                    layouts[[l]][,2] <<- as.numeric(input$txtLAYER_SCALE)*(layouts[[l]][,2] - YMIN + deltaY)/(YMAX-YMIN) - 1
-    
-                    if(LAYERS>1){
-                        if(input$chkPLOT_AS_EDGE_COLORED){
-                            if(input$chkAGGREGATE_SHOW){
-                                layouts[[l]][,1] <<- ((layouts[[LAYERS+1]][,1]- XMIN)/(XMAX-XMIN))*runif(1,1.005,1.01)
-                                layouts[[l]][,2] <<- ((layouts[[LAYERS+1]][,2] - YMIN)/(YMAX-YMIN))*runif(1,1.005,1.01)
+                if(input$radNetworkOfLayersLayoutType=="NETWORK_LAYERS_LAYOUT_ONELINE"){
+                    #rescale the layout to allow superposition with shift along z-axis
+                    for(l in 1:(LAYERS+1)){
+                        #not quite sure about this piece of code, waiting for empirical problems
+                        #deltaX <- min(layouts[[l]][,1],na.rm=T) - XMIN
+                        #if(XMIN > min(layouts[[l]][,1],na.rm=T)){
+                        #    deltaX <- -deltaX
+                        #}
+                        #deltaY <- min(layouts[[l]][,2],na.rm=T) - YMIN
+                        #if(YMIN > min(layouts[[l]][,2],na.rm=T)){
+                        #    deltaY <- -deltaY
+                        #}
+                        deltaX <- 0
+                        deltaY <- 0
+                        layouts[[l]][,1] <<- as.numeric(input$txtLAYER_SCALE)*(layouts[[l]][,1] - XMIN + deltaX)/(XMAX-XMIN) - 1 + (l-1)*as.numeric(input$txtLAYER_SHIFT)
+                        layouts[[l]][,2] <<- as.numeric(input$txtLAYER_SCALE)*(layouts[[l]][,2] - YMIN + deltaY)/(YMAX-YMIN) - 1
+        
+                        if(LAYERS>1){
+                            if(input$chkPLOT_AS_EDGE_COLORED){
+                                if(input$chkAGGREGATE_SHOW){
+                                    layouts[[l]][,1] <<- ((layouts[[LAYERS+1]][,1]- XMIN)/(XMAX-XMIN))*runif(1,1.005,1.01)
+                                    layouts[[l]][,2] <<- ((layouts[[LAYERS+1]][,2] - YMIN)/(YMAX-YMIN))*runif(1,1.005,1.01)
+                                }else{
+                                    layouts[[l]][,1] <<- ((layouts[[LAYERS+1]][,1]- XMIN)/(XMAX-XMIN))*runif(1,1.005,1.01)
+                                    layouts[[l]][,2] <<- ((layouts[[LAYERS+1]][,2] - YMIN)/(YMAX-YMIN))*runif(1,1.005,1.01)
+                                    #todo tofix this part to allow 2D plots showing the aggregate
+                                }                        
+        
+                                if(LAYOUT_DIMENSION==3){
+                                    layouts[[l]][,3] <<- ((layouts[[LAYERS+1]][,3] - ZMIN)/(ZMAX-ZMIN))*runif(1,1.005,1.01)
+                                }else{
+                                    layouts[[l]][,3] <<- 0
+                                }
+                                
                             }else{
-                                layouts[[l]][,1] <<- ((layouts[[LAYERS+1]][,1]- XMIN)/(XMAX-XMIN))*runif(1,1.005,1.01)
-                                layouts[[l]][,2] <<- ((layouts[[LAYERS+1]][,2] - YMIN)/(YMAX-YMIN))*runif(1,1.005,1.01)
-                                #todo tofix this part to allow 2D plots showing the aggregate
-                            }                        
-    
-                            if(LAYOUT_DIMENSION==3){
-                                layouts[[l]][,3] <<- ((layouts[[LAYERS+1]][,3] - ZMIN)/(ZMAX-ZMIN))*runif(1,1.005,1.01)
-                            }else{
-                                layouts[[l]][,3] <<- 0
+                                if(input$chkAGGREGATE_SHOW){
+                                    layouts[[l]][,3] <<- -1 + as.numeric(input$txtLAYER_SCALE)*as.numeric(input$txtLAYER_SPACE)*l/(LAYERS+1)
+                                }else{
+                                    layouts[[l]][,3] <<- -1 + as.numeric(input$txtLAYER_SCALE)*as.numeric(input$txtLAYER_SPACE)*l/LAYERS
+                                }
                             }
-                            
-                            print(layouts[[l]])
                         }else{
-                            if(input$chkAGGREGATE_SHOW){
-                                layouts[[l]][,3] <<- -1 + as.numeric(input$txtLAYER_SCALE)*as.numeric(input$txtLAYER_SPACE)*l/(LAYERS+1)
+                            #We allow this only if the layer is one
+                            if(LAYOUT_DIMENSION==3 && !GEOGRAPHIC_LAYOUT){
+                                layouts[[l]][,3] <<- as.numeric(input$txtLAYER_SCALE)*as.numeric(input$txtLAYER_SPACE)*(layouts[[l]][,3] - ZMIN)/(ZMAX-ZMIN) - 1 
                             }else{
-                                layouts[[l]][,3] <<- -1 + as.numeric(input$txtLAYER_SCALE)*as.numeric(input$txtLAYER_SPACE)*l/LAYERS
+                                layouts[[l]][,3] <<- 1
                             }
-                        }
-                    }else{
-                        #We allow this only if the layer is one
-                        if(LAYOUT_DIMENSION==3 && !GEOGRAPHIC_LAYOUT){
-                            layouts[[l]][,3] <<- as.numeric(input$txtLAYER_SCALE)*as.numeric(input$txtLAYER_SPACE)*(layouts[[l]][,3] - ZMIN)/(ZMAX-ZMIN) - 1 
-                        }else{
-                            layouts[[l]][,3] <<- 1
                         }
                     }
-                }
-    
+                }else{
+                    #new network of layers layouts
+                    if(input$radNetworkOfLayersLayoutType=="NETWORK_LAYERS_LAYOUT_MULTILINE"){
+                        if(LAYERS>1){
+                            rows <- as.numeric(input$txtNetworkLayersMultilineRows)
+                            cols <- as.numeric(input$txtNetworkLayersMultilineCols)
+                            
+                            #estimate the number of levels in the third dimension
+                            multilevels <- floor(LAYERS/(rows*cols)) + 1
+                            if( LAYERS %% (rows*cols)==0 ){
+                                #if the ratio is exact, we don't need one more level in the worst case
+                                multilevels <- multilevels-1
+                            }
+
+                            scal <- as.numeric(input$txtLAYER_SCALE)
+                            rescx <- scal/(XMAX-XMIN)
+                            rescy <- scal/(YMAX-YMIN)
+                            #shift <- as.numeric(input$txtLAYER_SHIFT) #useless for this layout
+                            space <- as.numeric(input$txtLAYER_SPACE)
+
+                            shiftx <- (cols*scal + cols*space)/2
+                            shifty <- (rows*scal + rows*space)/2
+
+                            rowcnt <- 1
+                            colcnt <- 1
+                            levelcnt <- 1
+                            for(l in 1:LAYERS){
+                                layouts[[l]][,1] <<- rescx*(layouts[[l]][,1] - XMIN) - shiftx + (colcnt-1)*scal + (colcnt-1)*space - 1
+                                layouts[[l]][,2] <<- rescy*(layouts[[l]][,2] - YMIN) + shifty - (rowcnt-1)*scal - (rowcnt-1)*space - 1
+                                
+                                #change z accordinly
+                                layouts[[l]][,3] <<- 1 - scal*2*space*(levelcnt-1)/LAYERS
+                                
+                                colcnt <- colcnt + 1
+                                if(colcnt==(cols+1)){
+                                    rowcnt <- rowcnt + 1
+                                    
+                                    if(rowcnt==(rows+1)){
+                                        levelcnt <- levelcnt + 1
+                                        rowcnt <- 1
+                                    }
+                                    
+                                    colcnt <- 1
+                                }
+                            }
+                            
+                            
+                        }else{
+                            progress$set(message = 'This layout require more than one layer!', value = 0.9)
+                        }
+                    }
+                    if(input$radNetworkOfLayersLayoutType=="NETWORK_LAYERS_LAYOUT_FORCEDIRECTED"){
+                        #todo
+                        if(LAYERS>1){
+                            
+                        }else{
+                            progress$set(message = 'This layout require more than one layer!', value = 0.9)
+                        }
+                    }
+                    if(input$radNetworkOfLayersLayoutType=="NETWORK_LAYERS_LAYOUT_MATRIX"){
+
+                        if(LAYERS>1){                            
+                            rows <- as.numeric(input$txtNetworkLayersMatrixRows)
+                            cols <- as.numeric(input$txtNetworkLayersMatrixCols)
+
+                            if(rows*cols<LAYERS){
+                                progress$set(message = 'ERROR! Rows x Columns < # Layers ...', value = 0.9)
+                            }else{
+                                scal <- as.numeric(input$txtLAYER_SCALE)
+                                rescx <- scal/(XMAX-XMIN)
+                                rescy <- scal/(YMAX-YMIN)
+                                #shift <- as.numeric(input$txtLAYER_SHIFT) #useless for this layout
+                                space <- as.numeric(input$txtLAYER_SPACE)
+
+                                shiftx <- (cols*scal + cols*space)/2
+                                shifty <- (rows*scal + rows*space)/2
+
+                                rowcnt <- 1
+                                colcnt <- 1
+                                for(l in 1:LAYERS){
+                                    layouts[[l]][,1] <<- rescx*(layouts[[l]][,1] - XMIN) - shiftx + (colcnt-1)*scal + (colcnt-1)*space - 1
+                                    layouts[[l]][,2] <<- rescy*(layouts[[l]][,2] - YMIN) + shifty - (rowcnt-1)*scal - (rowcnt-1)*space - 1
+                                    
+                                    #keep the same z
+                                    #layouts[[l]][,3] <<- -1 + scal*space*l/LAYERS
+                                    layouts[[l]][,3] <<- 0
+                                    
+                                    colcnt <- colcnt + 1
+                                    if(colcnt==(cols+1)){
+                                        colcnt = 1
+                                        rowcnt <- rowcnt + 1
+                                    }
+                                }
+                            }
+                        }else{
+                            progress$set(message = 'This layout require more than one layer!', value = 0.9)
+                        }                        
+                    }
+                }            
+
                 progress$set(message = 'Layout Completed!', value = 1)
                 Sys.sleep(2)
                 print("Layouting finished. Proceeding with openGL plot of each layer.")
@@ -2451,13 +3455,46 @@ shinyServer(function(input, output, session) {
                 #print(rgl.ids())
                 #if ( length(rgl.ids) )
                 #rgl.pop(type="lights")
-                
-                
+
+                #layer color
+                layer.color <- strsplit(input$txtLAYER_COLOR,",")[[1]]
+                if(length(layer.color)==LAYERS){
+                    for(l in 1:LAYERS){
+                        layerColor[[l]] <<- layer.color[l]
+                    }
+                }else{
+                    for(l in 1:LAYERS){
+                        layerColor[[l]] <<- input$txtLAYER_COLOR
+                    }                    
+                }
+
+                #layer alpha
+                layer.alpha <- strsplit(input$txtLAYER_TRANSP,",")[[1]]
+                if(length(layer.alpha)==LAYERS){
+                    for(l in 1:LAYERS){
+                        layerColorAlpha[[l]] <<- as.numeric(layer.alpha[l])
+                    }
+                }else{
+                    for(l in 1:LAYERS){
+                        layerColorAlpha[[l]] <<- as.numeric(input$txtLAYER_TRANSP)
+                    }                    
+                }                
+
+                #create the vector for inactive layers 
+                vecInactiveLayers <- as.numeric(strsplit(input$txtLAYERS_ACTIVE, ",")[[1]])
+
                 for(l in 1:(LAYERS+1)){
+                    if( l %in% vecInactiveLayers ){
+                        #skip layers set to be inactive
+                        next
+                    }
                     progress$set(message = paste('Layer',l,'...'), value = 0.05 + 0.85*l/(LAYERS+1))
     
                     if(l==(LAYERS+1)){
-                        if((!input$chkAGGREGATE_SHOW || LAYERS==1) || (input$chkPLOT_AS_EDGE_COLORED && LAYOUT_DIMENSION==3)){
+                        if( (!input$chkAGGREGATE_SHOW || LAYERS==1) || 
+                            (input$chkPLOT_AS_EDGE_COLORED && LAYOUT_DIMENSION==3) ||
+                            (input$radNetworkOfLayersLayoutType!="NETWORK_LAYERS_LAYOUT_ONELINE")
+                            ){
                             #if we don't want to show the aggregate, we must skip the rest
                             #we must skip also if the layers is just 1
                             next
@@ -2475,27 +3512,6 @@ shinyServer(function(input, output, session) {
                     E(g[[l]])$alpha <- floor(as.numeric(input$txtEDGE_TRANSP)*255)
                     V(g[[l]])$alpha <- floor(as.numeric(input$txtNODE_TRANSP)*255)
                 
-                    #colorset for the multiplex                
-                    if( input$selMultiplexColorPalette=="random" ){
-                        Rcolor <- sample(0:255, 1, replace=T)
-                        Gcolor <- sample(0:255, 1, replace=T)
-                        Bcolor <- sample(0:255, 1, replace=T)
-
-                        #assign the color to the layer
-                        E(g[[l]])$red <- Rcolor
-                        E(g[[l]])$green <- Gcolor
-                        E(g[[l]])$blue <- Bcolor
-                        V(g[[l]])$red <- Rcolor
-                        V(g[[l]])$green <- Gcolor
-                        V(g[[l]])$blue <- Bcolor
-                    
-                        E(g[[l]])$color<-rgb(E(g[[l]])$red, E(g[[l]])$green, E(g[[l]])$blue, E(g[[l]])$alpha, maxColorValue=255)
-                        V(g[[l]])$color <- rgb(V(g[[l]])$red, V(g[[l]])$green, V(g[[l]])$blue, V(g[[l]])$alpha, maxColorValue=255)
-                    }else{
-                        colorPalette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selMultiplexColorPalette],input$selMultiplexColorPalette))(LAYERS+1)
-                        E(g[[l]])$color <- colorPalette[l]
-                        V(g[[l]])$color <- colorPalette[l]
-                    }
 
                     print("Other graphic options...")
                     
@@ -2511,20 +3527,19 @@ shinyServer(function(input, output, session) {
                     arrayDiagnostics <- 1
     
                     if(diagnosticsOK){
-                        if(input$radNodeSizeType=="NODE_SIZE_PROPORTIONAL_TO_UNIFORM"){
-                            arrayDiagnostics <- rep(1,Nodes)
-                        }else if(input$radNodeSizeType=="NODE_SIZE_PROPORTIONAL_TO_STRENGTH"){
-                            arrayDiagnostics <- listDiagnostics[[l]]$Strength
-                        }else if(input$radNodeSizeType=="NODE_SIZE_PROPORTIONAL_TO_PAGERANK"){
-                            arrayDiagnostics <- listDiagnostics[[l]]$PageRank
-                        }else if(input$radNodeSizeType=="NODE_SIZE_PROPORTIONAL_TO_EIGENVECTOR"){
-                            arrayDiagnostics <- listDiagnostics[[l]]$Eigenvector
-                        }else if(input$radNodeSizeType=="NODE_SIZE_PROPORTIONAL_TO_HUB"){
-                            arrayDiagnostics <- listDiagnostics[[l]]$Hub
-                        }else if(input$radNodeSizeType=="NODE_SIZE_PROPORTIONAL_TO_AUTHORITY"){
-                            arrayDiagnostics <- listDiagnostics[[l]]$Authority
-                        }else if(input$radNodeSizeType=="NODE_SIZE_PROPORTIONAL_TO_KATZ"){
-                            arrayDiagnostics <- listDiagnostics[[l]]$Katz
+                        if(input$btnCalculateCentralityDiagnostics>0){
+                            #the GUI is visualizing the list of possibilities
+                            attrib <- input$selVizNodeSizeID
+                            if(attrib=="Uniform"){
+                                arrayDiagnostics <- rep(1,Nodes)
+                            }else{
+                                arrayDiagnostics <- as.numeric(listDiagnostics[[l]][attrib][,1])
+                            }
+                        }else{
+                            #the GUI shows only the UNIFORM option
+                            if(input$radNodeSizeType=="NODE_SIZE_PROPORTIONAL_TO_UNIFORM"){
+                                arrayDiagnostics <- rep(1,Nodes)
+                            }
                         }
                     }
                                     
@@ -2552,7 +3567,7 @@ shinyServer(function(input, output, session) {
                         }
                     }
     
-                    #random color coding of the node is the default, therefore we check only for other options
+                    #Node coloring
                     if(input$radNodeColor=="NODE_COLOR_COMMUNITY"){
                         if(communityOK){
                             if(input$btnCalculateCommunityDiagnostics>0){
@@ -2569,9 +3584,53 @@ shinyServer(function(input, output, session) {
                             }
                         }
                     }else if(input$radNodeColor=="NODE_COLOR_COMPONENT"){
-                        #todo color by component
                         if(input$chkPERFORM_COMPONENT_DETECTION && input$btnCalculateComponentDiagnostics>0){
+                            #todo
+                        }
+                    }else if(input$radNodeColor=="NODE_COLOR_RANDOM"){
+                        #colorset for the multiplex                
+                        if( input$selMultiplexColorPalette=="random" ){
+                            Rcolor <- sample(0:255, 1, replace=T)
+                            Gcolor <- sample(0:255, 1, replace=T)
+                            Bcolor <- sample(0:255, 1, replace=T)
+    
+                            #assign the color to the layer
+                            E(g[[l]])$red <- Rcolor
+                            E(g[[l]])$green <- Gcolor
+                            E(g[[l]])$blue <- Bcolor
+                            V(g[[l]])$red <- Rcolor
+                            V(g[[l]])$green <- Gcolor
+                            V(g[[l]])$blue <- Bcolor
+                        
+                            E(g[[l]])$color<-rgb(E(g[[l]])$red, E(g[[l]])$green, E(g[[l]])$blue, E(g[[l]])$alpha, maxColorValue=255)
+                            V(g[[l]])$color <- rgb(V(g[[l]])$red, V(g[[l]])$green, V(g[[l]])$blue, V(g[[l]])$alpha, maxColorValue=255)
+                        }else{
+                            colorPalette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selMultiplexColorPalette],input$selMultiplexColorPalette))(LAYERS+1)
+                            E(g[[l]])$color <- colorPalette[l]
+                            V(g[[l]])$color <- colorPalette[l]
+                        }
+                    }else if(input$radNodeColor=="NODE_COLOR_UNIFORM"){
+                        E(g[[l]])$color <- input$txtNODE_COLOR_UNIFORM_COLOR
+                        V(g[[l]])$color <- input$txtNODE_COLOR_UNIFORM_COLOR
+                    }else if(input$radNodeColor=="NODE_COLOR_CENTRALITY"){
+                        if(diagnosticsOK){
+                            bins <- as.numeric(input$txtNODE_COLOR_CENTRALITY_BINS)
+                            colorPalette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selCentralityColorPalette],input$selCentralityColorPalette))(bins)
+
+                            attrib <- input$selVizNodeColorID
+                            values <- as.numeric(listDiagnostics[[l]][attrib][,1])  
                             
+                            if(input$radNodeColorType2=="NODE_COLOR_PROPORTIONAL_TYPE_LOG"){
+                                values <- 1+2*log(1+values)
+                            }else if(input$radNodeColorType2=="NODE_COLOR_PROPORTIONAL_TYPE_LOGLOG"){
+                                values <- log(1+log(1+values))
+                            }
+
+                            values <- 1 + (bins-1)*(values - min(values, na.rm=T))/(max(values, na.rm=T) - min(values, na.rm=T))
+                            values <- floor(values)
+                            
+                            E(g[[l]])$color <- "#F2F2F2"
+                            V(g[[l]])$color <- colorPalette[ values ]
                         }
                     }else if(input$radNodeColor=="NODE_COLOR_TOPRANK"){
                         if(diagnosticsOK){
@@ -2612,7 +3671,7 @@ shinyServer(function(input, output, session) {
 
                     #plot the graph with openGL    
                     #print(layouts[[l]])
-                    rglplot.igraph(g[[l]], layout=layouts[[l]],
+                    rglplot(g[[l]], layout=layouts[[l]],
                                         vertex.size=V(g[[l]])$size, 
                                         vertex.color=V(g[[l]])$color,
                                         vertex.label=V(g[[l]])$label,
@@ -2626,10 +3685,50 @@ shinyServer(function(input, output, session) {
                                         edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
                                         edge.curved=E(g[[l]])$curve,
                                         rescale=F)
-         
+
                     print(paste("  Layout of layer: finished."))
                 }
                 
+                if(input$chkINTERLINK_SHOW && LAYERS>1){
+                    if(input$radMultiplexModel!="MULTIPLEX_IS_EDGECOLORED"){
+                        print("Adding interlayer links.")
+
+                        #set to 0 the width of intra-layer links
+                        E(g.multi)$width <- as.numeric(input$txtINTERLINK_WIDTH)*E(g.multi)$weight
+                        E(g.multi)[which(multilayerEdges[,2]==multilayerEdges[,4])]$width <- 0
+                        
+                        #the same for interlinks from and to inactive layers 
+                        for(l in vecInactiveLayers){
+                            E(g.multi)[which(multilayerEdges[,2]==l | multilayerEdges[,4]==l)]$width <- 0
+                        }
+                        
+                        #setup the layout for g.multi by merging the layout of each layer, in order
+                        layout.multi <<- matrix(0, ncol=3, nrow=Nodes*LAYERS)
+                        
+                        for(l in 1:LAYERS){
+                            layout.multi[ (1 + (l-1)*Nodes):(l*Nodes), 1] <<- layouts[[l]][, 1]
+                            layout.multi[ (1 + (l-1)*Nodes):(l*Nodes), 2] <<- layouts[[l]][, 2]
+                            layout.multi[ (1 + (l-1)*Nodes):(l*Nodes), 3] <<- layouts[[l]][, 3]
+                        }
+    
+                        #Print the interlinks by superimposing the g.multi
+                        rglplot(g.multi, layout=layout.multi,
+                                            vertex.size=0, 
+                                            vertex.label="",
+                                            edge.width=E(g.multi)$width, 
+                                            edge.color=input$txtINTERLINK_COLOR, 
+                                            edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
+                                            edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
+                                            edge.curved=as.numeric(input$txtEDGE_BENDING),
+                                            edge.lty = input$txtINTERLINK_TYPE,
+                                            rescale=F)
+                        #edge/node transparancy not yet supported by rglplot
+                        #alpha=as.numeric(input$txtINTERLINK_TRANSP))
+                    }                
+                }                
+
+                                    
+
                 #Call the visualization of other graphics
                 FinalizeRenderingMultiplex(progress)
                 
@@ -2700,90 +3799,321 @@ shinyServer(function(input, output, session) {
                         
             progress$set(message = 'Finalizing rendering...', value = 0.95)
 
+            #inactive layers
+            vecInactiveLayers <- as.numeric(strsplit(input$txtLAYERS_ACTIVE,",")[[1]])
+    
             if(input$chkLAYER_SHOW && !input$chkPLOT_AS_EDGE_COLORED){
-                for(l in 1:(LAYERS+1)){
-                    if(LAYERS>1){
-                        #This draws a plan to be used as layer
-                        if(input$chkAGGREGATE_SHOW){
-                            d <- -1 + as.numeric(input$txtLAYER_SCALE)*as.numeric(input$txtLAYER_SPACE)*l/(LAYERS+1)
-                        }else{
-                            d <- -1 + as.numeric(input$txtLAYER_SCALE)*as.numeric(input$txtLAYER_SPACE)*l/LAYERS
+                if(input$radNetworkOfLayersLayoutType=="NETWORK_LAYERS_LAYOUT_ONELINE"){
+                    #the standard one-line visualization made my muxViz, no changes wrt previous versions
+                    for(l in 1:(LAYERS+1)){
+                        if(l %in% vecInactiveLayers){
+                            #skip inactive layers
+                            next
                         }
-                    }else{
-                        #to allow drawing single-layer networks
-                        d <- 1
-                    }
-            
-                    x <- c(-1,-1,-1+as.numeric(input$txtLAYER_SCALE),-1+as.numeric(input$txtLAYER_SCALE)) + (l-1)*as.numeric(input$txtLAYER_SHIFT)
-                    y <- c(-1+as.numeric(input$txtLAYER_SCALE),-1,-1,-1+as.numeric(input$txtLAYER_SCALE))
-                    z <- c(d,d,d,d)
-                    
-                    if(LAYOUT_DIMENSION==2){
-                        if(l<LAYERS+1){
-                            #planes3d(0,0,1, -d , alpha=LAYER_TRANSP, col=LAYER_COLOR)
-                            if(GEOGRAPHIC_LAYOUT && input$chkGEOGRAPHIC_BOUNDARIES_SHOW){
-                                quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_TRANSP), col=input$txtLAYER_COLOR,texcoords=cbind(c(0,0,1,1), -c(0,1,1,0)), texture=fileNamePNG)
+                        
+                        if(LAYERS>1){
+                            #This draws a plan to be used as layer
+                            if(input$chkAGGREGATE_SHOW){
+                                d <- -1 + as.numeric(input$txtLAYER_SCALE)*as.numeric(input$txtLAYER_SPACE)*l/(LAYERS+1)
                             }else{
-                                quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_TRANSP), col=input$txtLAYER_COLOR)
+                                d <- -1 + as.numeric(input$txtLAYER_SCALE)*as.numeric(input$txtLAYER_SPACE)*l/LAYERS
                             }
                         }else{
-                            if(input$chkAGGREGATE_SHOW && LAYERS>1){
-                                #planes3d(0,0,1, -d , alpha=LAYER_AGGREGATE_TRANSP, col=LAYER_AGGREGATE_COLOR)
-                                if(GEOGRAPHIC_LAYOUT && input$chkGEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW){
-                                    quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_AGGREGATE_TRANSP), col=input$txtLAYER_AGGREGATE_COLOR,texcoords=cbind(c(0,0,1,1), -c(0,1,1,0)), texture=fileNamePNG)
+                            #to allow drawing single-layer networks
+                            d <- 1
+                        }
+                
+                        x <- c(-1,-1,-1+as.numeric(input$txtLAYER_SCALE),-1+as.numeric(input$txtLAYER_SCALE)) + (l-1)*as.numeric(input$txtLAYER_SHIFT)
+                        y <- c(-1+as.numeric(input$txtLAYER_SCALE),-1,-1,-1+as.numeric(input$txtLAYER_SCALE))
+                        z <- c(d,d,d,d)
+
+                        if(LAYOUT_DIMENSION==2){
+                            if(l<LAYERS+1){
+                                #planes3d(0,0,1, -d , alpha=LAYER_TRANSP, col=LAYER_COLOR)
+                                if(GEOGRAPHIC_LAYOUT && input$chkGEOGRAPHIC_BOUNDARIES_SHOW){
+                                    quads3d(x,y,z, alpha=layerColorAlpha[[l]], col=layerColor[[l]],texcoords=cbind(c(0,0,1,1), -c(0,1,1,0)), texture=fileNamePNG)
                                 }else{
-                                    quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_AGGREGATE_TRANSP), col=input$txtLAYER_AGGREGATE_COLOR)                    
+                                    quads3d(x,y,z, alpha=layerColorAlpha[[l]], col=layerColor[[l]])
                                 }
                             }else{
-                                next
+                                if(input$chkAGGREGATE_SHOW && LAYERS>1){
+                                    #planes3d(0,0,1, -d , alpha=LAYER_AGGREGATE_TRANSP, col=LAYER_AGGREGATE_COLOR)
+                                    if(GEOGRAPHIC_LAYOUT && input$chkGEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW){
+                                        quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_AGGREGATE_TRANSP), col=input$txtLAYER_AGGREGATE_COLOR,texcoords=cbind(c(0,0,1,1), -c(0,1,1,0)), texture=fileNamePNG)
+                                    }else{
+                                        quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_AGGREGATE_TRANSP), col=input$txtLAYER_AGGREGATE_COLOR)                    
+                                    }
+                                }else{
+                                    next
+                                }
                             }
-                        }
-                                        
-                        if(input$chkLAYER_ID_SHOW_BOTTOMLEFT){
-                            text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT), -1, d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
-                        }
-                        if(input$chkLAYER_ID_SHOW_TOPLEFT){
-                            text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT), -1 + as.numeric(input$txtLAYER_SCALE), d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
-                        }
-                        if(input$chkLAYER_ID_SHOW_BOTTOMRIGHT){
-                            text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT)+as.numeric(input$txtLAYER_SCALE), -1, d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
-                        }
-                        if(input$chkLAYER_ID_SHOW_TOPRIGHT){
-                            text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT)+as.numeric(input$txtLAYER_SCALE), -1 + as.numeric(input$txtLAYER_SCALE), d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
-                        }
-                    }
-                }
-            
-            }
-            
-            if(!LAYOUT_INDEPENDENT){
-                if(input$chkINTERLINK_SHOW && as.numeric(input$txtINTERLINK_SHOW_FRACTION)>0 && LAYERS>1){
-                    print("Adding interlayer links.")
-                    #to be generalized to allow cross-interlink and absence of interlinks for some nodes
-                    for( l in 1:(LAYERS-1) ){
-                        layerLinesX <- matrix(c(0),nrow=Nodes,ncol=2)
-                        layerLinesY <- matrix(c(0),nrow=Nodes,ncol=2)
-                        layerLinesZ <- matrix(c(0),nrow=Nodes,ncol=2)
-            
-                        layerLinesX <- cbind(layouts[[l]][,1] + (l-1)*as.numeric(input$txtLAYER_SHIFT),layouts[[l+1]][,1] + l*as.numeric(input$txtLAYER_SHIFT))
-                        layerLinesY <- cbind(layouts[[l]][,2],layouts[[l+1]][,2])
-                        layerLinesZ <- cbind(layouts[[l]][,3],layouts[[l+1]][,3])
-            
-                        for(i in 1:Nodes){
-                            if(runif(1)>1-as.numeric(input$txtINTERLINK_SHOW_FRACTION)){ 
-                                segments3d(
-                                    layerLinesX[i,],
-                                    layerLinesY[i,],
-                                    layerLinesZ[i,],
-                                    lwd=as.numeric(input$txtINTERLINK_WIDTH), 
-                                    col=input$txtINTERLINK_COLOR, 
-                                    lty=input$txtINTERLINK_TYPE,
-                                    alpha=as.numeric(input$txtINTERLINK_TRANSP))
+                                            
+                            if(input$chkLAYER_ID_SHOW_BOTTOMLEFT){
+                                text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT), -1, d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                            }
+                            if(input$chkLAYER_ID_SHOW_TOPLEFT){
+                                text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT), -1 + as.numeric(input$txtLAYER_SCALE), d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                            }
+                            if(input$chkLAYER_ID_SHOW_BOTTOMRIGHT){
+                                text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT)+as.numeric(input$txtLAYER_SCALE), -1, d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                            }
+                            if(input$chkLAYER_ID_SHOW_TOPRIGHT){
+                                text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT)+as.numeric(input$txtLAYER_SCALE), -1 + as.numeric(input$txtLAYER_SCALE), d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
                             }
                         }
                     }
+                }else{
+                    #new network of layers layouts
+                    if(input$radNetworkOfLayersLayoutType=="NETWORK_LAYERS_LAYOUT_MULTILINE"){
+                        if(LAYERS>1){                            
+                            rows <- as.numeric(input$txtNetworkLayersMultilineRows)
+                            cols <- as.numeric(input$txtNetworkLayersMultilineCols)
+
+                            #estimate the number of levels in the third dimension
+                            multilevels <- floor(LAYERS/(rows*cols)) + 1
+                            if( LAYERS %% (rows*cols)==0 ){
+                                #if the ratio is exact, we don't need one more level in the worst case
+                                multilevels <- multilevels-1
+                            }
+
+
+                            scal <- as.numeric(input$txtLAYER_SCALE)
+                            rescx <- scal/(XMAX-XMIN)
+                            rescy <- scal/(YMAX-YMIN)
+                            #shift <- as.numeric(input$txtLAYER_SHIFT) #useless for this layout
+                            space <- as.numeric(input$txtLAYER_SPACE)
+
+                            shiftx <- cols*(scal + space)/2
+                            shifty <- rows*(scal + space)/2
+
+                            rowcnt <- 1
+                            colcnt <- 1
+                            levelcnt <- 1
+                            for(l in 1:LAYERS){
+                                d <- 1 - scal*2*space*(levelcnt-1)/LAYERS
+                                #when scal=1 x ranges in [-1,0]   y [-1,0]
+                                #try: rgl.clear();axes3d();quads3d(c(-1,-1,0,0),c(0,-1,-1,0),c(0,0,0,0),col='green')
+                                x <- c(-1,-1,-1+scal,-1+scal) - shiftx + (colcnt-1)*(scal + space)
+                                y <- c(-1+scal,-1,-1,-1+scal) + shifty - (rowcnt-1)*(scal + space)
+                                z <- c(d,d,d,d)
+
+                                if(!l %in% vecInactiveLayers){
+                                    #skip inactive layers
+                                    if(GEOGRAPHIC_LAYOUT && input$chkGEOGRAPHIC_BOUNDARIES_SHOW){
+                                        quads3d(x,y,z, alpha=layerColorAlpha[[l]], col=layerColor[[l]], 
+                                                        texcoords=cbind(c(0,0,1,1), -c(0,1,1,0)), texture=fileNamePNG)
+                                    }else{
+                                        quads3d(x,y,z, alpha=layerColorAlpha[[l]], col=layerColor[[l]])
+                                    }
+                                                                        
+                                    if(input$chkLAYER_ID_SHOW_TOPLEFT){
+                                        text3d(-1- shiftx + (colcnt-1)*(scal + space), 
+                                                    -1 + scal + shifty - (rowcnt-1)*(scal + space), 
+                                                    d, 
+                                                    text=layerLabel[[l]][1], 
+                                                    adj = 0.2, 
+                                                    color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                                    }
+                                    if(input$chkLAYER_ID_SHOW_BOTTOMLEFT){
+                                        text3d(-1- shiftx + (colcnt-1)*(scal + space), 
+                                                    -1 + shifty - (rowcnt-1)*(scal + space), 
+                                                    d, 
+                                                    text=layerLabel[[l]][1], 
+                                                    adj = 0.2, 
+                                                    color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                                    }
+                                    if(input$chkLAYER_ID_SHOW_BOTTOMRIGHT){
+                                        text3d(-1 + scal - shiftx + (colcnt-1)*(scal + space), 
+                                                    -1 + shifty - (rowcnt-1)*(scal + space), 
+                                                    d, 
+                                                    text=layerLabel[[l]][1], 
+                                                    adj = 0.2, 
+                                                    color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                                    }
+                                    if(input$chkLAYER_ID_SHOW_TOPRIGHT){
+                                        text3d(-1 + scal - shiftx + (colcnt-1)*(scal + space), 
+                                                    -1 + scal + shifty - (rowcnt-1)*(scal + space), 
+                                                    d, 
+                                                    text=layerLabel[[l]][1], 
+                                                    adj = 0.2, 
+                                                    color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                                    }
+                                }
+
+                                colcnt <- colcnt + 1
+                                if(colcnt==(cols+1)){
+                                    rowcnt <- rowcnt + 1
+                                    
+                                    if(rowcnt==(rows+1)){
+                                        levelcnt <- levelcnt + 1
+                                        rowcnt <- 1
+                                    }
+                                    
+                                    colcnt <- 1
+                                }
+                            }
+                        }else{
+                            progress$set(message = 'This layout require more than one layer!', value = 0.9)
+                        }                        
+                    }
+                    if(input$radNetworkOfLayersLayoutType=="NETWORK_LAYERS_LAYOUT_FORCEDIRECTED"){
+                        #todo
+                    }
+                    if(input$radNetworkOfLayersLayoutType=="NETWORK_LAYERS_LAYOUT_MATRIX"){
+                        if(LAYERS>1){                            
+                            rows <- as.numeric(input$txtNetworkLayersMatrixRows)
+                            cols <- as.numeric(input$txtNetworkLayersMatrixCols)
+
+                            if(rows*cols<LAYERS){
+                                progress$set(message = 'ERROR! Rows x Columns < # Layers ...', value = 0.9)
+                            }else{
+                                scal <- as.numeric(input$txtLAYER_SCALE)
+                                rescx <- scal/(XMAX-XMIN)
+                                rescy <- scal/(YMAX-YMIN)
+                                #shift <- as.numeric(input$txtLAYER_SHIFT) #useless for this layout
+                                space <- as.numeric(input$txtLAYER_SPACE)
+
+                                shiftx <- cols*(scal + space)/2
+                                shifty <- rows*(scal + space)/2
+
+                                rowcnt <- 1
+                                colcnt <- 1
+                                for(l in 1:LAYERS){
+                                    d <- 0
+                                    #when scal=1 x ranges in [-1,0]   y [-1,0]
+                                    #try: rgl.clear();axes3d();quads3d(c(-1,-1,0,0),c(0,-1,-1,0),c(0,0,0,0),col='green')
+                                    x <- c(-1,-1,-1+scal,-1+scal) - shiftx + (colcnt-1)*(scal + space)
+                                    y <- c(-1+scal,-1,-1,-1+scal) + shifty - (rowcnt-1)*(scal + space)
+                                    z <- c(d,d,d,d)
+
+                                    if(!l %in% vecInactiveLayers){
+                                        #skip inactive layers
+                                        if(GEOGRAPHIC_LAYOUT && input$chkGEOGRAPHIC_BOUNDARIES_SHOW){
+                                            quads3d(x,y,z, alpha=layerColorAlpha[[l]], col=layerColor[[l]], 
+                                                          texcoords=cbind(c(0,0,1,1), -c(0,1,1,0)), texture=fileNamePNG)
+                                        }else{
+                                            quads3d(x,y,z, alpha=layerColorAlpha[[l]], col=layerColor[[l]])
+                                        }
+                                                                            
+                                        if(input$chkLAYER_ID_SHOW_TOPLEFT){
+                                            text3d(-1- shiftx + (colcnt-1)*(scal + space), 
+                                                       -1 + scal + shifty - (rowcnt-1)*(scal + space), 
+                                                       d, 
+                                                       text=layerLabel[[l]][1], 
+                                                       adj = 0.2, 
+                                                       color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                                        }
+                                        if(input$chkLAYER_ID_SHOW_BOTTOMLEFT){
+                                            text3d(-1- shiftx + (colcnt-1)*(scal + space), 
+                                                       -1 + shifty - (rowcnt-1)*(scal + space), 
+                                                       d, 
+                                                       text=layerLabel[[l]][1], 
+                                                       adj = 0.2, 
+                                                       color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                                        }
+                                        if(input$chkLAYER_ID_SHOW_BOTTOMRIGHT){
+                                            text3d(-1 + scal - shiftx + (colcnt-1)*(scal + space), 
+                                                       -1 + shifty - (rowcnt-1)*(scal + space), 
+                                                       d, 
+                                                       text=layerLabel[[l]][1], 
+                                                       adj = 0.2, 
+                                                       color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                                        }
+                                        if(input$chkLAYER_ID_SHOW_TOPRIGHT){
+                                            text3d(-1 + scal - shiftx + (colcnt-1)*(scal + space), 
+                                                       -1 + scal + shifty - (rowcnt-1)*(scal + space), 
+                                                       d, 
+                                                       text=layerLabel[[l]][1], 
+                                                       adj = 0.2, 
+                                                       color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                                        }
+                                    }
+                                    
+                                    colcnt <- colcnt + 1
+                                    if(colcnt==(cols+1)){
+                                        colcnt = 1
+                                        rowcnt <- rowcnt + 1
+                                    }
+
+                                }
+                            }
+                            
+                            flag <- F
+                            while(!flag){
+                                tryCatch({
+                                    print("Popping lights...")
+                                    rgl.pop("lights")},
+                                    error=function(e){
+                                        print("Warning: no more lights to pop")
+                                        },
+                                    finally={flag=T}
+                                    )
+                            }
+                            rgl.light(theta = 30, phi = 20, viewpoint.rel = TRUE, ambient = "#FFFFFF", 
+                                        diffuse = "#FFFFFF", specular = "#FFFFFF")
+                        }else{
+                            progress$set(message = 'This layout require more than one layer!', value = 0.9)
+                        }                        
+
+                    }
+                }            
+            }
+            
+            #add labels as text3d because the vertex.label attribute of rgl.igraph does not work
+            if(input$chkNODE_LABELS_SHOW){
+                for(l in 1:LAYERS){    
+                    if(!l %in% vecInactiveLayers){
+                        this.labels <- nodesLabel[[l]]
+                        if(input$chkNODE_ISOLATED_HIDE){
+                            #this is to account for nodes isolated wrt intra-layer links, but not wrt inter-layer links
+                            if(input$radMultiplexModel=="MULTIPLEX_IS_EDGECOLORED"){
+                                arrayStrength <- graph.strength(g[[l]],mode="total")
+                                this.labels[arrayStrength==0.] <- ""    
+                            }else{
+                                nodesOK <- union(multilayerEdges[ multilayerEdges$V2==l, ]$V1, multilayerEdges[ multilayerEdges$V4==l, ]$V3)                                
+                                this.labels[-nodesOK] <- ""                                    
+                            }
+                        }
+                        this.labels[ is.na(this.labels) ] <- ""
+                        text3d(layouts[[l]],
+                                   text=this.labels,
+                                   adj = as.numeric(input$txtNODE_LABELS_DISTANCE), 
+                                   color=input$txtNODE_LABELS_FONT_COLOR, 
+                                   family="sans", 
+                                   cex=as.numeric(input$txtNODE_LABELS_FONT_SIZE)
+                                   )
+                    }
                 }
             }
+                        
+#            if(!LAYOUT_INDEPENDENT){
+#                if(input$chkINTERLINK_SHOW && as.numeric(input$txtINTERLINK_SHOW_FRACTION)>0 && LAYERS>1){
+#                    print("Adding interlayer links.")
+#                    #to be generalized to allow cross-interlink and absence of interlinks for some nodes
+#                    for( l in 1:(LAYERS-1) ){
+#                        layerLinesX <- matrix(c(0),nrow=Nodes,ncol=2)
+#                        layerLinesY <- matrix(c(0),nrow=Nodes,ncol=2)
+#                        layerLinesZ <- matrix(c(0),nrow=Nodes,ncol=2)
+#            
+#                        layerLinesX <- cbind(layouts[[l]][,1] + (l-1)*as.numeric(input$txtLAYER_SHIFT),layouts[[l+1]][,1] + l*as.numeric(input$txtLAYER_SHIFT))
+#                        layerLinesY <- cbind(layouts[[l]][,2],layouts[[l+1]][,2])
+#                        layerLinesZ <- cbind(layouts[[l]][,3],layouts[[l+1]][,3])
+#            
+#                        for(i in 1:Nodes){
+#                            if(runif(1)>1-as.numeric(input$txtINTERLINK_SHOW_FRACTION)){ 
+#                                segments3d(
+#                                    layerLinesX[i,],
+#                                    layerLinesY[i,],
+#                                    layerLinesZ[i,],
+#                                    lwd=as.numeric(input$txtINTERLINK_WIDTH), 
+#                                    col=input$txtINTERLINK_COLOR, 
+#                                    lty=input$txtINTERLINK_TYPE,
+#                                    alpha=as.numeric(input$txtINTERLINK_TRANSP))
+#                            }
+#                        }
+#                    }
+#                }
+#            }
             
             if(!input$chkPLOT_AS_EDGE_COLORED){
                 if(!input$chkPLOT_REMEMBER_ORIENTATION){
@@ -2820,6 +4150,11 @@ shinyServer(function(input, output, session) {
                 rgl.light(phi=as.numeric(input$txtPLOT_LIGHT_PHI),theta=as.numeric(input$txtPLOT_LIGHT_THETA))
             }
 
+            if(input$chkPLOT_AXES3D){
+                #add a light
+                axes3d()
+            }
+
             print("Finalizing rendering...")    
         }
         
@@ -2840,29 +4175,38 @@ shinyServer(function(input, output, session) {
                 tmplistDiagnostics[[l]] <- data.frame(Layer = rep("Aggr",Nodes))
                 tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Node = 1:Nodes))
                 tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Label = nodesLabel[[l]]))
-    
+
                 if(input$chkNODE_CENTRALITY_STRENGTH){
                     progress2 <- shiny::Progress$new(session)
                     on.exit(progress2$close())
                     progress2$set(message = paste('Current: Strength...'), value = 0.5)
                     
-                    createOctaveConfigFile()
-                    #call octave
-                    system("octave -qf octave/muxMultisliceCentralityDegree.m",intern=T)
-                    #read output.
-                    resultFile <- paste(input$txtProjectName,"_centrality_degree.txt",sep="")
-                    centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                    for(l in 1:LAYERS){
+                    if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
+                        createOctaveConfigFile()
+                        #call octave
+                        system("octave -qf octave/muxMultisliceCentralityDegree.m",intern=T)
+                        #read output.
+                        resultFile <- paste(input$txtProjectName,"_centrality_degree.txt",sep="")
+                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                        for(l in 1:LAYERS){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Strength = centralityVector))
+                        }
+                        if(file.exists(resultFile)) file.remove(resultFile)
+        
+                        resultFile <- paste(input$txtProjectName,"_centrality_degree_aggregate.txt",sep="")
+                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                        l <- LAYERS+1
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Strength = centralityVector))
+                        if(file.exists(resultFile)) file.remove(resultFile)
+                    }else{
+                        #for an interdependent network, it is enough to calculate centrality in the aggregate
+                        #http://igraph.sourceforge.net/doc/R/graph.strength.html
+                        centralityVector <- graph.strength(g[[LAYERS+1]],mode="total")
+                        for(l in 1:(LAYERS+1)){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Strength = centralityVector))
+                        }
                     }
-                    if(file.exists(resultFile)) file.remove(resultFile)
-    
-                    resultFile <- paste(input$txtProjectName,"_centrality_degree_aggregate.txt",sep="")
-                    centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                    l <- LAYERS+1
-                    tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Strength = centralityVector))
-                    if(file.exists(resultFile)) file.remove(resultFile)
-
+                    
                     progress2$set(message = paste('Current: Strength... Done!'), value = 1)
                     Sys.sleep(1)
                     progress2$close()
@@ -2880,22 +4224,32 @@ shinyServer(function(input, output, session) {
                     progress2$set(message = paste('Current: In-Strength...'), value = 0.5)
                     
                     if(DIRECTED){
-                        createOctaveConfigFile()
-                        #call octave
-                        system("octave -qf octave/muxMultisliceCentralityInDegree.m",intern=T)
-                        #read output.
-                        resultFile <- paste(input$txtProjectName,"_centrality_indegree.txt",sep="")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                        for(l in 1:LAYERS){
+                        if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
+                            createOctaveConfigFile()
+                            #call octave
+                            system("octave -qf octave/muxMultisliceCentralityInDegree.m",intern=T)
+                            #read output.
+                            resultFile <- paste(input$txtProjectName,"_centrality_indegree.txt",sep="")
+                            centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                            for(l in 1:LAYERS){
+                                tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthIn = centralityVector))
+                            }
+                            if(file.exists(resultFile)) file.remove(resultFile)
+            
+                            resultFile <- paste(input$txtProjectName,"_centrality_indegree_aggregate.txt",sep="")
+                            centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                            l <- LAYERS+1
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthIn = centralityVector))
+                            if(file.exists(resultFile)) file.remove(resultFile)
+                        }else{
+                            #for an interdependent network, it is enough to calculate centrality in the aggregate
+                            #http://igraph.sourceforge.net/doc/R/graph.strength.html
+                            centralityVector <- graph.strength(g[[LAYERS+1]],mode="in")
+                            for(l in 1:(LAYERS+1)){
+                                tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthIn = centralityVector))
+                            }
+
                         }
-                        if(file.exists(resultFile)) file.remove(resultFile)
-        
-                        resultFile <- paste(input$txtProjectName,"_centrality_indegree_aggregate.txt",sep="")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                        l <- LAYERS+1
-                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthIn = centralityVector))
-                        if(file.exists(resultFile)) file.remove(resultFile)
                     }else{
                         for(l in 1:(LAYERS+1)){
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthIn = tmplistDiagnostics[[l]]$Strength))
@@ -2920,22 +4274,31 @@ shinyServer(function(input, output, session) {
                     progress2$set(message = paste('Current: Out-Strength...'), value = 0.5)
 
                     if(DIRECTED){
-                        createOctaveConfigFile()
-                        #call octave
-                        system("octave -qf octave/muxMultisliceCentralityOutDegree.m",intern=T)
-                        #read output.
-                        resultFile <- paste(input$txtProjectName,"_centrality_outdegree.txt",sep="")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                        for(l in 1:LAYERS){
+                        if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
+                            createOctaveConfigFile()
+                            #call octave
+                            system("octave -qf octave/muxMultisliceCentralityOutDegree.m",intern=T)
+                            #read output.
+                            resultFile <- paste(input$txtProjectName,"_centrality_outdegree.txt",sep="")
+                            centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                            for(l in 1:LAYERS){
+                                tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthOut = centralityVector))
+                            }
+                            if(file.exists(resultFile)) file.remove(resultFile)
+            
+                            resultFile <- paste(input$txtProjectName,"_centrality_outdegree_aggregate.txt",sep="")
+                            centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                            l <- LAYERS+1
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthOut = centralityVector))
+                            if(file.exists(resultFile)) file.remove(resultFile)
+                        }else{
+                            #for an interdependent network, it is enough to calculate centrality in the aggregate
+                            #http://igraph.sourceforge.net/doc/R/graph.strength.html
+                            centralityVector <- graph.strength(g[[LAYERS+1]],mode="out")
+                            for(l in 1:(LAYERS+1)){
+                                tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthOut = centralityVector))
+                            }
                         }
-                        if(file.exists(resultFile)) file.remove(resultFile)
-        
-                        resultFile <- paste(input$txtProjectName,"_centrality_outdegree_aggregate.txt",sep="")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                        l <- LAYERS+1
-                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthOut = centralityVector))
-                        if(file.exists(resultFile)) file.remove(resultFile)
                     }else{
                         for(l in 1:(LAYERS+1)){
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthOut = tmplistDiagnostics[[l]]$Strength))
@@ -2945,7 +4308,6 @@ shinyServer(function(input, output, session) {
                     progress2$set(message = paste('Current: Out-Strength... Done!'), value = 1)
                     Sys.sleep(1)
                     progress2$close()
-
                 }else{
                     for(l in 1:LAYERS){
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthOut = rep("-",Nodes)))
@@ -2959,24 +4321,34 @@ shinyServer(function(input, output, session) {
                     on.exit(progress$close())
                     progress$set(message = paste('Current: PageRank...'), value = 0.5)
 
-                    createOctaveConfigFile()
-                    #call octave
-                    system("octave -qf octave/muxMultisliceCentralityPageRank.m",intern=T)
-                    #read output.
-                    resultFile <- paste(input$txtProjectName,"_centrality_pagerank.txt",sep="")
-                    centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                    centralityVector <- centralityVector/max(centralityVector)
-                    for(l in 1:LAYERS){
+                    if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
+                        createOctaveConfigFile()
+                        #call octave
+                        system("octave -qf octave/muxMultisliceCentralityPageRank.m",intern=T)
+                        #read output.
+                        resultFile <- paste(input$txtProjectName,"_centrality_pagerank.txt",sep="")
+                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                        centralityVector <- centralityVector/max(centralityVector)
+                        for(l in 1:LAYERS){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(PageRank = centralityVector))
+                        }
+                        if(file.exists(resultFile)) file.remove(resultFile)
+        
+                        resultFile <- paste(input$txtProjectName,"_centrality_pagerank_aggregate.txt",sep="")
+                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                        centralityVector <- centralityVector/max(centralityVector)
+                        l <- (LAYERS+1)
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(PageRank = centralityVector))
-                    }
-                    if(file.exists(resultFile)) file.remove(resultFile)
-    
-                    resultFile <- paste(input$txtProjectName,"_centrality_pagerank_aggregate.txt",sep="")
-                    centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                    centralityVector <- centralityVector/max(centralityVector)
-                    l <- (LAYERS+1)
-                    tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(PageRank = centralityVector))
-                    if(file.exists(resultFile)) file.remove(resultFile)
+                        if(file.exists(resultFile)) file.remove(resultFile)
+                    }else{
+                        #http://igraph.sourceforge.net/doc/R/page.rank.html
+                        #for an interdependent network, it is enough to calculate centrality in the aggregate                        
+                        centralityVector <- page.rank(g[[LAYERS+1]],directed=DIRECTED)$vector
+                        centralityVector <- centralityVector/max(centralityVector)
+                        for(l in 1:(LAYERS+1)){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(PageRank = centralityVector))
+                        }
+                    }                    
                     
                     progress$set(message = paste('Current: PageRank... Done!'), value = 1)
                     Sys.sleep(1)
@@ -2995,37 +4367,50 @@ shinyServer(function(input, output, session) {
                     on.exit(progress$close())
                     progress$set(message = paste('Current: Eigenvector...'), value = 0.5)
 
-                    #call octave
-                    system("octave -qf octave/muxMultisliceCentralityEigenvector.m",intern=T)
-                    #read output.
-                    resultFile <- paste(input$txtProjectName,"_centrality_eigenvector.txt",sep="")
-                    centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                    centralityVector <- centralityVector/max(centralityVector)
-                    if(any(centralityVector<0)){
-                        print(paste("WARNING! Eigenvector centralities cannot be calculated. Assigning the same centrality to all nodes."))
-                        progress$set(message = paste('Graph directed and acyclic or other problems...'), value = 0.5)
-                        Sys.sleep(5)
-                        centralityVector <- rep(1,Nodes)
-                    }
-                    for(l in 1:LAYERS){
+                    if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
+                        #call octave
+                        system("octave -qf octave/muxMultisliceCentralityEigenvector.m",intern=T)
+                        #read output.
+                        resultFile <- paste(input$txtProjectName,"_centrality_eigenvector.txt",sep="")
+                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                        centralityVector <- centralityVector/max(centralityVector)
+                        if(any(centralityVector<0)){
+                            print(paste("WARNING! Eigenvector centralities cannot be calculated. Assigning the same centrality to all nodes."))
+                            progress$set(message = paste('Graph directed and acyclic or other problems...'), value = 0.5)
+                            Sys.sleep(5)
+                            centralityVector <- rep(1,Nodes)
+                        }
+                        for(l in 1:LAYERS){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Eigenvector = centralityVector))
+                        }
+                        if(file.exists(resultFile)) file.remove(resultFile)
+                        
+                        resultFile <- paste(input$txtProjectName,"_centrality_eigenvector_aggregate.txt",sep="")
+                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                        centralityVector <- centralityVector/max(centralityVector)
+                        if(any(centralityVector<0)){
+                            print(paste("WARNING! Eigenvector centralities cannot be calculated. Assigning the same centrality to all nodes."))
+                            progress$set(message = paste('Graph directed and acyclic or other problems...'), value = 0.5)
+                            Sys.sleep(5)
+                            centralityVector <- rep(1,Nodes)
+                        }
+    
+                        l <- (LAYERS+1)
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Eigenvector = centralityVector))
+                        if(file.exists(resultFile)) file.remove(resultFile)
+                    }else{
+                        #http://igraph.sourceforge.net/doc/R/evcent.html
+                        #for an interdependent network, it is enough to calculate centrality in the aggregate
+                        centralityVector <- evcent(g[[LAYERS+1]],directed=DIRECTED)$vector
+                        centralityVector <- centralityVector/max(centralityVector)
+                        if(any(is.null(centralityVector)) || any(is.nan(centralityVector)) || length(centralityVector)==0){
+                            centralityVector <- rep(0,Nodes)
+                        } 
+                        for(l in 1:(LAYERS+1)){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Eigenvector = centralityVector))
+                        }
                     }
-                    if(file.exists(resultFile)) file.remove(resultFile)
-                    
-                    resultFile <- paste(input$txtProjectName,"_centrality_eigenvector_aggregate.txt",sep="")
-                    centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                    centralityVector <- centralityVector/max(centralityVector)
-                    if(any(centralityVector<0)){
-                        print(paste("WARNING! Eigenvector centralities cannot be calculated. Assigning the same centrality to all nodes."))
-                        progress$set(message = paste('Graph directed and acyclic or other problems...'), value = 0.5)
-                        Sys.sleep(5)
-                        centralityVector <- rep(1,Nodes)
-                    }
-
-                    l <- (LAYERS+1)
-                    tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Eigenvector = centralityVector))
-                    if(file.exists(resultFile)) file.remove(resultFile)
-                    
+                                        
                     progress$set(message = paste('Current: Eigenvector... Done!'), value = 1)
                     Sys.sleep(1)
                     progress$close()
@@ -3042,23 +4427,33 @@ shinyServer(function(input, output, session) {
                     on.exit(progress$close())
                     progress$set(message = paste('Current: Hub...'), value = 0.5)
 
-                    #call octave
-                    system("octave -qf octave/muxMultisliceCentralityHub.m",intern=T)
-                    #read output.
-                    resultFile <- paste(input$txtProjectName,"_centrality_hub.txt",sep="")
-                    centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                    centralityVector <- centralityVector/max(centralityVector)
-                    for(l in 1:LAYERS){
+                    if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
+                        #call octave
+                        system("octave -qf octave/muxMultisliceCentralityHub.m",intern=T)
+                        #read output.
+                        resultFile <- paste(input$txtProjectName,"_centrality_hub.txt",sep="")
+                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                        centralityVector <- centralityVector/max(centralityVector)
+                        for(l in 1:LAYERS){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Hub = centralityVector))
+                        }
+                        if(file.exists(resultFile)) file.remove(resultFile)
+        
+                        resultFile <- paste(input$txtProjectName,"_centrality_hub_aggregate.txt",sep="")
+                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                        centralityVector <- centralityVector/max(centralityVector)
+                        l <- (LAYERS+1)
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Hub = centralityVector))
-                    }
-                    if(file.exists(resultFile)) file.remove(resultFile)
-    
-                    resultFile <- paste(input$txtProjectName,"_centrality_hub_aggregate.txt",sep="")
-                    centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                    centralityVector <- centralityVector/max(centralityVector)
-                    l <- (LAYERS+1)
-                    tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Hub = centralityVector))
-                    if(file.exists(resultFile)) file.remove(resultFile)
+                        if(file.exists(resultFile)) file.remove(resultFile)
+                    }else{
+                        #http://igraph.sourceforge.net/doc/R/kleinberg.html
+                        #for an interdependent network, it is enough to calculate centrality in the aggregate
+                        centralityVector <- hub.score(g[[LAYERS+1]],scale = TRUE)$vector
+                        centralityVector <- centralityVector/max(centralityVector)
+                        for(l in 1:(LAYERS+1)){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Hub = centralityVector))
+                        }
+                    }                    
                     
                     progress$set(message = paste('Current: Hub... Done!'), value = 1)
                     Sys.sleep(1)
@@ -3076,23 +4471,33 @@ shinyServer(function(input, output, session) {
                     on.exit(progress$close())
                     progress$set(message = paste('Current: Authority...'), value = 0.5)
 
-                    #call octave
-                    system("octave -qf octave/muxMultisliceCentralityAuthority.m",intern=T)
-                    #read output.
-                    resultFile <- paste(input$txtProjectName,"_centrality_authority.txt",sep="")
-                    centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                    centralityVector <- centralityVector/max(centralityVector)
-                    for(l in 1:LAYERS){
+                    if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
+                        #call octave
+                        system("octave -qf octave/muxMultisliceCentralityAuthority.m",intern=T)
+                        #read output.
+                        resultFile <- paste(input$txtProjectName,"_centrality_authority.txt",sep="")
+                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                        centralityVector <- centralityVector/max(centralityVector)
+                        for(l in 1:LAYERS){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Authority = centralityVector))
+                        }
+                        if(file.exists(resultFile)) file.remove(resultFile)
+        
+                        resultFile <- paste(input$txtProjectName,"_centrality_authority_aggregate.txt",sep="")
+                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                        centralityVector <- centralityVector/max(centralityVector)
+                        l <- (LAYERS+1)
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Authority = centralityVector))
-                    }
-                    if(file.exists(resultFile)) file.remove(resultFile)
-    
-                    resultFile <- paste(input$txtProjectName,"_centrality_authority_aggregate.txt",sep="")
-                    centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                    centralityVector <- centralityVector/max(centralityVector)
-                    l <- (LAYERS+1)
-                    tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Authority = centralityVector))
-                    if(file.exists(resultFile)) file.remove(resultFile)
+                        if(file.exists(resultFile)) file.remove(resultFile)
+                    }else{
+                        #http://igraph.sourceforge.net/doc/R/kleinberg.html
+                        #for an interdependent network, it is enough to calculate centrality in the aggregate
+                        centralityVector <- authority.score(g[[LAYERS+1]],scale = TRUE)$vector
+                        centralityVector <- centralityVector/max(centralityVector)
+                        for(l in 1:(LAYERS+1)){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Authority = centralityVector))
+                        }
+                    }                    
                     
                     progress$set(message = paste('Current: Authority... Done!'), value = 1)
                     Sys.sleep(1)
@@ -3110,24 +4515,44 @@ shinyServer(function(input, output, session) {
                     on.exit(progress$close())
                     progress$set(message = paste('Current: Katz...'), value = 0.5)
 
-                    #call octave
-                    system("octave -qf octave/muxMultisliceCentralityKatz.m",intern=T)
-                    #read output.
-                    resultFile <- paste(input$txtProjectName,"_centrality_katz.txt",sep="")
-                    centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                    centralityVector <- centralityVector/max(centralityVector)
-                    for(l in 1:LAYERS){
+                    if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
+                        #call octave
+                        system("octave -qf octave/muxMultisliceCentralityKatz.m",intern=T)
+                        #read output.
+                        resultFile <- paste(input$txtProjectName,"_centrality_katz.txt",sep="")
+                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                        centralityVector <- centralityVector/max(centralityVector)
+                        for(l in 1:LAYERS){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Katz = centralityVector))
+                        }
+                        if(file.exists(resultFile)) file.remove(resultFile)
+        
+                        resultFile <- paste(input$txtProjectName,"_centrality_katz_aggregate.txt",sep="")
+                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                        centralityVector <- centralityVector/max(centralityVector)
+                        l <- (LAYERS+1)
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Katz = centralityVector))
-                    }
-                    if(file.exists(resultFile)) file.remove(resultFile)
-    
-                    resultFile <- paste(input$txtProjectName,"_centrality_katz_aggregate.txt",sep="")
-                    centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                    centralityVector <- centralityVector/max(centralityVector)
-                    l <- (LAYERS+1)
-                    tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Katz = centralityVector))
-                    if(file.exists(resultFile)) file.remove(resultFile)
-                    
+                        if(file.exists(resultFile)) file.remove(resultFile)
+                    }else{
+                        #http://igraph.sourceforge.net/doc/R/alpha.centrality.html
+                        #for an interdependent network, it is enough to calculate centrality in the aggregate
+                        #It is easy to show that Katz centrality can be obtained from Bonacich centrality:
+                        # v(katz) = v(bonacich) - vec(1)
+                        #calculate the eigenvector centrality to obtain the leading eigenvalue
+
+                        lambda <- evcent(g[[LAYERS+1]],directed=DIRECTED)$value
+                        if(is.null(lambda) || is.nan(lambda) || is.infinite(lambda) || abs(lambda)<1e-8){
+                            #use a lower bound:
+                            #http://files.ele-math.com/articles/jmi-04-36.pdf
+                            lambda <- sqrt(max(graph.strength(g[[LAYERS+1]],mode="total")))
+                        }
+
+                        centralityVector <- alpha.centrality(g[[LAYERS+1]], exo=1, alpha=0.99999/lambda) - 1
+                        centralityVector <- centralityVector/max(centralityVector)
+                        for(l in 1:(LAYERS+1)){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Katz = centralityVector))
+                        }
+                    }                    
                     progress$set(message = paste('Current: Katz... Done!'), value = 1)
                     Sys.sleep(1)
                     progress$close()
@@ -3138,6 +4563,105 @@ shinyServer(function(input, output, session) {
                     l <- (LAYERS+1)
                     tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Katz = rep("-",Nodes)))
                 }
+
+                if(input$chkNODE_CENTRALITY_MULTIPLEXITY){
+                    progress <- shiny::Progress$new(session)
+                    on.exit(progress$close())
+                    progress$set(message = paste('Current: Multiplexity...'), value = 0.5)
+
+                    if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
+                        #call octave
+                        system("octave -qf octave/muxMultisliceCentralityMultiplexity.m",intern=T)
+                        #read output.
+                        resultFile <- paste(input$txtProjectName,"_centrality_multiplexity.txt",sep="")
+                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                        #centralityVector <- centralityVector/max(centralityVector)
+                        for(l in 1:LAYERS){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Multiplexity = centralityVector))
+                        }
+                        if(file.exists(resultFile)) file.remove(resultFile)
+        
+                        #resultFile <- paste(input$txtProjectName,"_centrality_multiplexity_aggregate.txt",sep="")
+                        #centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                        #centralityVector <- centralityVector/max(centralityVector)
+                        l <- (LAYERS+1)
+                        centralityVector <- rep(0, Nodes)
+                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Multiplexity = centralityVector))
+                        #if(file.exists(resultFile)) file.remove(resultFile)
+                    }else{
+                        centralityVector <- as.numeric(rowSums(table(  rbind(multilayerEdges[,1],multilayerEdges[,3]), rbind(multilayerEdges[,2],multilayerEdges[,4])  )>0))
+                        
+                        #for an interdependent network, node multiplexity should be 1
+                        if(!all( centralityVector==1 )){
+                            progress <- shiny::Progress$new(session)
+                            on.exit(progress$close())
+                            progress$set(message = 'Error! Multiplexity expected to be 1/# Layers for all nodes, but different values have been found. Are you sure your network is interdependent?', value = 0.5)
+                            Sys.sleep(10)
+                        }
+                        centralityVector <- centralityVector/LAYERS
+
+                        for(l in 1:(LAYERS+1)){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Multiplexity = centralityVector))
+                        }
+                    }
+                                        
+                    progress$set(message = paste('Current: Multiplexity... Done!'), value = 1)
+                    Sys.sleep(1)
+                    progress$close()
+                }else{
+                    for(l in 1:LAYERS){
+                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Multiplexity = rep("-",Nodes)))
+                    }
+                    l <- (LAYERS+1)
+                    tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Multiplexity = rep("-",Nodes)))
+                }
+                
+                if(input$chkNODE_CENTRALITY_KCORE){
+                    progress <- shiny::Progress$new(session)
+                    on.exit(progress$close())
+                    progress$set(message = paste('Current: K-core...'), value = 0.5)
+
+                    if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
+                        #we can calculate this within R, no octave
+
+                        #calculate centrality in each layer separately and then get the max per node
+                        kcore.table <- matrix(0, nrow=Nodes, ncol=LAYERS)
+
+                        for(l in 1:LAYERS){
+                            kcore.table[,l] <- graph.coreness(g[[l]], mode="all")
+                        }
+                        
+                        centralityVector <- apply(kcore.table, 1, max)
+                        #centralityVector <- centralityVector/max(centralityVector)
+                        for(l in 1:LAYERS){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Kcore = centralityVector))
+                        }
+            
+                        l <- (LAYERS+1)
+                        centralityVector <- graph.coreness(g[[l]], mode="all")
+                        #centralityVector <- centralityVector/max(centralityVector)
+                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Kcore = centralityVector))
+                    }else{
+                        #http://www.inside-r.org/packages/cran/igraph/docs/graph.coreness
+                        #for an interdependent network, it is enough to calculate centrality in the aggregate
+
+                        centralityVector <- graph.coreness(g[[LAYERS+1]], mode="all")
+                        #centralityVector <- centralityVector/max(centralityVector)
+                        for(l in 1:(LAYERS+1)){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Kcore = centralityVector))
+                        }
+                    }                    
+                    progress$set(message = paste('Current: K-core... Done!'), value = 1)
+                    Sys.sleep(1)
+                    progress$close()
+                }else{
+                    for(l in 1:LAYERS){
+                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Kcore = rep("-",Nodes)))
+                    }
+                    l <- (LAYERS+1)
+                    tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Kcore = rep("-",Nodes)))
+                }
+
             }else{
                 #calculation per layer. No needs to specify the weight attribute because the g objects
                 #are built assuming weighted input (where weight is 1 for binary networks), and each measure
@@ -3270,6 +4794,37 @@ shinyServer(function(input, output, session) {
                     }else{
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Katz = rep("-",Nodes)))
                     }
+
+                    if(input$chkNODE_CENTRALITY_MULTIPLEXITY){
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
+                        progress$set(message = paste('Current: Multiplexity  for layer',l,'...'), value = 0.5)
+
+                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Multiplexity = rep(0,Nodes)))
+                        
+                        progress$set(message = paste('Current: Multiplexity  for layer',l,'... Done!'), value = 1)
+                        Sys.sleep(1)
+                        progress$close()
+                    }else{
+                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Multiplexity = rep("-",Nodes)))
+                    }
+
+                    if(input$chkNODE_CENTRALITY_KCORE){
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
+                        progress$set(message = paste('Current: Kcore  for layer',l,'...'), value = 0.5)
+
+                        centralityVector <- graph.coreness(g[[l]], mode="all")
+                        #centralityVector <- centralityVector/max(centralityVector)
+                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Kcore = centralityVector))
+                        
+                        progress$set(message = paste('Current: Kcore  for layer',l,'... Done!'), value = 1)
+                        Sys.sleep(1)
+                        progress$close()
+                    }else{
+                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Kcore = rep("-",Nodes)))
+                    }
+
                 }
                 #progress$close()
             }
@@ -3313,19 +4868,36 @@ shinyServer(function(input, output, session) {
     
                 FILE_RGL_SNAPSHOT <- buildPath("export",paste(input$txtProjectName,"_",as.character(format(Sys.time(), "%d-%m-%Y_%H%M%S")),".png",sep=""))
                 rgl.snapshot(FILE_RGL_SNAPSHOT) 
-                
-                #the idea is promising, but output is very bad
-                #FILE_RGL_SNAPSHOT <- paste("export/",input$txtProjectName,"_",as.character(format(Sys.time(), "%d-%m-%Y_%H%M%S")),".eps",sep="")
-                #rgl.postscript(FILE_RGL_SNAPSHOT,"eps",drawText=TRUE)
-                #FILE_RGL_SNAPSHOT <- paste("export/",input$txtProjectName,"_",as.character(format(Sys.time(), "%d-%m-%Y_%H%M%S")),".pdf",sep="")
-                #rgl.postscript(FILE_RGL_SNAPSHOT,"pdf",drawText=TRUE)
-                
+                                
                 progress$set(message = paste('Image exported to',FILE_RGL_SNAPSHOT), value = 1)
                 Sys.sleep(5)
     
                 btnExportRenderingValue <<- input$btnExportRendering
             })
         })
+        
+        observe({
+            if(input$btnExportRenderingPDF==0 || input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
+    
+            if(btnExportRenderingPDFValue==input$btnExportRenderingPDF) return()
+    
+            isolate({
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
+    
+                progress$set(message = 'Start exporting...', value = 0.05)
+                Sys.sleep(1)
+    
+                FILE_RGL_SNAPSHOT <- buildPath("export",paste(input$txtProjectName,"_",as.character(format(Sys.time(), "%d-%m-%Y_%H%M%S")),".pdf",sep=""))
+                rgl.postscript(FILE_RGL_SNAPSHOT,"pdf",drawText=TRUE)
+                                
+                progress$set(message = paste('Image exported to',FILE_RGL_SNAPSHOT), value = 1)
+                Sys.sleep(5)
+    
+                btnExportRenderingPDFValue <<- input$btnExportRenderingPDF
+            })
+        })
+
     
         observe({
             if(input$btnExportRenderingWeb==0 || input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
@@ -3483,7 +5055,104 @@ shinyServer(function(input, output, session) {
                 width=550
             )
         })
-    
+
+        #######################################
+        ## Download handlers
+        #######################################
+
+        # downloadHandler() takes two arguments, both functions.
+        #output$downSaveAs <- downloadHandler(    
+        #    filename = function() { paste(input$txtProjectName, "csv", sep = ".") },
+        #    content = function(file) { write.table(myData, file, sep = ";", row.names = FALSE) }
+        #)
+
+        #pippo table
+        output$downMotifsTable <- downloadHandler(    
+            filename = function() { paste0(input$txtProjectName, "_motifs_table.csv") },
+            content = function(file) { 
+
+                if(input$btnCalculateMotifs==0 || input$btnImportNetworks == 0 ||  LAYERS<=1){
+                    return(NULL)
+                }else{
+                    write.table(listMotifs, file, sep = ";", row.names = FALSE) 
+                }
+            }
+        )
+        
+        output$downCentralityTable <- downloadHandler(    
+            filename = function() { paste0(input$txtProjectName, "_centrality_table.csv") },
+            content = function(file) { 
+
+                if(input$btnCalculateCentralityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0){
+                    return(NULL)
+                }else{
+                    write.table(listDiagnosticsMerge, file, sep = ";", row.names = FALSE) 
+                }
+            }
+        )
+
+        output$downCommunitySummaryTable <- downloadHandler(    
+            filename = function() { paste0(input$txtProjectName, "_community_summary_table.csv") },
+            content = function(file) { 
+
+                if(input$btnCalculateCommunityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0){
+                    return(NULL)
+                }else{
+                    write.table(sumCommunitiesMerge, file, sep = ";", row.names = FALSE) 
+                }
+            }
+        )
+
+        output$downCommunityTable <- downloadHandler(    
+            filename = function() { paste0(input$txtProjectName, "_community_table.csv") },
+            content = function(file) { 
+
+                if(input$btnCalculateCommunityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0){
+                    return(NULL)
+                }else{
+                    write.table(listCommunitiesMerge, file, sep = ";", row.names = FALSE) 
+                }
+            }
+        )
+        
+        output$downOverlappingSummaryTable <- downloadHandler(    
+            filename = function() { paste0(input$txtProjectName, "_overlap_table.csv") },
+            content = function(file) { 
+
+                if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0){
+                    return(NULL)
+                }else{
+                    write.table(listOverlap, file, sep = ";", row.names = FALSE) 
+                }
+            }
+        )
+
+        output$downInterPearsonSummaryTable <- downloadHandler(    
+            filename = function() { paste0(input$txtProjectName, "_interpearson_table.csv") },
+            content = function(file) { 
+
+                if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0){
+                    return(NULL)
+                }else{
+                    write.table(listInterPearson, file, sep = ";", row.names = FALSE) 
+                }
+            }
+        )
+
+        output$downInterSpearmanSummaryTable <- downloadHandler(    
+            filename = function() { paste0(input$txtProjectName, "_interspearman_table.csv") },
+            content = function(file) { 
+
+                if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0){
+                    return(NULL)
+                }else{
+                    write.table(listInterSpearman, file, sep = ";", row.names = FALSE) 
+                }
+            }
+        )
+
+
+                    
         #######################################
         ## Simple interface with octave
         #######################################
@@ -3496,16 +5165,28 @@ shinyServer(function(input, output, session) {
             write(paste("AnalysisName = \"",input$txtProjectName,"\";",sep=""),
                 file=octaveConfigFile,append=F)
     
-            for(l in 1:LAYERS){
+            if(input$radMultiplexModel=="MULTIPLEX_IS_EDGECOLORED"){
+                write(paste0("isExtendedEdgesList = 0;"), file=octaveConfigFile,append=T)
+                for(l in 1:LAYERS){
+                    if(input$chkEdgeListLabel){
+                        write(paste0("LayersList{",l,"}=\"",normalizePath(paste0(fileName[[l]][1],".rel")),"\";"),
+                            file=octaveConfigFile,append=T)                    
+                    }else{
+                        write(paste0("LayersList{",l,"}=\"",normalizePath(fileName[[l]][1]),"\";"),
+                            file=octaveConfigFile,append=T)
+                    }
+                }
+            }else{
+                write(paste0("isExtendedEdgesList = 1;"), file=octaveConfigFile,append=T) 
                 if(input$chkEdgeListLabel){
-                    write(paste("LayersList{",l,"}=\"",normalizePath(paste(fileName[[l]][1],".rel",sep="")),"\";",sep=""),
-                        file=octaveConfigFile,append=T)                    
+                    write(paste0("MultiLayerEdgesListFile = \"",normalizePath(paste0(fileName[[1]][1],".rel")),"\";"),
+                            file=octaveConfigFile,append=T)
                 }else{
-                    write(paste("LayersList{",l,"}=\"",normalizePath(fileName[[l]][1]),"\";",sep=""),
-                        file=octaveConfigFile,append=T)
+                    write(paste0("MultiLayerEdgesListFile = \"",normalizePath(fileName[[1]][1]),"\";"),
+                            file=octaveConfigFile,append=T)
                 }
             }
-    
+                
             if(!DIRECTED){
                 flag <- "U"
                 if(!input$chkEdgeListUndirectedBoth) flag <- "UD"

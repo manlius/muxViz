@@ -1,3 +1,46 @@
+### August/September 2015
+
+Manlio De Domenico:
+
+New descriptors:
+
+- Added multiplexity centrality
+- Added k-coreness centrality
+- Added Louvain community detection per layer
+    
+New structures:
+
+- Added support to import extended edges list format for:
+      1. Interconnected multiplex networks
+      2. Interdependent networks
+      3. General multilayer networks
+- Added support for visualization of interconnected layers (for interlinks specified in the input data)
+- Added support for analysis of any type of supported multilayer networks
+
+GUI:
+
+- Introduced conditional rules to show available options, to facilitate usability
+- Added the possibility to export the results of analyses
+
+New analytic tools and visualization options:
+
+- Added support for (interactive) analysis of centrality descriptors:
+       1. Visualization of nodes ranked by centrality
+       2. Histogram 
+       3. Scatter 
+       Simultaneous comparison between descriptors obtained from multilayer, aggregate and layers is allowed
+- Added support for calculation and interactive visualization of the network of layers (through d3)
+- Added support for coloring nodes according to centrality measures
+- Added support for coloring nodes and edges uniformly
+- Added the possibility to show 3D axes in the rendered figure
+- Added the possibility to change color and opacity of each layer separately
+- Added a new visualization mode (matrix disposition of layers)
+- Added the possibility to hide one or more layers in the rendering. Intra- and inter-links are hidden.
+
+Technical:
+- Solved apparent incompatibility with igraph 1.0.1
+	
+
 ### 2 July 2015
 
 Manlio De Domenico:

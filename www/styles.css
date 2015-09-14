@@ -2,6 +2,12 @@ body{
   font-size: 14px;    
 }
 
+#projectImport span {
+  color: #944;
+  font-weight: 400;
+  font-size: 16px;
+}
+
 #projectTimelineHTML span {
   color: #944;
   font-weight: 400;

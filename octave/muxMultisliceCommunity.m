@@ -7,6 +7,8 @@ muxOctaveLib;
 LayersList = {};
 muxOctaveConfig;
 
+%note that the only analysis supported here is by interlinking edge-colored graphs in ordered or categorical way
+
 NodesTensor = {}; 
 Layers = 0;
 [NodesTensor,Layers,Nodes] = BuildMultiplexFromFileList(LayersList,Flags,MaxNodes,FirstNodeLabel);
