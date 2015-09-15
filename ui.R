@@ -515,88 +515,83 @@ shinyUI(bootstrapPage(
                                 )
                             ),
                         tabPanel("Centrality",
-                            conditionalPanel(condition="input.radMultiplexModel=='MULTIPLEX_IS_INTERDEPENDENT'",
-                                helpText("No options to set up for interdependent network models.")
-                            ),
-                            conditionalPanel(condition="input.radMultiplexModel!='MULTIPLEX_IS_INTERDEPENDENT'",
-                                fluidRow(
-                                    column(width = 5,
-                                        myBox("Framework", "basic",
-                                            checkboxInput("chkNODE_CENTRALITY_MULTIPLEX","Use tensorial calculation (uncheck this for calculation in each layer separately)",TRUE)
-                                        ),
-                                        HTML("<center>"),
-                                        actionButton("btnCalculateCentralityDiagnostics", "Calculate Centrality Diagnostics"),
-                                        HTML("</center>")
+                            fluidRow(
+                                column(width = 5,
+                                    myBox("Framework", "basic",
+                                        checkboxInput("chkNODE_CENTRALITY_MULTIPLEX","Use tensorial calculation (uncheck this for calculation in each layer separately)",TRUE)
                                     ),
-                                    column(width = 5,
-                                        myBox("Descriptors", "basic",
-                                            #HTML('<h4>Centrality</h4>'),
-                                            checkboxInput("chkNODE_CENTRALITY_STRENGTH","Degree (strength for weighted networks; in-going, out-going and total)",TRUE),
-                                            checkboxInput("chkNODE_CENTRALITY_PAGERANK","PageRank",F),
-                                            checkboxInput("chkNODE_CENTRALITY_EIGENVECTOR","Eigenvector",F),
-                                            checkboxInput("chkNODE_CENTRALITY_HUB","Hub",F),
-                                            checkboxInput("chkNODE_CENTRALITY_AUTHORITY","Authority",F),
-                                            checkboxInput("chkNODE_CENTRALITY_KATZ","Katz",F),
-                                            checkboxInput("chkNODE_CENTRALITY_KCORE","K-core",F),
-                                            checkboxInput("chkNODE_CENTRALITY_MULTIPLEXITY","Multiplexity",F)
+                                    HTML("<center>"),
+                                    actionButton("btnCalculateCentralityDiagnostics", "Calculate Centrality Diagnostics"),
+                                    HTML("</center>")
+                                ),
+                                column(width = 5,
+                                    myBox("Descriptors", "basic",
+                                        #HTML('<h4>Centrality</h4>'),
+                                        checkboxInput("chkNODE_CENTRALITY_STRENGTH","Degree (strength for weighted networks; in-going, out-going and total)",TRUE),
+                                        checkboxInput("chkNODE_CENTRALITY_PAGERANK","PageRank",F),
+                                        checkboxInput("chkNODE_CENTRALITY_EIGENVECTOR","Eigenvector",F),
+                                        checkboxInput("chkNODE_CENTRALITY_HUB","Hub",F),
+                                        checkboxInput("chkNODE_CENTRALITY_AUTHORITY","Authority",F),
+                                        checkboxInput("chkNODE_CENTRALITY_KATZ","Katz",F),
+                                        checkboxInput("chkNODE_CENTRALITY_KCORE","K-core",F),
+                                        checkboxInput("chkNODE_CENTRALITY_MULTIPLEXITY","Multiplexity",F)
+                                        )
+                                    )
+                                ),
+                            tags$hr(),
+                            HTML('<h4>Centrality diagnostics</h4>'),
+                            conditionalPanel(condition="input.btnCalculateCentralityDiagnostics>0",
+                                checkboxInput(inputId = "centralityTablePageable", label = "Pageable", TRUE),
+                                conditionalPanel("input.centralityTablePageable==true",
+                                        uiOutput("numOutputCentralityTableNodesPerPage")
+                                    ),
+                                htmlOutput("centralityTable"),
+                                downloadButton('downCentralityTable', 'Export'),
+                                tags$hr(),
+                                fluidRow(
+                                    column(width = 4,
+                                        myBox("Diagnostics analysis", "basic",
+                                            uiOutput("selDiagnosticsCentralityVizOutputID"),
+                                            radioButtons('radDiagnosticsCentralityType', 'Analysis',
+                                                c(TopRanked='DIAGNOSTICS_ANALYSIS_TOPRANKED',
+                                                    Distribution='DIAGNOSTICS_ANALYSIS_DISTRIBUTION',
+                                                    Scatter='DIAGNOSTICS_ANALYSIS_SCATTER'),
+                                                    selected='DIAGNOSTICS_ANALYSIS_TOPRANKED'
+                                                ),
+                                            HTML("<strong>Networks to include:</strong>:"),
+                                            checkboxInput(inputId = "chkCentralityAnalysisStructureMultiplex", label = "Multilayer", T),
+                                            checkboxInput(inputId = "chkCentralityAnalysisStructureLayer", label = "Layer(s)", F),
+                                            conditionalPanel(condition="input.chkCentralityAnalysisStructureLayer",
+                                                textInput("txtDiagnosticsCentralityStructureLayer", label=HTML("<strong>Use the following layer (eg 1,3,7 to use more than one layer):</strong>"), "1")
+                                                ), 
+                                            checkboxInput(inputId = "chkCentralityAnalysisStructureAggregate", label = "Aggregate", T),
+                                            conditionalPanel(condition="input.radDiagnosticsCentralityType == 'DIAGNOSTICS_ANALYSIS_DISTRIBUTION'",
+                                                textInput("txtDiagnosticsCentralityDistributionBins", label=HTML("<strong>Number of bins:</strong>"), "30"),
+                                                checkboxInput(inputId = "centralityAnalysisDistributionLogx", label = "Log x", F),
+                                                checkboxInput(inputId = "centralityAnalysisDistributionLogy", label = "Log y", F)
+                                                ),
+                                            conditionalPanel(condition="input.radDiagnosticsCentralityType == 'DIAGNOSTICS_ANALYSIS_TOPRANKED'",
+                                                textInput("txtDiagnosticsCentralityTopRankedBins", label=HTML("<strong>Show the top:</strong>"), "20"),
+                                                checkboxInput(inputId = "centralityAnalysisTopRankedLog", label = "Log", F)
+                                                ),
+                                            conditionalPanel(condition="input.radDiagnosticsCentralityType == 'DIAGNOSTICS_ANALYSIS_SCATTER'",
+                                                uiOutput("selDiagnosticsCentralityVizScatterOutputID"),
+                                                textInput('txtDiagnosticsCentralityVizScatterColorTransparency', label='Circle transparency (from 0 to 1; 1 means full color):', "0.7"),
+                                                uiOutput("selDiagnosticsCentralityVizScatterSizeOutputID"),
+                                                checkboxInput(inputId = "centralityAnalysisScatterLogx", label = "Log x", F),
+                                                checkboxInput(inputId = "centralityAnalysisScatterLogy", label = "Log y", F),
+                                                checkboxInput(inputId = "centralityAnalysisScatterLogRadius", label = "Log Radius", F)
+                                                ),
+                                            HTML("<center>"),
+                                            actionButton("btnCentralityDiagnosticsAnalysis", "Plot"),
+                                            HTML("</center>")
                                             )
+                                        ),
+                                    column(width=6,
+                                        showOutput("centralityAnalysisPlot","nvd3")                                        
                                         )
                                     ),
-                                tags$hr(),
-                                HTML('<h4>Centrality diagnostics</h4>'),
-                                conditionalPanel(condition="input.btnCalculateCentralityDiagnostics>0",
-                                    checkboxInput(inputId = "centralityTablePageable", label = "Pageable", TRUE),
-                                    conditionalPanel("input.centralityTablePageable==true",
-                                            uiOutput("numOutputCentralityTableNodesPerPage")
-                                        ),
-                                    htmlOutput("centralityTable"),
-                                    downloadButton('downCentralityTable', 'Export'),
-                                    tags$hr(),
-                                    fluidRow(
-                                        column(width = 4,
-                                            myBox("Diagnostics analysis", "basic",
-                                                uiOutput("selDiagnosticsCentralityVizOutputID"),
-                                                radioButtons('radDiagnosticsCentralityType', 'Analysis',
-                                                    c(TopRanked='DIAGNOSTICS_ANALYSIS_TOPRANKED',
-                                                        Distribution='DIAGNOSTICS_ANALYSIS_DISTRIBUTION',
-                                                        Scatter='DIAGNOSTICS_ANALYSIS_SCATTER'),
-                                                        selected='DIAGNOSTICS_ANALYSIS_TOPRANKED'
-                                                    ),
-                                                HTML("<strong>Networks to include:</strong>:"),
-                                                checkboxInput(inputId = "chkCentralityAnalysisStructureMultiplex", label = "Multilayer", T),
-                                                checkboxInput(inputId = "chkCentralityAnalysisStructureLayer", label = "Layer(s)", F),
-                                                conditionalPanel(condition="input.chkCentralityAnalysisStructureLayer",
-                                                    textInput("txtDiagnosticsCentralityStructureLayer", label=HTML("<strong>Use the following layer (eg 1,3,7 to use more than one layer):</strong>"), "1")
-                                                    ), 
-                                                checkboxInput(inputId = "chkCentralityAnalysisStructureAggregate", label = "Aggregate", T),
-                                                conditionalPanel(condition="input.radDiagnosticsCentralityType == 'DIAGNOSTICS_ANALYSIS_DISTRIBUTION'",
-                                                    textInput("txtDiagnosticsCentralityDistributionBins", label=HTML("<strong>Number of bins:</strong>"), "30"),
-                                                    checkboxInput(inputId = "centralityAnalysisDistributionLogx", label = "Log x", F),
-                                                    checkboxInput(inputId = "centralityAnalysisDistributionLogy", label = "Log y", F)
-                                                    ),
-                                                conditionalPanel(condition="input.radDiagnosticsCentralityType == 'DIAGNOSTICS_ANALYSIS_TOPRANKED'",
-                                                    textInput("txtDiagnosticsCentralityTopRankedBins", label=HTML("<strong>Show the top:</strong>"), "20"),
-                                                    checkboxInput(inputId = "centralityAnalysisTopRankedLog", label = "Log", F)
-                                                    ),
-                                                conditionalPanel(condition="input.radDiagnosticsCentralityType == 'DIAGNOSTICS_ANALYSIS_SCATTER'",
-                                                    uiOutput("selDiagnosticsCentralityVizScatterOutputID"),
-                                                    textInput('txtDiagnosticsCentralityVizScatterColorTransparency', label='Circle transparency (from 0 to 1; 1 means full color):', "0.7"),
-                                                    uiOutput("selDiagnosticsCentralityVizScatterSizeOutputID"),
-                                                    checkboxInput(inputId = "centralityAnalysisScatterLogx", label = "Log x", F),
-                                                    checkboxInput(inputId = "centralityAnalysisScatterLogy", label = "Log y", F),
-                                                    checkboxInput(inputId = "centralityAnalysisScatterLogRadius", label = "Log Radius", F)
-                                                    ),
-                                                HTML("<center>"),
-                                                actionButton("btnCentralityDiagnosticsAnalysis", "Plot"),
-                                                HTML("</center>")
-                                                )
-                                            ),
-                                        column(width=6,
-                                            showOutput("centralityAnalysisPlot","nvd3")                                        
-                                            )
-                                        ),
-                                    tags$hr()
-                                    )
+                                tags$hr()
                                 )
                             ),
                         tabPanel("Community",
@@ -795,8 +790,8 @@ shinyUI(bootstrapPage(
                                         helpText("Note: this layout will not show the aggregate network.")
                                     ),
                                     conditionalPanel(condition="input.radNetworkOfLayersLayoutType == 'NETWORK_LAYERS_LAYOUT_FORCEDIRECTED'",
-                                        HTML("<font color='red'>Very experimental. Not working yet.</font>"),#todo
-                                        #HTML("<font color='red'>Very experimental. Layers could overlap in some cases.</font>"),
+                                        #HTML("<font color='red'>Very experimental.</font>"),
+                                        HTML("<font color='red'>Very experimental. Layers could overlap in some cases.</font>"),
                                         helpText("Note: this layout will not show the aggregate network.")
                                     )
                                 ),

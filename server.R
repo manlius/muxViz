@@ -58,6 +58,7 @@ layerColorAlpha <- vector("list",LAYERS)
 layerLayoutFile <- vector("list",LAYERS)
 layerLayout <- vector("list",LAYERS+1)
 nodesLabel <- vector("list",LAYERS+1)
+layout.non <- NULL
 layerTable <- NULL
 g <- vector("list",LAYERS+1)
 g.multi <- NULL
@@ -283,60 +284,62 @@ shinyServer(function(input, output, session) {
       	################################################
 
         observe({
-            #input$btnRenderNetworkOfLayers
+            input$btnRenderNetworkOfLayers
             #print(multilayerEdges)
             if(nrow(multilayerEdges)==0 || LAYERS<=0) return()
                 
-            if(btnRenderNetworkOfLayersValue==input$btnRenderNetworkOfLayers) return()
+            #if(btnRenderNetworkOfLayersValue==input$btnRenderNetworkOfLayers) return()
 
-            progress <- shiny::Progress$new(session)
-            on.exit(progress$close())
-            progress$set(message = 'Building the network...', value = 0.2)
-            Sys.sleep(1)
-
-
-            #this is not the optimal approach.. but for the networks handled by muxViz shoudl be enough
-            #alternatively: use igraph to create the weighted network, then convert again to data.frame
-            #see http://lists.nongnu.org/archive/html/igraph-help/2013-02/msg00079.html
-            dfNoN <- data.frame()
-            
-            sub.multi <- multilayerEdges#multilayerEdges[ multilayerEdges[,2]!=multilayerEdges[,4], ]
-            sub.multi$V1 <- NULL
-            sub.multi$V3 <- NULL
-            #print(sub.multi)
-            
-            colnames(sub.multi) <- c("from", "to", "weight")
-            g.non <- graph.data.frame(sub.multi, directed=DIRECTED)
-            g.non <- simplify(g.non, edge.attr.comb="sum")
-            
-            dfNoN <- as.data.frame( cbind( get.edgelist(g.non) , E(g.non)$weight) )
-            colnames(dfNoN) <- c("from", "to", "weight")
-            dfNoN$from <- as.numeric(dfNoN$from) - 1
-            dfNoN$to <- as.numeric(dfNoN$to) - 1
-            dfNoN$weight <- log(1+as.numeric(dfNoN$weight))
-
-            if(nrow(dfNoN)>0){
-                comm.non <- as.numeric(membership(multilevel.community(as.undirected(g.non))))
-                dfNodes <- data.frame(ID=1:LAYERS, name=unlist(layerLabel)[1:LAYERS], group=comm.non)
-                #print(dfNodes)
-                output$networkOfLayersPlot <- renderPrint({
-                    return(d3ForceNetwork(Nodes = dfNodes,
-                                    Links = dfNoN,
-                                    Source = "from", Target = "to",
-                                    Value = "weight", NodeID = "name",
-                                    Group = "group", width = 600, height = 600,
-                                    opacity = 0.8, standAlone = FALSE, zoom=TRUE,
-                                    parentElement = '#networkOfLayersPlot'))
-                })
-            }else{
-                progress$set(message = 'No network of layers from the data...', value = 0.5)
+            isolate({
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
+                progress$set(message = 'Building the network...', value = 0.2)
                 Sys.sleep(1)
-            }
-
-            btnRenderNetworkOfLayersValue <<- input$btnRenderNetworkOfLayers
-
-            progress$set(detail = 'Done!', value = 1)
-            Sys.sleep(2)
+    
+    
+                #this is not the optimal approach.. but for the networks handled by muxViz shoudl be enough
+                #alternatively: use igraph to create the weighted network, then convert again to data.frame
+                #see http://lists.nongnu.org/archive/html/igraph-help/2013-02/msg00079.html
+                dfNoN <- data.frame()
+                
+                sub.multi <- multilayerEdges #multilayerEdges[ multilayerEdges[,2]!=multilayerEdges[,4], ]
+                sub.multi$V1 <- NULL
+                sub.multi$V3 <- NULL
+                #print(sub.multi)
+                
+                colnames(sub.multi) <- c("from", "to", "weight")
+                g.non <- graph.data.frame(sub.multi, directed=DIRECTED)
+                g.non <- simplify(g.non, edge.attr.comb="sum")
+                
+                dfNoN <- as.data.frame( cbind( get.edgelist(g.non) , E(g.non)$weight) )
+                colnames(dfNoN) <- c("from", "to", "weight")
+                dfNoN$from <- as.numeric(dfNoN$from) - 1
+                dfNoN$to <- as.numeric(dfNoN$to) - 1
+                dfNoN$weight <- log(1+as.numeric(dfNoN$weight))
+    
+                if(nrow(dfNoN)>0){
+                    comm.non <- as.numeric(membership(multilevel.community(as.undirected(g.non))))
+                    dfNodes <- data.frame(ID=1:LAYERS, name=unlist(layerLabel)[1:LAYERS], group=comm.non)
+                    #print(dfNodes)
+                    output$networkOfLayersPlot <- renderPrint({
+                        return(d3ForceNetwork(Nodes = dfNodes,
+                                        Links = dfNoN,
+                                        Source = "from", Target = "to",
+                                        Value = "weight", NodeID = "name",
+                                        Group = "group", width = 600, height = 600,
+                                        opacity = 0.8, standAlone = FALSE, zoom=TRUE,
+                                        parentElement = '#networkOfLayersPlot'))
+                    })
+                }else{
+                    progress$set(message = 'No network of layers from the data...', value = 0.5)
+                    Sys.sleep(1)
+                }
+    
+                btnRenderNetworkOfLayersValue <<- input$btnRenderNetworkOfLayers
+    
+                progress$set(detail = 'Done!', value = 1)
+                Sys.sleep(2)
+            })
         })
 
       	################################################
@@ -3373,9 +3376,38 @@ shinyServer(function(input, output, session) {
                         }
                     }
                     if(input$radNetworkOfLayersLayoutType=="NETWORK_LAYERS_LAYOUT_FORCEDIRECTED"){
-                        #todo
+                        #todo 
                         if(LAYERS>1){
+                            scal <- as.numeric(input$txtLAYER_SCALE)
+                            rescx <- scal/(XMAX-XMIN)
+                            rescy <- scal/(YMAX-YMIN)
+
+                            #this is not the optimal approach.. but for the networks handled by muxViz shoudl be enough
+                            #alternatively: use igraph to create the weighted network, then convert again to data.frame
+                            #see http://lists.nongnu.org/archive/html/igraph-help/2013-02/msg00079.html
+                            dfNoN <- data.frame()
                             
+                            sub.multi <- multilayerEdges #multilayerEdges[ multilayerEdges[,2]!=multilayerEdges[,4], ]
+                            sub.multi$V1 <- NULL
+                            sub.multi$V3 <- NULL
+                            #print(sub.multi)
+                            
+                            colnames(sub.multi) <- c("from", "to", "weight")
+                            g.non <- graph.data.frame(sub.multi, directed=DIRECTED)
+                            g.non <- simplify(g.non, edge.attr.comb="sum")
+
+                            layout.non <<- layout.auto(g.non, dim=3)
+                            layout.non[,1] <<- (layout.non[,1] - min(layout.non[,1]))/(max(layout.non[,1])-min(layout.non[,1]))
+                            layout.non[,2] <<- (layout.non[,2] - min(layout.non[,2]))/(max(layout.non[,2])-min(layout.non[,2]))
+                            layout.non[,3] <<- (layout.non[,3] - min(layout.non[,3]))/(max(layout.non[,3])-min(layout.non[,3]))
+                            layout.non <<- scal*scal*layout.non + scal
+                            #print(layout.non)
+                            
+                            for(l in 1:LAYERS){
+                                layouts[[l]][,1] <<- rescx*(layouts[[l]][,1] - XMIN) - 1 - layout.non[l,1]
+                                layouts[[l]][,2] <<- rescy*(layouts[[l]][,2] - YMIN) - 1 - layout.non[l,2]
+                                layouts[[l]][,3] <<-  layout.non[l,3]
+                            }
                         }else{
                             progress$set(message = 'This layout require more than one layer!', value = 0.9)
                         }
@@ -3957,7 +3989,78 @@ shinyServer(function(input, output, session) {
                         }                        
                     }
                     if(input$radNetworkOfLayersLayoutType=="NETWORK_LAYERS_LAYOUT_FORCEDIRECTED"){
-                        #todo
+                        #todo pippo
+                        if(LAYERS>1){                            
+
+                            scal <- as.numeric(input$txtLAYER_SCALE)
+                            #shift <- as.numeric(input$txtLAYER_SHIFT) #useless for this layout
+                            #space <- as.numeric(input$txtLAYER_SPACE)
+                              
+                            #this should have been already calculated and stored..  
+                            #layout.non <<- layout.auto(g.non, dim=3)
+                            #layout.non[,1] <<- (layout.non[,1] - min(layout.non[,1]))/(max(layout.non[,1])-min(layout.non[,1]))
+                            #layout.non[,2] <<- (layout.non[,2] - min(layout.non[,2]))/(max(layout.non[,2])-min(layout.non[,2]))
+                            #layout.non[,3] <<- (layout.non[,3] - min(layout.non[,3]))/(max(layout.non[,3])-min(layout.non[,3]))
+                            #layout.non <<- scal*layout.non + scal
+                            #print(layout.non)
+                            
+
+                            for(l in 1:LAYERS){
+                                d <- layout.non[l,3]
+                                shiftx <- layout.non[l,1]
+                                shifty <- layout.non[l,2]
+                                #when scal=1 x ranges in [-1,0]   y [-1,0]
+                                #try: rgl.clear();axes3d();quads3d(c(-1,-1,0,0),c(0,-1,-1,0),c(0,0,0,0),col='green')
+                                x <- c(-1,-1,-1+scal,-1+scal) - shiftx
+                                y <- c(-1+scal,-1,-1,-1+scal) - shifty
+                                z <- c(d,d,d,d)
+
+                                if(!l %in% vecInactiveLayers){
+                                    #skip inactive layers
+                                    if(GEOGRAPHIC_LAYOUT && input$chkGEOGRAPHIC_BOUNDARIES_SHOW){
+                                        quads3d(x,y,z, alpha=layerColorAlpha[[l]], col=layerColor[[l]], 
+                                                        texcoords=cbind(c(0,0,1,1), -c(0,1,1,0)), texture=fileNamePNG)
+                                    }else{
+                                        quads3d(x,y,z, alpha=layerColorAlpha[[l]], col=layerColor[[l]])
+                                    }
+                                                                        
+                                    if(input$chkLAYER_ID_SHOW_TOPLEFT){
+                                        text3d(-1 - shiftx, 
+                                                    -1 + scal - shifty, 
+                                                    d, 
+                                                    text=layerLabel[[l]][1], 
+                                                    adj = 0.2, 
+                                                    color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                                    }
+                                    if(input$chkLAYER_ID_SHOW_BOTTOMLEFT){
+                                        text3d(-1 - shiftx, 
+                                                    -1 - shifty, 
+                                                    d, 
+                                                    text=layerLabel[[l]][1], 
+                                                    adj = 0.2, 
+                                                    color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                                    }
+                                    if(input$chkLAYER_ID_SHOW_BOTTOMRIGHT){
+                                        text3d(-1 + scal  - shiftx, 
+                                                    -1  - shifty, 
+                                                    d, 
+                                                    text=layerLabel[[l]][1], 
+                                                    adj = 0.2, 
+                                                    color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                                    }
+                                    if(input$chkLAYER_ID_SHOW_TOPRIGHT){
+                                        text3d(-1 + scal  - shiftx, 
+                                                    -1 + scal - shifty, 
+                                                    d, 
+                                                    text=layerLabel[[l]][1], 
+                                                    adj = 0.2, 
+                                                    color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                                    }
+                                }
+                            }
+                        }else{
+                            progress$set(message = 'This layout require more than one layer!', value = 0.9)
+                        }                        
                     }
                     if(input$radNetworkOfLayersLayoutType=="NETWORK_LAYERS_LAYOUT_MATRIX"){
                         if(LAYERS>1){                            
