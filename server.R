@@ -21,6 +21,9 @@ library(ggplot2)
 library(d3Network)
 
 
+#TODO: quando plotti i top-rank, ma hai calcolato la centralità per layer, colora i primi 20 nodi per nome, non per centralità. invece funziona bene con calcolo tensorial.. si deve sistemare questa. non ha senso fare il toprank con centralità single-layer quindi si deve aggiungere un check o semplicemente impostare l if su diagnostics multilayer..
+
+
 ##################################################
 # Global variables
 ##################################################
@@ -177,6 +180,42 @@ getExecutablePath <- function(exec_name){
     }
     
     return(path)
+}
+
+text3dwrap <- function( coordsMatrix3D, labels, wraplength, wrapoffset, layerscale, adj, color, family, cex){
+    #insert a "\n" in very long lines, for later processing
+    labels <- unlist(lapply(labels, function(x) paste(strwrap(x,wraplength), collapse="\n")))
+
+    dy <- layerscale/(8*sqrt(Nodes)) + wrapoffset
+    
+    #look for lines where the char "\n" is present
+    res <- grep("\n",labels)
+    if(length(res)>0){
+        #if any..
+        newCoordsMatrix3D <- coordsMatrix3D[-res,]
+        newLabels <- labels[-res]
+       
+        for(idx in res){
+            labels.tmp <- strsplit(labels[idx], '\n')[[1]]
+            
+            for(n in 1:length(labels.tmp)){
+                
+                x <- coordsMatrix3D[idx,1]
+                y <- coordsMatrix3D[idx,2] - dy*(n-1)
+                z <- coordsMatrix3D[idx,3]
+
+                newCoordsMatrix3D <- rbind( newCoordsMatrix3D, t(as.matrix(c(x,y,z))) )
+                newLabels <- c( newLabels, labels.tmp[n] )
+            }
+        }
+        
+        text3d(newCoordsMatrix3D, text=newLabels, adj=adj, color=color, family=family, cex=cex)
+        print( cbind(newCoordsMatrix3D, newLabels) )
+    }else{
+        #nothing to do, just plot
+        text3d(coordsMatrix3D, text=labels, adj=adj, color=color, family=family, cex=cex)
+        print( cbind(coordsMatrix3D, labels) )
+    }
 }
 
 #to open/save a session.. still experimental
@@ -1445,10 +1484,10 @@ shinyServer(function(input, output, session) {
                         rglplot(g[[l]], layout=layouts[[l]],
                                             vertex.size=V(g[[l]])$size, 
                                             vertex.color=V(g[[l]])$color,
-                                            vertex.label=V(g[[l]])$label,
+                                            vertex.label="",#V(g[[l]])$label,
                                             vertex.label.dist=as.numeric(input$txtNODE_LABELS_DISTANCE), #,+ 0.01*V(g[[l]])$size,
                                             vertex.label.font=2,
-                                            vertex.label.cex=as.numeric(input$txtNODE_LABELS_FONT_SIZE), 
+                                            vertex.label.cex=0, 
                                             vertex.label.color=V(g[[l]])$vertex.label.color,
                                             edge.width=E(g[[l]])$size, 
                                             edge.color=E(g[[l]])$color, 
@@ -1486,6 +1525,7 @@ shinyServer(function(input, output, session) {
                             rglplot(g.multi, layout=layout.multi,
                                                 vertex.size=0, 
                                                 vertex.label="",
+                                                vertex.label.cex=0,
                                                 edge.width=E(g.multi)$width, 
                                                 edge.color=input$txtINTERLINK_COLOR, 
                                                 edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
@@ -3706,10 +3746,10 @@ shinyServer(function(input, output, session) {
                     rglplot(g[[l]], layout=layouts[[l]],
                                         vertex.size=V(g[[l]])$size, 
                                         vertex.color=V(g[[l]])$color,
-                                        vertex.label=V(g[[l]])$label,
+                                        vertex.label="",#V(g[[l]])$label,
                                         vertex.label.dist=as.numeric(input$txtNODE_LABELS_DISTANCE), #,+ 0.01*V(g[[l]])$size,
                                         vertex.label.font=2,
-                                        vertex.label.cex=as.numeric(input$txtNODE_LABELS_FONT_SIZE), 
+                                        vertex.label.cex=0, 
                                         vertex.label.color=V(g[[l]])$vertex.label.color,
                                         edge.width=E(g[[l]])$size, 
                                         edge.color=E(g[[l]])$color, 
@@ -3747,6 +3787,7 @@ shinyServer(function(input, output, session) {
                         rglplot(g.multi, layout=layout.multi,
                                             vertex.size=0, 
                                             vertex.label="",
+                                            vertex.label.cex=0,
                                             edge.width=E(g.multi)$width, 
                                             edge.color=input$txtINTERLINK_COLOR, 
                                             edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
@@ -3989,7 +4030,6 @@ shinyServer(function(input, output, session) {
                         }                        
                     }
                     if(input$radNetworkOfLayersLayoutType=="NETWORK_LAYERS_LAYOUT_FORCEDIRECTED"){
-                        #todo pippo
                         if(LAYERS>1){                            
 
                             scal <- as.numeric(input$txtLAYER_SCALE)
@@ -4178,13 +4218,29 @@ shinyServer(function(input, output, session) {
                             }
                         }
                         this.labels[ is.na(this.labels) ] <- ""
-                        text3d(layouts[[l]],
-                                   text=this.labels,
-                                   adj = as.numeric(input$txtNODE_LABELS_DISTANCE), 
-                                   color=input$txtNODE_LABELS_FONT_COLOR, 
-                                   family="sans", 
-                                   cex=as.numeric(input$txtNODE_LABELS_FONT_SIZE)
-                                   )
+
+                        if(input$chkNODE_LABELS_SHOW_WRAP){
+                            if(as.numeric(input$txtNODE_LABELS_WRAP)>0){
+                                text3dwrap(layouts[[l]],
+                                           this.labels,
+                                           as.numeric(input$txtNODE_LABELS_WRAP),
+                                           as.numeric(input$txtNODE_LABELS_WRAP_OFFSET),
+                                           as.numeric(input$txtLAYER_SCALE),
+                                           as.numeric(input$txtNODE_LABELS_DISTANCE), 
+                                           input$txtNODE_LABELS_FONT_COLOR, 
+                                           "sans", 
+                                           as.numeric(input$txtNODE_LABELS_FONT_SIZE)
+                                           )
+                            }
+                        }else{
+                            text3d(layouts[[l]],
+                                       text=this.labels,
+                                       adj = as.numeric(input$txtNODE_LABELS_DISTANCE), 
+                                       color=input$txtNODE_LABELS_FONT_COLOR, 
+                                       family="sans", 
+                                       cex=as.numeric(input$txtNODE_LABELS_FONT_SIZE)
+                                       )
+                        }
                     }
                 }
             }
@@ -5169,7 +5225,6 @@ shinyServer(function(input, output, session) {
         #    content = function(file) { write.table(myData, file, sep = ";", row.names = FALSE) }
         #)
 
-        #pippo table
         output$downMotifsTable <- downloadHandler(    
             filename = function() { paste0(input$txtProjectName, "_motifs_table.csv") },
             content = function(file) { 

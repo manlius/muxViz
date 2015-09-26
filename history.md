@@ -1,3 +1,10 @@
+### 26 September 2015
+
+Manlio De Domenico:
+
+Added possibility to automatically wrap long node labels.
+
+
 ### August/September 2015
 
 Manlio De Domenico:

@@ -1012,6 +1012,11 @@ shinyUI(bootstrapPage(
                                         checkboxInput("chkNODE_ISOLATED_HIDE","Exclude isolated nodes from the visualization",TRUE),
                                         textInput('txtNODE_TRANSP', label='Node transparency (from 0 to 1; 1 means full color):', "0.2"),
                                         checkboxInput("chkNODE_LABELS_SHOW","Show nodes labels (recommended only for small networks):",FALSE),
+                                        checkboxInput("chkNODE_LABELS_SHOW_WRAP","Wrap labels",FALSE),
+                                        conditionalPanel(condition="input.chkNODE_LABELS_SHOW_WRAP",
+                                            textInput('txtNODE_LABELS_WRAP', label='Wrap length (with respect to blank spaces)', "10"),
+                                            textInput('txtNODE_LABELS_WRAP_OFFSET', label='Wrap offset (usually 0; use this to fine-tune the distance between wrapped labels)', "0")
+                                            ),
                                         textInput('txtNODE_LABELS_DISTANCE', label='Distance of labels from nodes:', "1."),
                                         textInput('txtNODE_LABELS_FONT_SIZE', label='Size of nodes labels :', "0.5"),
                                         textInput('txtNODE_LABELS_FONT_COLOR', label='Color of nodes labels (any valid R type):', "#2F2F2F")
