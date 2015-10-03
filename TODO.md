@@ -7,9 +7,6 @@ The following list reflects the possible improvements of muxViz.
 
 #### High priority
 
-- It would be nice to have the code with a 'network of networks' layout
-
-
 ###### Notes
 
     There are open issues with the native RGL device. This is far beyond the scope of muxViz for the moment, but maybe someone could find a way to solve them
@@ -48,7 +45,7 @@ The following list reflects the possible improvements of muxViz.
 
 - Additional centrality descriptors (betweenness, closeness, random walk betweenness, random walk closeness) should be included as soon as possible (see [this paper](http://dl.acm.org/citation.cfm?id=2615687) for some references). 
 
-- Add support to calculation of [shortest paths](http://dl.acm.org/citation.cfm?id=2615687) and their visualization
+- Add support to calculation of [shortest paths](http://dl.acm.org/citation.cfm?id=2615687) and their visualization, giving possibility to specify origin/destination, width and color of the path
 
 - Additional centrality descriptors: clustering/transitivity (see [paper1](http://arxiv.org/abs/1405.0425) [paper2](http://arxiv.org/abs/1308.3182) [paper3](http://arxiv.org/abs/1403.1546) [paper4](http://arxiv.org/abs/1307.6780))
 

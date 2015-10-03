@@ -991,18 +991,25 @@ shinyUI(bootstrapPage(
                                         conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_UNIFORM'",
                                             textInput('txtNODE_COLOR_UNIFORM_COLOR', label='Color (any valid R type):', "#F2F2F2")
                                             ),
-                                        conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_TOPRANK'",    
-                                            textInput('txtNODE_COLOR_TOP', label='Number of top-ranked nodes to consider:', "5"),
+                                        conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_TOPRANK' && input.btnCalculateCentralityDiagnostics>0",
+                                            uiOutput("selVizNodeColorTopOutputID"),
+                                            textInput('txtNODE_COLOR_TOP', label='Number of top-ranked nodes to consider (monoplex or multiplex centrality is considered, according to latest calculation):', "5"),
                                             textInput('txtNODE_COLOR_TOP_COLOR_TOP', label='Color of top-ranked nodes (any valid R type):', "#FF0000"),
                                             textInput('txtNODE_COLOR_TOP_COLOR_OTHERS', label='Color of the other nodes and all edges (any valid R type):', "#F2F2F2"),         
                                             checkboxInput("chkNODE_LABELS_SHOW_ONLY_TOP","Show nodes labels only for top-ranked nodes:",TRUE),                   
                                             textInput('txtNODE_COLOR_TOP_LABELS_FONT_COLOR', label='Color of nodes labels (any valid R type):', "#000000")
                                             ),
-                                        conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_COMMUNITY'",    
+                                        conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_TOPRANK' && input.btnCalculateCentralityDiagnostics==0",
+                                            helpText("You need to calculate diagnostics before using this option.")
+                                            ),                                            
+                                        conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_COMMUNITY' && input.btnCalculateCommunityDiagnostics>0",    
                                             textInput("txtCOMMUNITY_MIN_SIZE",label="Color-code with the same RGB all nodes in communities smaller than (useful for evidencing larger communities, not valid for the multiplex):","1"),
                                             selectInput("selCommunityColorPalette", HTML("Color palette for coloring communities (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
                                                 choices = append(as.vector(paletteChoiceArray),"random"))
-                                            )                                            
+                                            ),
+                                        conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_COMMUNITY' && input.btnCalculateCommunityDiagnostics==0",
+                                            helpText("You need to calculate diagnostics before using this option.")
+                                            ) 
                                         )
                                     )
                                 ),
@@ -1010,6 +1017,9 @@ shinyUI(bootstrapPage(
                                 column(5,
                                     myBox("Other Options", "basic", 
                                         checkboxInput("chkNODE_ISOLATED_HIDE","Exclude isolated nodes from the visualization",TRUE),
+                                        conditionalPanel(condition="input.chkNODE_ISOLATED_HIDE && input.radMultiplexModel!='MULTIPLEX_IS_EDGECOLORED'",
+                                            checkboxInput("chkNODE_ISOLATED_HIDE_INTERLINKS","Find isolated nodes while accounting for interlayer links",FALSE)
+                                            ),
                                         textInput('txtNODE_TRANSP', label='Node transparency (from 0 to 1; 1 means full color):', "0.2"),
                                         checkboxInput("chkNODE_LABELS_SHOW","Show nodes labels (recommended only for small networks):",FALSE),
                                         checkboxInput("chkNODE_LABELS_SHOW_WRAP","Wrap labels",FALSE),

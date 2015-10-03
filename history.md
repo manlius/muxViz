@@ -1,3 +1,11 @@
+### 3 October 2015
+
+Manlio De Domenico
+
+- Added possibility to account or not for interlayer links to exclude isolated nodes
+- Solved a visualization bug related to top-ranked nodes coloring
+ 
+
 ### 26 September 2015
 
 Manlio De Domenico:

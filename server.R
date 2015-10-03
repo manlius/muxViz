@@ -21,9 +21,6 @@ library(ggplot2)
 library(d3Network)
 
 
-#TODO: quando plotti i top-rank, ma hai calcolato la centralità per layer, colora i primi 20 nodi per nome, non per centralità. invece funziona bene con calcolo tensorial.. si deve sistemare questa. non ha senso fare il toprank con centralità single-layer quindi si deve aggiungere un check o semplicemente impostare l if su diagnostics multilayer..
-
-
 ##################################################
 # Global variables
 ##################################################
@@ -938,6 +935,22 @@ shinyServer(function(input, output, session) {
                 choices = tmpChoice
                 )
         })
+
+        #Dynamically create the selectInput after the diagnostics have been calculated
+        output$selVizNodeColorTopOutputID <- renderUI({
+            if (input$btnImportNetworks == 0 || input$btnCalculateCentralityDiagnostics == 0 || length(input$project_file)==0)
+                return(NULL)
+    
+            tmpChoice <- NULL
+            
+            for( attrib in attributes(listDiagnostics[[1]])$names ){        
+                if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+            }
+            
+            selectInput("selVizNodeColorTopID", HTML("Rank calculated from:"), 
+                choices = tmpChoice
+                )
+        })
     
         #Dynamically create the selectInput after the diagnostics have been calculated
         output$selAnularVizOutputFeatureID <- renderUI({
@@ -1370,10 +1383,41 @@ shinyServer(function(input, output, session) {
                 if(input$chkNODE_ISOLATED_HIDE){
                     #this piece of code must be executed after the above one, to change the size of isolated
                     #nodes to zero, and also their label to ""
-                    for(l in 1:(LAYERS+1)){
-                        arrayStrength <- graph.strength(g[[l]],mode="total")
-                        V(g[[l]])[arrayStrength==0.]$size <- 0
-                        V(g[[l]])[arrayStrength==0.]$label <- ""
+                    
+                    if(input$radMultiplexModel == "MULTIPLEX_IS_EDGECOLORED"){
+                        for(l in 1:(LAYERS+1)){
+                            arrayStrength <- graph.strength(g[[l]],mode="total")
+                            V(g[[l]])[arrayStrength==0.]$size <- 0
+                            V(g[[l]])[arrayStrength==0.]$label <- ""
+                        }
+                    }else{
+                        if(input$chkNODE_ISOLATED_HIDE_INTERLINKS){
+                            #account for degree in the multiplex
+                            
+                            arrayStrength <- graph.strength(g.multi,mode="total")
+                            idxtohide <- which(arrayStrength==0.)
+                            inlayers <- floor((idxtohide-1)/Nodes) + 1
+                            innodes <- (idxtohide-1) %% Nodes + 1
+                            
+                            for(l in 1:LAYERS){
+                                idxs <- which(inlayers==l)
+                                nodes2hide <- which(V(g[[l]]) %in% innodes[idxs])
+                                V(g[[l]])[nodes2hide]$size <- 0
+                                V(g[[l]])[nodes2hide]$label <- ""
+                            }
+                            
+                            #aggregate must be done separately
+                            arrayStrength <- graph.strength(g[[LAYERS+1]],mode="total")
+                            V(g[[l]])[arrayStrength==0.]$size <- 0
+                            V(g[[l]])[arrayStrength==0.]$label <- ""
+                        }else{
+                            #do not account for interlinks, just intralinks
+                            for(l in 1:(LAYERS+1)){
+                                arrayStrength <- graph.strength(g[[l]],mode="total")
+                                V(g[[l]])[arrayStrength==0.]$size <- 0
+                                V(g[[l]])[arrayStrength==0.]$label <- ""
+                            }
+                        }
                     }
                 }
 
@@ -3415,8 +3459,7 @@ shinyServer(function(input, output, session) {
                             progress$set(message = 'This layout require more than one layer!', value = 0.9)
                         }
                     }
-                    if(input$radNetworkOfLayersLayoutType=="NETWORK_LAYERS_LAYOUT_FORCEDIRECTED"){
-                        #todo 
+                    if(input$radNetworkOfLayersLayoutType=="NETWORK_LAYERS_LAYOUT_FORCEDIRECTED"){ 
                         if(LAYERS>1){
                             scal <- as.numeric(input$txtLAYER_SCALE)
                             rescx <- scal/(XMAX-XMIN)
@@ -3708,7 +3751,9 @@ shinyServer(function(input, output, session) {
                         if(diagnosticsOK){
                             if(input$btnCalculateCentralityDiagnostics>0 && as.numeric(input$txtNODE_COLOR_TOP)>0){
                                 numTop <- as.numeric(input$txtNODE_COLOR_TOP)
-                                topNodes <- head(rev(order(arrayDiagnostics)),numTop)
+                                attrib <- input$selVizNodeColorTopID
+                                values <- as.numeric(listDiagnostics[[l]][attrib][,1])  
+                                topNodes <- head(rev(order(values)),numTop)
                                 #V(g[[l]])$color <- rgb(169,169,169, V(g[[l]])$alpha, maxColorValue=255)
                                 #E(g[[l]])$color <- rgb(169,169,169, V(g[[l]])$alpha, maxColorValue=255)
                                 V(g[[l]])$color <- input$txtNODE_COLOR_TOP_COLOR_OTHERS
@@ -3728,11 +3773,33 @@ shinyServer(function(input, output, session) {
                     if(input$chkNODE_ISOLATED_HIDE){
                         #this piece of code must be executed after the above one, to change the size of isolated
                         #nodes to zero, and also their label to ""
-                        arrayStrength <- graph.strength(g[[l]],mode="total")
-                        V(g[[l]])[arrayStrength==0.]$size <- 0
-                        V(g[[l]])[arrayStrength==0.]$label <- ""
+                        
+                        if(input$radMultiplexModel == "MULTIPLEX_IS_EDGECOLORED"){
+                            arrayStrength <- graph.strength(g[[l]],mode="total")
+                            V(g[[l]])[arrayStrength==0.]$size <- 0
+                            V(g[[l]])[arrayStrength==0.]$label <- ""
+                        }else{
+                            if(input$chkNODE_ISOLATED_HIDE_INTERLINKS){
+                                #account for degree in the multiplex
+                                
+                                arrayStrength <- graph.strength(g.multi,mode="total")
+                                idxtohide <- which(arrayStrength==0.)
+                                inlayers <- floor((idxtohide-1)/Nodes) + 1
+                                innodes <- (idxtohide-1) %% Nodes + 1
+
+                                idxs <- which(inlayers==l)
+                                nodes2hide <- which(V(g[[l]]) %in% innodes[idxs])
+                                V(g[[l]])[nodes2hide]$size <- 0
+                                V(g[[l]])[nodes2hide]$label <- ""
+                            }else{
+                                #do not account for interlinks, just intralinks
+                                arrayStrength <- graph.strength(g[[l]],mode="total")
+                                V(g[[l]])[arrayStrength==0.]$size <- 0
+                                V(g[[l]])[arrayStrength==0.]$label <- ""
+                            }
+                        }
                     }
-                   
+
                     print("  openGL phase...")
 
                     #saving default values for later usage
