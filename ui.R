@@ -814,9 +814,10 @@ shinyUI(bootstrapPage(
                                             radioButtons('radLayoutDimension', '',
                                                 c(Two_Dimensional='LAYOUT_DIMENSION_2D',
                                                     Three_Dimensional='LAYOUT_DIMENSION_3D'),
-                                                    selected='LAYOUT_DIMENSION_2D'
+                                                    selected='LAYOUT_DIMENSION_2D', inline=TRUE
                                                 ),
-                                                checkboxInput("chkPLOT_AS_EDGE_COLORED",HTML("Visualize as edge-colored multigraph (<font color='red'>Very experimental! Works only with centrality/community in the multiplex.</font>)"),FALSE)
+                                                checkboxInput("chkPLOT_AS_EDGE_COLORED",HTML("Visualize as edge-colored multigraph (<font color='red'>Very experimental! Works only with centrality/community in the multiplex.</font>)"),FALSE),
+                                                checkboxInput("chkPLOT_WITH_RGL",HTML("Use openGL (<font color='red'>Very experimental! If unchecked, standard device will be used</font>)"),TRUE)
                                             )
                                         )
                                     ),
@@ -827,7 +828,7 @@ shinyUI(bootstrapPage(
                                             c(Multiplex='LAYOUT_MULTIPLEX',
                                                 By_LayerID='LAYOUT_BY_LAYER_ID',
                                                 Independent='LAYOUT_INDEPENDENT'),
-                                                selected='LAYOUT_MULTIPLEX'
+                                                selected='LAYOUT_MULTIPLEX', inline=TRUE
                                             ),
                                         #this is a dynamic object changing because of input
                                         uiOutput("selOutputLayerID"),
@@ -851,24 +852,45 @@ shinyUI(bootstrapPage(
                                         textInput('txtPLOT_SUBTITLE', label='Plot subtitle:', ""),
                                         textInput('txtBACKGROUND_COLOR', label='Background color (any valid R type):', "white")
                                         ),
-                                    myBox("Light Options","basic",
-                                        checkboxInput("chkPLOT_LIGHT","Add a light to the plot (to improve visualization):",FALSE),
-                                        textInput('txtPLOT_LIGHT_PHI', label='Phi coordinate (deg):', "20"),
-                                        textInput('txtPLOT_LIGHT_THETA', label='Theta coordinate (deg):', "30"),
-                                        HTML("<center>"),
-                                        actionButton("btnResetLights", "Reset"),
-                                        HTML("</center>"),
-                                        helpText("It could be necessary to close the rgl window before rendering again.")
+                                    conditionalPanel(condition="input.chkPLOT_WITH_RGL",
+                                        myBox("Light Options (RGL)","basic",
+                                            checkboxInput("chkPLOT_LIGHT","Add a light to the plot (to improve visualization):",FALSE),
+                                            textInput('txtPLOT_LIGHT_PHI', label='Phi coordinate (deg):', "20"),
+                                            textInput('txtPLOT_LIGHT_THETA', label='Theta coordinate (deg):', "30"),
+                                            HTML("<center>"),
+                                            actionButton("btnResetLights", "Reset"),
+                                            HTML("</center>"),
+                                            helpText("It could be necessary to close the rgl window before rendering again.")
+                                            )
                                         )
                                     ),
                                 column(5,
                                     myBox("3D Options", "basic",    
-                                        checkboxInput('chkPLOT_AXES3D', label='Show axes', F),
-                                        textInput('txtPLOT_FOV', label='Default field of view (degrees):', "20"),
+                                        conditionalPanel(condition="input.chkPLOT_WITH_RGL",
+                                            checkboxInput('chkPLOT_AXES3D', label='Show axes (for RGL)', F),
+                                            checkboxInput("chkPLOT_REMEMBER_ORIENTATION","Remember previous orientation in a new rendering (for RGL)",TRUE),
+                                            textInput('txtPLOT_FOV', label=HTML('Default field of view (degrees; for RGL):'), "20")
+                                            ),
+                                        conditionalPanel(condition="!input.chkPLOT_WITH_RGL",
+                                            HTML('For non-RGL visualization, rotate by angle (degrees) around (<font color="red">must apply the layout again</font>):'),
+                                            tags$br(),
+                                            textInputRow('txtPLOT_ROTX', label=HTML('X-axis:'), "0"),
+                                            textInputRow('txtPLOT_ROTY', label=HTML('Y-axis:'), "120"),
+                                            textInputRow('txtPLOT_ROTZ', label=HTML('Z-axis:'), "0"),
+                                            helpText("Note: order of rotations is (x,y,z)."),
+                                            
+#                                            radioButtons('radPlotNonRGLQuickLayout', 'Quick layout:',
+#                                                c(Horizontal='PLOT_NONRGL_QUICK_LAYOUT_HORIZONTAL',
+#                                                    Vertical='PLOT_NONRGL_QUICK_LAYOUT_VERTICAL',
+#                                                    Custom='PLOT_NONRGL_QUICK_LAYOUT_NONE'),
+#                                                    selected='PLOT_NONRGL_QUICK_LAYOUT_HORIZONTAL', inline=TRUE
+#                                                ),
+                                            helpText("Horizontal layout: x=0°, y=120°, z=0°, shift>0."),
+                                            helpText("Vertical layout: x=120°, y=90°, z=-90°, shift=0")
+                                            ),
                                         textInput('txtLAYER_SHIFT', label=HTML('Shift layers (along horizontal axis to improve perspective, <font color="red">must apply the layout again</font>) by:'), "0.8"),
                                         textInput('txtLAYER_SCALE', label=HTML('Scale layers (<font color="red">must apply the layout again</font>) by:'), "4"),
-                                        textInput('txtLAYER_SPACE', label=HTML('Space between layers (<font color="red">must apply the layout again</font>) by:'), "3"),
-                                        checkboxInput("chkPLOT_REMEMBER_ORIENTATION","Remember previous orientation in a new rendering",TRUE)
+                                        textInput('txtLAYER_SPACE', label=HTML('Space between layers (<font color="red">must apply the layout again</font>) by:'), "3")
                                         )
                                     )
                                 )
@@ -881,7 +903,7 @@ shinyUI(bootstrapPage(
                                             checkboxInput("chkINTERLINK_SHOW",HTML("Show inter-links (<font color='red'>resource consuming</font>, recommended for small networks):"),TRUE),
                                             #textInput('txtINTERLINK_SHOW_FRACTION', label='Show only this random fraction of inter-links (from 0 to 1):', "0.2"),
                                             textInput('txtINTERLINK_COLOR', label='Inter-link color (any valid R type):', "#D8D8D8"),
-                                            textInput('txtINTERLINK_TYPE', label='Inter-link line style (any valid R type):', "dotted"),
+                                            selectInput('selINTERLINK_TYPE', 'Inter-link line style:', choices=                                                c("dotted", "solid", "dashed", "dotdash", "longdash", "twodash")),                                                
                                             textInput('txtINTERLINK_WIDTH', label='Inter-link width:', "0.4"),
                                             textInput('txtINTERLINK_TRANSP', label='Inter-link transparency (from 0 to 1; 1 means full color):', "0.2")
                                             )
@@ -895,24 +917,29 @@ shinyUI(bootstrapPage(
                         tabPanel("Layers",
                             fluidRow(
                                 column(5,
-                                    myBox("Layer Options", "basic",
-                                        checkboxInput("chkLAYER_SHOW","Show layers:",TRUE),
-                                        textInput('txtLAYER_LABEL_PREFIX', label='Layer label prefix (overwritten by label, if any, provided with the config file):', "L"),
-                                        textInput('txtLAYER_COLOR', label='Layer color (any valid R type; use commas to indicate a color for each layer):', "gray"),
-                                        textInput('txtLAYER_TRANSP', label='Layer transparency (from 0 to 1; 1 means full color; use commas to indicate a value for each layer):', "0.08"),
-                                        checkboxInput("chkLAYER_ID_SHOW_TOPLEFT","Show labels on top-left:",FALSE),
-                                        checkboxInput("chkLAYER_ID_SHOW_BOTTOMLEFT","Show labels on bottom-left:",TRUE),
-                                        checkboxInput("chkLAYER_ID_SHOW_TOPRIGHT","Show labels on top-right:",FALSE),
-                                        checkboxInput("chkLAYER_ID_SHOW_BOTTOMRIGHT","Show labels on bottom-right:",FALSE),
-                                        textInput('txtLAYER_ID_FONTSIZE', label='Font size for labels:', "1.5")
+                                    conditionalPanel(condition="input.chkPLOT_WITH_RGL",
+                                        myBox("Layer Options", "basic",
+                                            checkboxInput("chkLAYER_SHOW","Show layers:",TRUE),
+                                            textInput('txtLAYER_LABEL_PREFIX', label='Layer label prefix (overwritten by label, if any, provided with the config file):', "L"),
+                                            textInput('txtLAYER_COLOR', label='Layer color (any valid R type; use commas to indicate a color for each layer):', "gray"),
+                                            textInput('txtLAYER_TRANSP', label='Layer transparency (from 0 to 1; 1 means full color; use commas to indicate a value for each layer):', "0.08"),
+                                            HTML("Show labels on:"),
+                                            checkboxInput("chkLAYER_ID_SHOW_TOPLEFT","top-left",FALSE),
+                                            checkboxInput("chkLAYER_ID_SHOW_BOTTOMLEFT","bottom-left:",TRUE),
+                                            checkboxInput("chkLAYER_ID_SHOW_TOPRIGHT","top-right:",FALSE),
+                                            checkboxInput("chkLAYER_ID_SHOW_BOTTOMRIGHT","bottom-right:",FALSE),
+                                            textInput('txtLAYER_ID_FONTSIZE', label='Font size for labels:', "1.5")
+                                            )
                                         )
                                     ),
                                 column(5,
-                                    myBox("Aggregate Options", "basic",
-                                        checkboxInput("chkAGGREGATE_SHOW",HTML("Show aggregate network as separate layer (<font color='red'>must apply the layout again</font>):"),TRUE),
-                                        textInput('txtLAYER_AGGREGATE_LABEL_PREFIX', label='Aggregate layer label:', "Aggregate"),
-                                        textInput('txtLAYER_AGGREGATE_COLOR', label='Aggregate layer color (any valid R type):', "blue"),
-                                        textInput('txtLAYER_AGGREGATE_TRANSP', label='Aggregate layer transparency (from 0 to 1; 1 means full color):', "0.08")
+                                    conditionalPanel(condition="input.chkPLOT_WITH_RGL",
+                                        myBox("Aggregate Options", "basic",
+                                            checkboxInput("chkAGGREGATE_SHOW",HTML("Show aggregate network as separate layer (<font color='red'>must apply the layout again</font>):"),FALSE),
+                                            textInput('txtLAYER_AGGREGATE_LABEL_PREFIX', label='Aggregate layer label:', "Aggregate"),
+                                            textInput('txtLAYER_AGGREGATE_COLOR', label='Aggregate layer color (any valid R type):', "blue"),
+                                            textInput('txtLAYER_AGGREGATE_TRANSP', label='Aggregate layer transparency (from 0 to 1; 1 means full color):', "0.08")
+                                            )
                                         ),
                                     myBox("Inactive Layers","basic",
                                         textInput("txtLAYERS_ACTIVE", label="Deactivate the following layer(s) from the visualization (keep it blank to keep all layers active; use commas to indicate more than one layer, eg 1,2,5):")
@@ -921,16 +948,18 @@ shinyUI(bootstrapPage(
                                 ),
                             fluidRow(
                                 column(5,
-                                    myBox("Geographical Options", "basic",
-                                        checkboxInput("chkGEOGRAPHIC_BOUNDARIES_SHOW","[Layer] Show geographical boundaries if geographical layout is provided",TRUE),
-                                        checkboxInput("chkGEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW","[Aggregate] Show geographical boundaries if geographical layout is provided",TRUE),                            
-                                        selectInput("selOSMType", HTML("If geographical layout is provided, use the following background (requires Internet connection):</strong>"), 
-                                            choices = c("bing","mapbox","mapquest-aerial","osm","osm-bbike-german","osm-transport","stamen-toner","stamen-watercolor")),
-                                        helpText(HTML("<h5>Custom set of all geographical boundaries (<font color='red'>must apply the layout again</font>)</h5>")),
-                                        textInput('txtGEOGRAPHIC_LAT_MIN', label='Minimum latitude (default: automatic):', ""),
-                                        textInput('txtGEOGRAPHIC_LAT_MAX', label='Maximum latitude (default: automatic):', ""),
-                                        textInput('txtGEOGRAPHIC_LONG_MIN', label='Minimum longitude (default: automatic):', ""),
-                                        textInput('txtGEOGRAPHIC_LONG_MAX', label='Maximum longitude (default: automatic):', "")
+                                    conditionalPanel(condition="input.chkPLOT_WITH_RGL",
+                                        myBox("Geographical Options", "basic",
+                                            checkboxInput("chkGEOGRAPHIC_BOUNDARIES_SHOW","[Layer] Show geographical boundaries if geographical layout is provided",TRUE),
+                                            checkboxInput("chkGEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW","[Aggregate] Show geographical boundaries if geographical layout is provided",TRUE),                            
+                                            selectInput("selOSMType", HTML("If geographical layout is provided, use the following background (requires Internet connection):</strong>"), 
+                                                choices = c("bing","mapbox","mapquest-aerial","osm","osm-bbike-german","osm-transport","stamen-toner","stamen-watercolor")),
+                                            helpText(HTML("<h5>Custom set of all geographical boundaries (<font color='red'>must apply the layout again</font>)</h5>")),
+                                            textInput('txtGEOGRAPHIC_LAT_MIN', label='Minimum latitude (default: automatic):', ""),
+                                            textInput('txtGEOGRAPHIC_LAT_MAX', label='Maximum latitude (default: automatic):', ""),
+                                            textInput('txtGEOGRAPHIC_LONG_MIN', label='Minimum longitude (default: automatic):', ""),
+                                            textInput('txtGEOGRAPHIC_LONG_MAX', label='Maximum longitude (default: automatic):', "")
+                                            )
                                         )
                                     )
                                 )
@@ -952,7 +981,7 @@ shinyUI(bootstrapPage(
                                             c(Constant='NODE_SIZE_PROPORTIONAL_TYPE_NORMAL',
                                                 Log='NODE_SIZE_PROPORTIONAL_TYPE_LOG',
                                                 LogLog='NODE_SIZE_PROPORTIONAL_TYPE_LOGLOG'),
-                                                selected='NODE_SIZE_PROPORTIONAL_TYPE_LOGLOG'
+                                                selected='NODE_SIZE_PROPORTIONAL_TYPE_LOGLOG', inline=TRUE
                                             ),
                                         textInput('txtNODE_DEFAULT_SIZE', label='Default size (used for fine tuning of Uniform, Log and LogLog option):', "10")
                                         )
@@ -1018,9 +1047,10 @@ shinyUI(bootstrapPage(
                                     myBox("Other Options", "basic", 
                                         checkboxInput("chkNODE_ISOLATED_HIDE","Exclude isolated nodes from the visualization",TRUE),
                                         conditionalPanel(condition="input.chkNODE_ISOLATED_HIDE && input.radMultiplexModel!='MULTIPLEX_IS_EDGECOLORED'",
-                                            checkboxInput("chkNODE_ISOLATED_HIDE_INTERLINKS","Find isolated nodes while accounting for interlayer links",FALSE)
+                                            checkboxInput("chkNODE_ISOLATED_HIDE_INTERLINKS","Find isolated nodes while accounting for interlayer links",TRUE)
                                             ),
-                                        textInput('txtNODE_TRANSP', label='Node transparency (from 0 to 1; 1 means full color):', "0.2"),
+                                        textInput('txtNODE_TRANSP', label='Node transparency (from 0 to 1; 1 means full color):', "0.8"),
+                                        textInput("txtNODE_FRAME_COLOR", label="Node frame color (any valid R type; keep it blank to use the same as node color):",""),
                                         checkboxInput("chkNODE_LABELS_SHOW","Show nodes labels (recommended only for small networks):",FALSE),
                                         checkboxInput("chkNODE_LABELS_SHOW_WRAP","Wrap labels",FALSE),
                                         conditionalPanel(condition="input.chkNODE_LABELS_SHOW_WRAP",
@@ -1041,34 +1071,82 @@ shinyUI(bootstrapPage(
                                         radioButtons('radEdgeSizeType', 'Edge size proportional to:',
                                             c(Uniform='EDGE_SIZE_PROPORTIONAL_TO_UNIFORM',
                                                 Weight='EDGE_SIZE_PROPORTIONAL_TO_WEIGHT'),
-                                                selected='EDGE_SIZE_PROPORTIONAL_TO_WEIGHT'
+                                                selected='EDGE_SIZE_PROPORTIONAL_TO_WEIGHT', inline=TRUE
                                             ),
                                         radioButtons('radEdgeSizeType2', 'Type of proportionality:',
                                             c(Constant='EDGE_SIZE_PROPORTIONAL_TYPE_NORMAL',
                                                 Log='EDGE_SIZE_PROPORTIONAL_TYPE_LOG',
                                                 LogLog='EDGE_SIZE_PROPORTIONAL_TYPE_LOGLOG'),
-                                                selected='EDGE_SIZE_PROPORTIONAL_TYPE_LOGLOG'
+                                                selected='EDGE_SIZE_PROPORTIONAL_TYPE_LOGLOG', inline=TRUE
                                             ),
                                         textInput('txtEDGE_DEFAULT_SIZE', label='Default size (used for fine tuning of Uniform, Log and LogLog option):', "2")
                                         )
                                     ),
                                 column(5,
                                     myBox("Other Options", "basic",
-                                        textInput('txtEDGE_BENDING', label='Bending factor (0 means straight; max 1):', "0.2"),
+                                        textInput('txtEDGE_BENDING', label='Bending factor (0 means straight; max 1):', "0"),
                                         textInput('txtEDGE_TRANSP', label='Edge transparency (from 0 to 1; 1 means full color):', "0.2"),
-                                        textInput('txtLAYER_ARROW_SIZE', label='Arrow size:', "0.5"),
-                                        textInput('txtLAYER_ARROW_WIDTH', label='Arrow width:', "0.5")
+                                        textInput('txtLAYER_ARROW_SIZE', label='Arrow size:', "0.2"),
+                                        textInput('txtLAYER_ARROW_WIDTH', label='Arrow width:', "0.2")
                                         )
                                     )
                                 )
                             ),
                         tabPanel("Export",
                             br(),
-                            HTML("<center>"),
-                            actionButton("btnExportRendering","Export PNG"),
-                            actionButton("btnExportRenderingPDF","Export PDF"),
-                            actionButton("btnExportRenderingWeb","Export webGL"),
-                            HTML("</center>")
+                            fluidRow(
+                                column(5,
+                                    myBox("Options", "basic",
+                                        conditionalPanel(condition="input.chkPLOT_WITH_RGL",
+                                            radioButtons('radRGLExport', 'Select the format:',
+                                                c(PNG='RGL_EXPORT_PNG',
+                                                    PDF='RGL_EXPORT_PDF',
+                                                    SVG='RGL_EXPORT_SVG',
+                                                    webGL='RGL_EXPORT_WEBGL'),
+                                                    selected='RGL_EXPORT_PNG', inline=TRUE
+                                                ),
+                                            HTML("<center>"),
+                                            conditionalPanel(condition="input.radRGLExport=='RGL_EXPORT_PNG'",
+                                                actionButton("btnExportRendering","Export PNG")
+                                                ),
+                                            conditionalPanel(condition="input.radRGLExport=='RGL_EXPORT_PDF'",
+                                                actionButton("btnExportRenderingPDF","Export PDF")
+                                                ),
+                                            conditionalPanel(condition="input.radRGLExport=='RGL_EXPORT_SVG'",
+                                                actionButton("btnExportRenderingSVG","Export SVG")
+                                                ),
+                                            conditionalPanel(condition="input.radRGLExport=='RGL_EXPORT_WEBGL'",
+                                                actionButton("btnExportRenderingWeb","Export webGL")
+                                                ),
+                                            HTML("</center>")
+                                            ),
+                                        conditionalPanel(condition="!input.chkPLOT_WITH_RGL",
+                                            radioButtons('radNORGLExport', 'Select the format:',
+                                                c(PNG='NORGL_EXPORT_PNG',
+                                                    PDF='NORGL_EXPORT_PDF'),
+                                                    selected='NORGL_EXPORT_PNG', inline=TRUE
+                                                ),
+                                            conditionalPanel(condition="input.radNORGLExport=='NORGL_EXPORT_PNG'",
+                                                textInputRow("txtExportRenderingClassicPNGWidth", "Width (px):", "1024"),
+                                                textInputRow("txtExportRenderingClassicPNGHeight", "Height (px):", "768"),
+                                                textInputRow("txtExportRenderingClassicPNGResolution", "Resolution (dpi):", "300"),
+                                                tags$br(),
+                                                HTML("<center>"),
+                                                actionButton("btnExportRenderingClassicPNG","Export PNG"),
+                                                HTML("</center>")
+                                                ),
+                                            conditionalPanel(condition="input.radNORGLExport=='NORGL_EXPORT_PDF'",
+                                                textInputRow("txtExportRenderingClassicPDFWidth", "Width (px):", "1024"),
+                                                textInputRow("txtExportRenderingClassicPDFHeight", "Height (px):", "768"),
+                                                tags$br(),
+                                                HTML("<center>"),
+                                                actionButton("btnExportRenderingClassicPDF","Export PDF"),
+                                                HTML("</center>")
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
                             )
                         ),
                     value=0

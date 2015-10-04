@@ -38,8 +38,11 @@ btnRenderDynamicsSnapshotsValue <- 0
 btnApplyLayoutValue <- 0
 btnRenderNetworksValue <- 0
 btnExportRenderingValue <- 0
+btnExportRenderingSVGValue <- 0
 btnExportRenderingPDFValue <- 0
 btnExportRenderingWebValue <- 0
+btnExportRenderingClassicPNGValue <- 0
+btnExportRenderingClassicPDFValue <- 0
 btnAnularVizValue <- 0
 btnCalculateReducibilityValue <- 0
 btnSaveSessionValue <- 0
@@ -213,6 +216,49 @@ text3dwrap <- function( coordsMatrix3D, labels, wraplength, wrapoffset, layersca
         text3d(coordsMatrix3D, text=labels, adj=adj, color=color, family=family, cex=cex)
         print( cbind(coordsMatrix3D, labels) )
     }
+}
+
+addalpha <- function(colors, alpha=1.0) {
+  r <- col2rgb(colors, alpha=T)
+  # Apply alpha
+  r[4,] <- alpha*255
+  r <- r/255.0
+  return(rgb(r[1,], r[2,], r[3,], r[4,]))
+}
+
+
+#http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
+Rotx <- function(th){ 
+    th<-th*pi/360.
+    Rx<-matrix(nrow=3,ncol=3,0)
+    Rx[2,2] <- cos(th)
+    Rx[2,3] <- -sin(th)
+    Rx[3,2] <- -Rx[2,3]
+    Rx[3,3] <- Rx[1,1]
+    Rx[1,1] <- 1
+    return(Rx) 
+}
+
+Roty <- function(th){ 
+    th<-th*pi/360.
+    Ry<-matrix(nrow=3,ncol=3,0)
+    Ry[1,1] <- cos(th)
+    Ry[1,3] <- sin(th)
+    Ry[3,1] <- -Ry[1,3]
+    Ry[3,3] <- Ry[1,1]
+    Ry[2,2] <- 1
+    return(Ry) 
+}
+
+Rotz <- function(th){ 
+    th<-th*pi/360.
+    Rz<-matrix(nrow=3,ncol=3,0)
+    Rz[1,1] <- cos(th)
+    Rz[1,2] <- -sin(th)
+    Rz[2,1] <- -Rz[1,2]
+    Rz[2,2] <- Rz[1,1]
+    Rz[3,3] <- 1
+    return(Rz) 
 }
 
 #to open/save a session.. still experimental
@@ -1375,9 +1421,7 @@ shinyServer(function(input, output, session) {
                 if(!input$chkNODE_LABELS_SHOW){
                     for(l in 1:(LAYERS+1)) V(g[[l]])$label <- ""
                 }else{
-                    for(l in 1:(LAYERS+1)) V(g[[l]])$label <- ""
-                    #for(l in 1:(LAYERS+1)) V(g[[l]])$label <- nodesLabel[[l]]
-                    #I add the labels as text3d in FinalizeRendering..
+                    for(l in 1:(LAYERS+1)) V(g[[l]])$label <- nodesLabel[[l]]
                 }
 
                 if(input$chkNODE_ISOLATED_HIDE){
@@ -1408,8 +1452,8 @@ shinyServer(function(input, output, session) {
                             
                             #aggregate must be done separately
                             arrayStrength <- graph.strength(g[[LAYERS+1]],mode="total")
-                            V(g[[l]])[arrayStrength==0.]$size <- 0
-                            V(g[[l]])[arrayStrength==0.]$label <- ""
+                            V(g[[LAYERS+1]])[arrayStrength==0.]$size <- 0
+                            V(g[[LAYERS+1]])[arrayStrength==0.]$label <- ""
                         }else{
                             #do not account for interlinks, just intralinks
                             for(l in 1:(LAYERS+1)){
@@ -1432,7 +1476,8 @@ shinyServer(function(input, output, session) {
                 }else{
                     for(l in 1:(LAYERS+1)) E(g[[l]])$size <- defaultEsize[[l]]
                 }
-                
+
+
                 print("Rendering dynamics")
 
                 for(timestep in min(timestepsList):max(timestepsList)){                    
@@ -1441,11 +1486,37 @@ shinyServer(function(input, output, session) {
                                         
                     print(paste("  Timeline (",100*which(timestepsList==timestep)/(max(timestepsList)-min(timestepsList)+1),"%",") -> timestep:",timestep))
 
-                    rgl.clear()
-                    tryCatch(rgl.pop("lights"),error=function(e) print("Warning: no lights to pop"))
-                    rgl.light(theta = 0, phi = 0, viewpoint.rel = TRUE, ambient = "#FFFFFF", 
-                   diffuse = "#FFFFFF", specular = "#FFFFFF")
+                    xmin.tmp <- 1e100
+                    xmax.tmp <- -1e100
+                    ymin.tmp <- 1e100
+                    ymax.tmp <- -1e100
 
+                    if(input$chkPLOT_WITH_RGL){
+                        rgl.clear()
+                        tryCatch(rgl.pop("lights"),error=function(e) print("Warning: no lights to pop"))
+                        rgl.light(theta = 0, phi = 0, viewpoint.rel = TRUE, ambient = "#FFFFFF", 
+                       diffuse = "#FFFFFF", specular = "#FFFFFF")
+                    }else{                        
+                        for(l in 1:LAYERS){
+                            xmin.tmp <- min(xmin.tmp, min(layouts[[l]][,1]))
+                            xmax.tmp <- max(xmax.tmp, max(layouts[[l]][,1]))
+                            ymin.tmp <- min(ymin.tmp, min(layouts[[l]][,2]))
+                            ymax.tmp <- max(ymax.tmp, max(layouts[[l]][,2]))
+                        }
+                        
+                        if(input$chkAGGREGATE_SHOW){
+                            l <- LAYERS+1
+                            xmin.tmp <- min(xmin.tmp, min(layouts[[l]][,1]))
+                            xmax.tmp <- max(xmax.tmp, max(layouts[[l]][,1]))
+                            ymin.tmp <- min(ymin.tmp, min(layouts[[l]][,2]))
+                            ymax.tmp <- max(ymax.tmp, max(layouts[[l]][,2]))
+                        }
+                        
+                        xmin.tmp <- min(xmin.tmp*0.95, xmin.tmp*1.05)
+                        xmax.tmp <- max(xmax.tmp*0.95, xmax.tmp*1.05)
+                        ymin.tmp <- min(ymin.tmp*0.95, ymin.tmp*1.05)
+                        ymax.tmp <- max(ymax.tmp*0.95, ymax.tmp*1.05)                        
+                    }
 
                     #for each time step, we have to modify the state of the network 
                     #nodes
@@ -1498,6 +1569,31 @@ shinyServer(function(input, output, session) {
 
                     vecInactiveLayers <- as.numeric(strsplit(input$txtLAYERS_ACTIVE, ",")[[1]])
 
+                    timelineFolder <- concatenatePath( concatenatePath("export","timeline"), input$txtProjectName)
+
+                    #create the folder if it does not exist
+                    dir.create(buildPath("export","timeline"), showWarnings = FALSE)
+                    dir.create(timelineFolder, showWarnings = FALSE)
+
+                    FILE_RGL_SNAPSHOT <- buildPath(timelineFolder,paste(input$txtProjectName,"_",sprintf("%05d",timestep),".png",sep=""))
+                    
+                    if(!input$chkPLOT_WITH_RGL){
+                        width <- as.numeric(input$txtExportRenderingClassicPNGWidth)
+                        height <- as.numeric(input$txtExportRenderingClassicPNGHeight)
+                        dpi <- as.numeric(input$txtExportRenderingClassicPNGResolution)
+        
+                        png(filename=FILE_RGL_SNAPSHOT, width=width, height=height, res=dpi)
+
+                        par(mar=c(0, 0, 0, 0), xaxs='i', yaxs='i') 
+                        par(oma=c(0, 0, 0, 0))
+
+                        plot(x=NULL, y=NULL, type="n", 
+                            xlim=c(xmin.tmp,xmax.tmp), ylim=c(ymin.tmp,ymax.tmp)
+                            )
+                        rect(par("usr")[1], par("usr")[3], par("usr")[2], par("usr")[4], col =input$txtBACKGROUND_COLOR)
+
+                    }
+
                     #now render the network
                     for(l in 1:(LAYERS+1)){
                         if( l %in% vecInactiveLayers ){
@@ -1519,27 +1615,60 @@ shinyServer(function(input, output, session) {
                         }else{
                             print(paste("    Timeline Layer: Aggregate"))    
                         }
-                        
-                        print("      openGL phase...")
-                        #plot the graph with openGL    
-                        #print(layouts[[l]])
-                        #V(g[[l]])$label <- ""
 
-                        rglplot(g[[l]], layout=layouts[[l]],
+                        #other assignments                        
+                        V(g[[l]])$vertex.label.color <- input$txtNODE_LABELS_FONT_COLOR
+                        E(g[[l]])$curve<- as.numeric(input$txtEDGE_BENDING)
+                        V(g[[l]])$shape <- "circle"
+                        V(g[[l]])$shape[V(g[[l]])$size==0] <- "none"                    
+                        V(g[[l]])$framecolor <- input$txtNODE_FRAME_COLOR
+                        if(input$txtNODE_FRAME_COLOR==""){ V(g[[l]])$framecolor <- V(g[[l]])$color }
+        
+                        if(input$chkPLOT_WITH_RGL){
+                            print("      openGL phase...")
+                            #plot the graph with openGL    
+                            #print(layouts[[l]])
+                            #V(g[[l]])$label <- ""
+    
+                            rglplot(g[[l]], layout=layouts[[l]],
+                                                vertex.size=V(g[[l]])$size, 
+                                                vertex.color=V(g[[l]])$color,
+                                                vertex.label="",#V(g[[l]])$label,
+                                                vertex.label.dist=as.numeric(input$txtNODE_LABELS_DISTANCE), #,+ 0.01*V(g[[l]])$size,
+                                                vertex.label.font=2,
+                                                vertex.label.cex=0, 
+                                                vertex.label.color=V(g[[l]])$vertex.label.color,
+                                                edge.width=E(g[[l]])$size, 
+                                                edge.color=E(g[[l]])$color, 
+                                                edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
+                                                edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
+                                                edge.curved=E(g[[l]])$curve,
+                                                rescale=F)
+                        }else{
+                            print("  Standard device output...")
+        
+                            #plot the graph with openGL    
+                            #print(layouts[[l]])
+                            plot(g[[l]], layout=layouts[[l]],
                                             vertex.size=V(g[[l]])$size, 
+                                            vertex.shape=V(g[[l]])$shape,
                                             vertex.color=V(g[[l]])$color,
-                                            vertex.label="",#V(g[[l]])$label,
+                                            vertex.frame.color=V(g[[l]])$framecolor,
+                                            vertex.label=V(g[[l]])$label,
                                             vertex.label.dist=as.numeric(input$txtNODE_LABELS_DISTANCE), #,+ 0.01*V(g[[l]])$size,
                                             vertex.label.font=2,
-                                            vertex.label.cex=0, 
+                                            vertex.label.cex=as.numeric(input$txtNODE_LABELS_FONT_SIZE), 
                                             vertex.label.color=V(g[[l]])$vertex.label.color,
                                             edge.width=E(g[[l]])$size, 
                                             edge.color=E(g[[l]])$color, 
                                             edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
                                             edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
                                             edge.curved=E(g[[l]])$curve,
-                                            rescale=F)
-                                                                
+                                            rescale=F, add=T)
+                                            
+                                title(main=input$txtPLOT_TITLE, sub=input$txtPLOT_SUBTITLE)
+                        }
+                                                                                        
                         print(paste("    Layout of layer: finished."))
                     }
 
@@ -1565,41 +1694,53 @@ shinyServer(function(input, output, session) {
                                 layout.multi[ (1 + (l-1)*Nodes):(l*Nodes), 3] <<- layouts[[l]][, 3]
                             }
         
-                            #Print the interlinks by superimposing the g.multi
-                            rglplot(g.multi, layout=layout.multi,
-                                                vertex.size=0, 
-                                                vertex.label="",
-                                                vertex.label.cex=0,
-                                                edge.width=E(g.multi)$width, 
-                                                edge.color=input$txtINTERLINK_COLOR, 
-                                                edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
-                                                edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
-                                                edge.curved=as.numeric(input$txtEDGE_BENDING),
-                                                edge.lty = input$txtINTERLINK_TYPE,
-                                                rescale=F)
-                            #edge/node transparancy not yet supported by rglplot
-                            #alpha=as.numeric(input$txtINTERLINK_TRANSP))
+                            if(input$chkPLOT_WITH_RGL){
+                                #Print the interlinks by superimposing the g.multi
+                                rglplot(g.multi, layout=layout.multi,
+                                                    vertex.size=0, 
+                                                    vertex.label="",
+                                                    vertex.label.cex=0,
+                                                    edge.width=E(g.multi)$width, 
+                                                    edge.color=input$txtINTERLINK_COLOR, 
+                                                    edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
+                                                    edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
+                                                    edge.curved=as.numeric(input$txtEDGE_BENDING),
+                                                    edge.lty = input$selINTERLINK_TYPE,
+                                                    rescale=F)
+                                #edge/node transparancy not yet supported by rglplot
+                                #alpha=as.numeric(input$txtINTERLINK_TRANSP))
+                            }else{
+                                plot(g.multi, layout=layout.multi,
+                                            vertex.size=0, 
+                                            vertex.shape="none",
+                                            vertex.label="",
+                                            vertex.label.cex=0,
+                                            edge.width=E(g.multi)$width, 
+                                            edge.color=addalpha(input$txtINTERLINK_COLOR,as.numeric(input$txtINTERLINK_TRANSP)), 
+                                            edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
+                                            edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
+                                            edge.curved=as.numeric(input$txtEDGE_BENDING),
+                                            edge.lty = input$selINTERLINK_TYPE,
+                                            rescale=F, add=T)
+                            }
                         }                
                     }                
 
-                    #Call the visualization of other graphics
-                    FinalizeRenderingMultiplex(progress)
-
-                    if(!is.na(tmpdfTimeline$labelStep[1])){
-                        #assuming that all labels for this timestep are identical, as it should be..
-                        title3d(input$txtPLOT_TITLE, tmpdfTimeline$labelStep[1],'','','')
-    
-                        print(paste("    Exporting snapshot",tmpdfTimeline$labelStep[1],"..."))
+                    if(input$chkPLOT_WITH_RGL){
+                        #Call the visualization of other graphics
+                        FinalizeRenderingMultiplex(progress)
+                    
+                        if(!is.na(tmpdfTimeline$labelStep[1])){
+                            #assuming that all labels for this timestep are identical, as it should be..
+                            title3d(input$txtPLOT_TITLE, tmpdfTimeline$labelStep[1],'','','')
+        
+                            print(paste("    Exporting snapshot",tmpdfTimeline$labelStep[1],"..."))
+                        }
+                    
+                        rgl.snapshot(FILE_RGL_SNAPSHOT) 
+                    }else{
+                        dev.off()
                     }
-                                        
-                    timelineFolder <- concatenatePath( concatenatePath("export","timeline"), input$txtProjectName)
-
-                    #create the folder if it does not exist
-                    dir.create(buildPath("export","timeline"), showWarnings = FALSE)
-                    dir.create(timelineFolder, showWarnings = FALSE)
-
-                    FILE_RGL_SNAPSHOT <- buildPath(timelineFolder,paste(input$txtProjectName,"_",sprintf("%05d",timestep),".png",sep=""))
-                    rgl.snapshot(FILE_RGL_SNAPSHOT) 
                     #Sys.sleep(1)
                 }
                 
@@ -1721,7 +1862,7 @@ shinyServer(function(input, output, session) {
                     g.motif <- simplify(g.motif,edge.attr.comb=list(color="sum"))
                     par(mar=c(0, 0, 0, 0), xaxs='i', yaxs='i') 
                     par(oma=c(0, 0, 0, 0))
-                    plot(x=NULL, y=NULL, type="n", 
+                    plot(x=NULL, y=NULL, type="n",
                         xlim=c(-1,1), ylim=c(-1,1)
                         )
 
@@ -3536,6 +3677,16 @@ shinyServer(function(input, output, session) {
                     }
                 }            
 
+                #rotate the view, if needed
+                thx <- as.numeric(input$txtPLOT_ROTX)
+                thy <- as.numeric(input$txtPLOT_ROTY)
+                thz <- as.numeric(input$txtPLOT_ROTZ)
+                for(l in 1:(LAYERS+1)){
+                    if(thx>0.){ layouts[[l]] <<- t( Rotx(thx) %*% t(layouts[[l]]) ) }
+                    if(thy>0.){ layouts[[l]] <<- t( Roty(thy) %*% t(layouts[[l]]) ) }
+                    if(thz>0.){ layouts[[l]] <<- t( Rotz(thz) %*% t(layouts[[l]]) ) }
+                }            
+
                 progress$set(message = 'Layout Completed!', value = 1)
                 Sys.sleep(2)
                 print("Layouting finished. Proceeding with openGL plot of each layer.")
@@ -3548,265 +3699,311 @@ shinyServer(function(input, output, session) {
       	################################################
       	# Plot
       	################################################
-        observe({
-            if(input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
-    
-            if(btnRenderNetworksValue==input$btnRenderNetworks) return()
-            
-            isolate({
-                progress <- shiny::Progress$new(session)
-                on.exit(progress$close())
-    
-                progress$set(message = 'Start rendering...', value = 0.05)
-                Sys.sleep(1)
-    
+      	makeRendering <- function(){
+            progress <- shiny::Progress$new(session)
+            on.exit(progress$close())
+
+            progress$set(message = 'Start rendering...', value = 0.05)
+            Sys.sleep(1)
+
+            if(input$chkPLOT_WITH_RGL){
                 #save orientation for later user, if needed
                 orientationRGL <<- par3d(no.readonly=TRUE)
                 
                 rgl.clear()
                 tryCatch(rgl.pop("lights"),error=function(e) print("Warning: no lights to pop"))
                 rgl.light(theta = 0, phi = 0, viewpoint.rel = TRUE, ambient = "#FFFFFF", 
-               diffuse = "#FFFFFF", specular = "#FFFFFF")
+                diffuse = "#FFFFFF", specular = "#FFFFFF")
                 #print(rgl.ids())
                 #if ( length(rgl.ids) )
                 #rgl.pop(type="lights")
-
-                #layer color
-                layer.color <- strsplit(input$txtLAYER_COLOR,",")[[1]]
-                if(length(layer.color)==LAYERS){
-                    for(l in 1:LAYERS){
-                        layerColor[[l]] <<- layer.color[l]
-                    }
-                }else{
-                    for(l in 1:LAYERS){
-                        layerColor[[l]] <<- input$txtLAYER_COLOR
-                    }                    
+            }else{
+                #plot.new()
+                par(mar=c(0, 0, 0, 0), xaxs='i', yaxs='i') 
+                par(oma=c(0, 0, 0, 0))
+                
+                xmin.tmp <- 1e100
+                xmax.tmp <- -1e100
+                ymin.tmp <- 1e100
+                ymax.tmp <- -1e100
+                for(l in 1:LAYERS){
+                    xmin.tmp <- min(xmin.tmp, min(layouts[[l]][,1]))
+                    xmax.tmp <- max(xmax.tmp, max(layouts[[l]][,1]))
+                    ymin.tmp <- min(ymin.tmp, min(layouts[[l]][,2]))
+                    ymax.tmp <- max(ymax.tmp, max(layouts[[l]][,2]))
                 }
+                
+                if(input$chkAGGREGATE_SHOW){
+                    l <- LAYERS+1
+                    xmin.tmp <- min(xmin.tmp, min(layouts[[l]][,1]))
+                    xmax.tmp <- max(xmax.tmp, max(layouts[[l]][,1]))
+                    ymin.tmp <- min(ymin.tmp, min(layouts[[l]][,2]))
+                    ymax.tmp <- max(ymax.tmp, max(layouts[[l]][,2]))
+                }
+                
+                xmin.tmp <- min(xmin.tmp*0.95, xmin.tmp*1.05)
+                xmax.tmp <- max(xmax.tmp*0.95, xmax.tmp*1.05)
+                ymin.tmp <- min(ymin.tmp*0.95, ymin.tmp*1.05)
+                ymax.tmp <- max(ymax.tmp*0.95, ymax.tmp*1.05)
+                
+                plot(x=NULL, y=NULL, type="n", 
+                    xlim=c(xmin.tmp,xmax.tmp), ylim=c(ymin.tmp,ymax.tmp)
+                    )
+                rect(par("usr")[1], par("usr")[3], par("usr")[2], par("usr")[4], col =input$txtBACKGROUND_COLOR)
+            }
+            
+            #layer color
+            layer.color <- strsplit(input$txtLAYER_COLOR,",")[[1]]
+            if(length(layer.color)==LAYERS){
+                for(l in 1:LAYERS){
+                    layerColor[[l]] <<- layer.color[l]
+                }
+            }else{
+                for(l in 1:LAYERS){
+                    layerColor[[l]] <<- input$txtLAYER_COLOR
+                }                    
+            }
 
-                #layer alpha
-                layer.alpha <- strsplit(input$txtLAYER_TRANSP,",")[[1]]
-                if(length(layer.alpha)==LAYERS){
-                    for(l in 1:LAYERS){
-                        layerColorAlpha[[l]] <<- as.numeric(layer.alpha[l])
-                    }
-                }else{
-                    for(l in 1:LAYERS){
-                        layerColorAlpha[[l]] <<- as.numeric(input$txtLAYER_TRANSP)
-                    }                    
-                }                
+            #layer alpha
+            layer.alpha <- strsplit(input$txtLAYER_TRANSP,",")[[1]]
+            if(length(layer.alpha)==LAYERS){
+                for(l in 1:LAYERS){
+                    layerColorAlpha[[l]] <<- as.numeric(layer.alpha[l])
+                }
+            }else{
+                for(l in 1:LAYERS){
+                    layerColorAlpha[[l]] <<- as.numeric(input$txtLAYER_TRANSP)
+                }                    
+            }                
 
-                #create the vector for inactive layers 
-                vecInactiveLayers <- as.numeric(strsplit(input$txtLAYERS_ACTIVE, ",")[[1]])
+            #create the vector for inactive layers 
+            vecInactiveLayers <- as.numeric(strsplit(input$txtLAYERS_ACTIVE, ",")[[1]])
 
-                for(l in 1:(LAYERS+1)){
-                    if( l %in% vecInactiveLayers ){
-                        #skip layers set to be inactive
+            for(l in 1:(LAYERS+1)){
+                if( l %in% vecInactiveLayers ){
+                    #skip layers set to be inactive
+                    next
+                }
+                progress$set(message = paste('Layer',l,'...'), value = 0.05 + 0.85*l/(LAYERS+1))
+
+                if(l==(LAYERS+1)){
+                    if( (!input$chkAGGREGATE_SHOW || LAYERS==1) || 
+                        (input$chkPLOT_AS_EDGE_COLORED && LAYOUT_DIMENSION==3) ||
+                        (input$radNetworkOfLayersLayoutType!="NETWORK_LAYERS_LAYOUT_ONELINE")
+                        ){
+                        #if we don't want to show the aggregate, we must skip the rest
+                        #we must skip also if the layers is just 1
                         next
                     }
-                    progress$set(message = paste('Layer',l,'...'), value = 0.05 + 0.85*l/(LAYERS+1))
-    
-                    if(l==(LAYERS+1)){
-                        if( (!input$chkAGGREGATE_SHOW || LAYERS==1) || 
-                            (input$chkPLOT_AS_EDGE_COLORED && LAYOUT_DIMENSION==3) ||
-                            (input$radNetworkOfLayersLayoutType!="NETWORK_LAYERS_LAYOUT_ONELINE")
-                            ){
-                            #if we don't want to show the aggregate, we must skip the rest
-                            #we must skip also if the layers is just 1
-                            next
-                        }
-                    }
-                    if(l<LAYERS+1){
-                        print(paste("Layer: ",l))
-                    }else{
-                        print(paste("Layer: Aggregate"))    
-                    }
-                    #V(g[[l]])$vertex.label.color <- rgb(47,47,47,0,maxColorValue = 255)
-                    V(g[[l]])$vertex.label.color <- input$txtNODE_LABELS_FONT_COLOR
-    
-                    #this set the transparency level of edges and nodes.. it can be customized
-                    E(g[[l]])$alpha <- floor(as.numeric(input$txtEDGE_TRANSP)*255)
-                    V(g[[l]])$alpha <- floor(as.numeric(input$txtNODE_TRANSP)*255)
-                
+                }
+                if(l<LAYERS+1){
+                    print(paste("Layer: ",l))
+                }else{
+                    print(paste("Layer: Aggregate"))    
+                }
+                #V(g[[l]])$vertex.label.color <- rgb(47,47,47,0,maxColorValue = 255)
+                V(g[[l]])$vertex.label.color <- input$txtNODE_LABELS_FONT_COLOR
 
-                    print("Other graphic options...")
-                    
-                    #other assignments
-                    E(g[[l]])$curve<- as.numeric(input$txtEDGE_BENDING)
+                #this set the transparency level of edges and nodes.. it can be customized
+                #E(g[[l]])$alpha <- floor(as.numeric(input$txtEDGE_TRANSP)*255)
+                #V(g[[l]])$alpha <- floor(as.numeric(input$txtNODE_TRANSP)*255)
+            
+
+                print("Other graphic options...")
                 
-                    if(!input$chkNODE_LABELS_SHOW){
-                        V(g[[l]])$label <- ""
-                    }else{
-                        V(g[[l]])$label <- nodesLabel[[l]]
-                    }
-                
-                    arrayDiagnostics <- 1
-    
-                    if(diagnosticsOK){
-                        if(input$btnCalculateCentralityDiagnostics>0){
-                            #the GUI is visualizing the list of possibilities
-                            attrib <- input$selVizNodeSizeID
-                            if(attrib=="Uniform"){
-                                arrayDiagnostics <- rep(1,Nodes)
-                            }else{
-                                arrayDiagnostics <- as.numeric(listDiagnostics[[l]][attrib][,1])
-                            }
+                #other assignments
+                E(g[[l]])$curve<- as.numeric(input$txtEDGE_BENDING)
+            
+                if(!input$chkNODE_LABELS_SHOW){
+                    V(g[[l]])$label <- ""
+                }else{
+                    V(g[[l]])$label <- nodesLabel[[l]]
+                }
+            
+                arrayDiagnostics <- 1
+
+                if(diagnosticsOK){
+                    if(input$btnCalculateCentralityDiagnostics>0){
+                        #the GUI is visualizing the list of possibilities
+                        attrib <- input$selVizNodeSizeID
+                        if(attrib=="Uniform"){
+                            arrayDiagnostics <- rep(1,Nodes)
                         }else{
-                            #the GUI shows only the UNIFORM option
-                            if(input$radNodeSizeType=="NODE_SIZE_PROPORTIONAL_TO_UNIFORM"){
-                                arrayDiagnostics <- rep(1,Nodes)
-                            }
+                            arrayDiagnostics <- as.numeric(listDiagnostics[[l]][attrib][,1])
+                        }
+                    }else{
+                        #the GUI shows only the UNIFORM option
+                        if(input$radNodeSizeType=="NODE_SIZE_PROPORTIONAL_TO_UNIFORM"){
+                            arrayDiagnostics <- rep(1,Nodes)
                         }
                     }
-                                    
-                    if(input$radNodeSizeType2=="NODE_SIZE_PROPORTIONAL_TYPE_NORMAL"){
-                        V(g[[l]])$size <- as.numeric(input$txtNODE_DEFAULT_SIZE)*arrayDiagnostics
-                    }else if(input$radNodeSizeType2=="NODE_SIZE_PROPORTIONAL_TYPE_LOG"){
-                        V(g[[l]])$size <- as.numeric(input$txtNODE_DEFAULT_SIZE)*(1+2*log(1+arrayDiagnostics))
-                    }else if(input$radNodeSizeType2=="NODE_SIZE_PROPORTIONAL_TYPE_LOGLOG"){
-                        V(g[[l]])$size <- as.numeric(input$txtNODE_DEFAULT_SIZE)*log(1+log(1+arrayDiagnostics));
-                    }
-                                    
-                    if(input$radEdgeSizeType=="EDGE_SIZE_PROPORTIONAL_TO_UNIFORM"){                
+                }
+                                
+                if(input$radNodeSizeType2=="NODE_SIZE_PROPORTIONAL_TYPE_NORMAL"){
+                    V(g[[l]])$size <- as.numeric(input$txtNODE_DEFAULT_SIZE)*arrayDiagnostics
+                }else if(input$radNodeSizeType2=="NODE_SIZE_PROPORTIONAL_TYPE_LOG"){
+                    V(g[[l]])$size <- as.numeric(input$txtNODE_DEFAULT_SIZE)*(1+2*log(1+arrayDiagnostics))
+                }else if(input$radNodeSizeType2=="NODE_SIZE_PROPORTIONAL_TYPE_LOGLOG"){
+                    V(g[[l]])$size <- as.numeric(input$txtNODE_DEFAULT_SIZE)*log(1+log(1+arrayDiagnostics));
+                }
+                                
+                if(input$radEdgeSizeType=="EDGE_SIZE_PROPORTIONAL_TO_UNIFORM"){                
+                    E(g[[l]])$size <- as.numeric(input$txtEDGE_DEFAULT_SIZE);
+                }else if(input$radEdgeSizeType=="EDGE_SIZE_PROPORTIONAL_TO_WEIGHT"){
+                    if(WEIGHTED){
+                        if(input$radEdgeSizeType2=="EDGE_SIZE_PROPORTIONAL_TYPE_NORMAL"){
+                            E(g[[l]])$size <- E(g[[l]])$weight
+                        }else if(input$radEdgeSizeType2=="EDGE_SIZE_PROPORTIONAL_TYPE_LOG"){
+                            E(g[[l]])$size <- as.numeric(input$txtEDGE_DEFAULT_SIZE)*log(1+E(g[[l]])$weight)
+                        }else if(input$radEdgeSizeType2=="EDGE_SIZE_PROPORTIONAL_TYPE_LOGLOG"){
+                            E(g[[l]])$size <- as.numeric(input$txtEDGE_DEFAULT_SIZE)*log(1+log(1+E(g[[l]])$weight))
+                        }
+                    }else{
                         E(g[[l]])$size <- as.numeric(input$txtEDGE_DEFAULT_SIZE);
-                    }else if(input$radEdgeSizeType=="EDGE_SIZE_PROPORTIONAL_TO_WEIGHT"){
-                        if(WEIGHTED){
-                            if(input$radEdgeSizeType2=="EDGE_SIZE_PROPORTIONAL_TYPE_NORMAL"){
-                                E(g[[l]])$size <- E(g[[l]])$weight
-                            }else if(input$radEdgeSizeType2=="EDGE_SIZE_PROPORTIONAL_TYPE_LOG"){
-                                E(g[[l]])$size <- as.numeric(input$txtEDGE_DEFAULT_SIZE)*log(1+E(g[[l]])$weight)
-                            }else if(input$radEdgeSizeType2=="EDGE_SIZE_PROPORTIONAL_TYPE_LOGLOG"){
-                                E(g[[l]])$size <- as.numeric(input$txtEDGE_DEFAULT_SIZE)*log(1+log(1+E(g[[l]])$weight))
+                    }
+                }
+
+                #Node coloring
+                if(input$radNodeColor=="NODE_COLOR_COMMUNITY"){
+                    if(communityOK){
+                        if(input$btnCalculateCommunityDiagnostics>0){
+                            if(input$radCommunityAlgorithm!="COMMUNITY_MULTIPLEX"){
+                                #color-code by community
+                                tmpColor <- rainbow( max(listCommunities[[l]]$Community) + 2, alpha=as.numeric(input$txtNODE_TRANSP), start=runif(1))[ listCommunities[[l]]$Community ]
+                                #setting a random start should avoid coloring nodes in the same way on different layers
+                            }else{
+                                #for the multiplex we want exactly the opposite behavior
+                                tmpColor <- rainbow( max(listCommunities[[l]]$Community) + 2, alpha=as.numeric(input$txtNODE_TRANSP), start=commonRunif)[ listCommunities[[l]]$Community ]                                
                             }
-                        }else{
-                            E(g[[l]])$size <- as.numeric(input$txtEDGE_DEFAULT_SIZE);
+                            
+                            V(g[[l]])$color <- tmpColor
                         }
                     }
-    
-                    #Node coloring
-                    if(input$radNodeColor=="NODE_COLOR_COMMUNITY"){
-                        if(communityOK){
-                            if(input$btnCalculateCommunityDiagnostics>0){
-                                if(input$radCommunityAlgorithm!="COMMUNITY_MULTIPLEX"){
-                                    #color-code by community
-                                    tmpColor <- rainbow( max(listCommunities[[l]]$Community) + 2, alpha=as.numeric(input$txtNODE_TRANSP), start=runif(1))[ listCommunities[[l]]$Community ]
-                                    #setting a random start should avoid coloring nodes in the same way on different layers
-                                }else{
-                                    #for the multiplex we want exactly the opposite behavior
-                                    tmpColor <- rainbow( max(listCommunities[[l]]$Community) + 2, alpha=as.numeric(input$txtNODE_TRANSP), start=commonRunif)[ listCommunities[[l]]$Community ]                                
-                                }
-                                
-                                V(g[[l]])$color <- tmpColor
-                            }
-                        }
-                    }else if(input$radNodeColor=="NODE_COLOR_COMPONENT"){
-                        if(input$chkPERFORM_COMPONENT_DETECTION && input$btnCalculateComponentDiagnostics>0){
-                            #todo
-                        }
-                    }else if(input$radNodeColor=="NODE_COLOR_RANDOM"){
-                        #colorset for the multiplex                
-                        if( input$selMultiplexColorPalette=="random" ){
-                            Rcolor <- sample(0:255, 1, replace=T)
-                            Gcolor <- sample(0:255, 1, replace=T)
-                            Bcolor <- sample(0:255, 1, replace=T)
-    
-                            #assign the color to the layer
-                            E(g[[l]])$red <- Rcolor
-                            E(g[[l]])$green <- Gcolor
-                            E(g[[l]])$blue <- Bcolor
-                            V(g[[l]])$red <- Rcolor
-                            V(g[[l]])$green <- Gcolor
-                            V(g[[l]])$blue <- Bcolor
-                        
-                            E(g[[l]])$color<-rgb(E(g[[l]])$red, E(g[[l]])$green, E(g[[l]])$blue, E(g[[l]])$alpha, maxColorValue=255)
-                            V(g[[l]])$color <- rgb(V(g[[l]])$red, V(g[[l]])$green, V(g[[l]])$blue, V(g[[l]])$alpha, maxColorValue=255)
-                        }else{
-                            colorPalette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selMultiplexColorPalette],input$selMultiplexColorPalette))(LAYERS+1)
-                            E(g[[l]])$color <- colorPalette[l]
-                            V(g[[l]])$color <- colorPalette[l]
-                        }
-                    }else if(input$radNodeColor=="NODE_COLOR_UNIFORM"){
-                        E(g[[l]])$color <- input$txtNODE_COLOR_UNIFORM_COLOR
-                        V(g[[l]])$color <- input$txtNODE_COLOR_UNIFORM_COLOR
-                    }else if(input$radNodeColor=="NODE_COLOR_CENTRALITY"){
-                        if(diagnosticsOK){
-                            bins <- as.numeric(input$txtNODE_COLOR_CENTRALITY_BINS)
-                            colorPalette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selCentralityColorPalette],input$selCentralityColorPalette))(bins)
+                }else if(input$radNodeColor=="NODE_COLOR_COMPONENT"){
+                    if(input$chkPERFORM_COMPONENT_DETECTION && input$btnCalculateComponentDiagnostics>0){
+                        #todo
+                    }
+                }else if(input$radNodeColor=="NODE_COLOR_RANDOM"){
+                    #colorset for the multiplex                
+                    if( input$selMultiplexColorPalette=="random" ){
+                        Rcolor <- sample(0:255, 1, replace=T)
+                        Gcolor <- sample(0:255, 1, replace=T)
+                        Bcolor <- sample(0:255, 1, replace=T)
 
-                            attrib <- input$selVizNodeColorID
+                        #assign the color to the layer
+                        E(g[[l]])$red <- Rcolor
+                        E(g[[l]])$green <- Gcolor
+                        E(g[[l]])$blue <- Bcolor
+                        V(g[[l]])$red <- Rcolor
+                        V(g[[l]])$green <- Gcolor
+                        V(g[[l]])$blue <- Bcolor
+                    
+                        E(g[[l]])$color<-rgb(red=E(g[[l]])$red, 
+                                                        green=E(g[[l]])$green, 
+                                                        blue=E(g[[l]])$blue, 
+                                                        maxColorValue=255)
+                        V(g[[l]])$color <- rgb(red=V(g[[l]])$red, 
+                                                            green=V(g[[l]])$green, 
+                                                            blue=V(g[[l]])$blue, 
+                                                            maxColorValue=255)
+                    }else{
+                        colorPalette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selMultiplexColorPalette],input$selMultiplexColorPalette))(LAYERS+1)
+                        E(g[[l]])$color <- colorPalette[l]
+                        V(g[[l]])$color <- colorPalette[l]
+                    }
+                }else if(input$radNodeColor=="NODE_COLOR_UNIFORM"){
+                    E(g[[l]])$color <- input$txtNODE_COLOR_UNIFORM_COLOR
+                    V(g[[l]])$color <- input$txtNODE_COLOR_UNIFORM_COLOR
+                }else if(input$radNodeColor=="NODE_COLOR_CENTRALITY"){
+                    if(diagnosticsOK){
+                        bins <- as.numeric(input$txtNODE_COLOR_CENTRALITY_BINS)
+                        colorPalette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selCentralityColorPalette],input$selCentralityColorPalette))(bins)
+
+                        attrib <- input$selVizNodeColorID
+                        values <- as.numeric(listDiagnostics[[l]][attrib][,1])  
+                        
+                        if(input$radNodeColorType2=="NODE_COLOR_PROPORTIONAL_TYPE_LOG"){
+                            values <- 1+2*log(1+values)
+                        }else if(input$radNodeColorType2=="NODE_COLOR_PROPORTIONAL_TYPE_LOGLOG"){
+                            values <- log(1+log(1+values))
+                        }
+
+                        values <- 1 + (bins-1)*(values - min(values, na.rm=T))/(max(values, na.rm=T) - min(values, na.rm=T))
+                        values <- floor(values)
+                        
+                        E(g[[l]])$color <- "#F2F2F2"
+                        V(g[[l]])$color <- colorPalette[ values ]
+                    }
+                }else if(input$radNodeColor=="NODE_COLOR_TOPRANK"){
+                    if(diagnosticsOK){
+                        if(input$btnCalculateCentralityDiagnostics>0 && as.numeric(input$txtNODE_COLOR_TOP)>0){
+                            numTop <- as.numeric(input$txtNODE_COLOR_TOP)
+                            attrib <- input$selVizNodeColorTopID
                             values <- as.numeric(listDiagnostics[[l]][attrib][,1])  
+                            topNodes <- head(rev(order(values)),numTop)
+                            #V(g[[l]])$color <- rgb(169,169,169, V(g[[l]])$alpha, maxColorValue=255)
+                            #E(g[[l]])$color <- rgb(169,169,169, V(g[[l]])$alpha, maxColorValue=255)
+                            V(g[[l]])$color <- input$txtNODE_COLOR_TOP_COLOR_OTHERS
+                            E(g[[l]])$color <- input$txtNODE_COLOR_TOP_COLOR_OTHERS
+                            #V(g[[l]])[topNodes]$color <- rgb(255, 0, 0, V(g[[l]])[topNodes]$alpha, maxColorValue=255)
+                            V(g[[l]])[topNodes]$color <- input$txtNODE_COLOR_TOP_COLOR_TOP
                             
-                            if(input$radNodeColorType2=="NODE_COLOR_PROPORTIONAL_TYPE_LOG"){
-                                values <- 1+2*log(1+values)
-                            }else if(input$radNodeColorType2=="NODE_COLOR_PROPORTIONAL_TYPE_LOGLOG"){
-                                values <- log(1+log(1+values))
-                            }
-
-                            values <- 1 + (bins-1)*(values - min(values, na.rm=T))/(max(values, na.rm=T) - min(values, na.rm=T))
-                            values <- floor(values)
-                            
-                            E(g[[l]])$color <- "#F2F2F2"
-                            V(g[[l]])$color <- colorPalette[ values ]
-                        }
-                    }else if(input$radNodeColor=="NODE_COLOR_TOPRANK"){
-                        if(diagnosticsOK){
-                            if(input$btnCalculateCentralityDiagnostics>0 && as.numeric(input$txtNODE_COLOR_TOP)>0){
-                                numTop <- as.numeric(input$txtNODE_COLOR_TOP)
-                                attrib <- input$selVizNodeColorTopID
-                                values <- as.numeric(listDiagnostics[[l]][attrib][,1])  
-                                topNodes <- head(rev(order(values)),numTop)
-                                #V(g[[l]])$color <- rgb(169,169,169, V(g[[l]])$alpha, maxColorValue=255)
-                                #E(g[[l]])$color <- rgb(169,169,169, V(g[[l]])$alpha, maxColorValue=255)
-                                V(g[[l]])$color <- input$txtNODE_COLOR_TOP_COLOR_OTHERS
-                                E(g[[l]])$color <- input$txtNODE_COLOR_TOP_COLOR_OTHERS
-                                #V(g[[l]])[topNodes]$color <- rgb(255, 0, 0, V(g[[l]])[topNodes]$alpha, maxColorValue=255)
-                                V(g[[l]])[topNodes]$color <- input$txtNODE_COLOR_TOP_COLOR_TOP
-                                
-                                if(input$chkNODE_LABELS_SHOW_ONLY_TOP){
-                                    V(g[[l]])$label <- ""
-                                    V(g[[l]])[topNodes]$label <- nodesLabel[[l]][topNodes]
-                                    V(g[[l]])[topNodes]$vertex.label.color <- input$txtNODE_COLOR_TOP_LABELS_FONT_COLOR
-                                }
+                            if(input$chkNODE_LABELS_SHOW_ONLY_TOP){
+                                V(g[[l]])$label <- ""
+                                V(g[[l]])[topNodes]$label <- nodesLabel[[l]][topNodes]
+                                V(g[[l]])[topNodes]$vertex.label.color <- input$txtNODE_COLOR_TOP_LABELS_FONT_COLOR
                             }
                         }
                     }
-    
-                    if(input$chkNODE_ISOLATED_HIDE){
-                        #this piece of code must be executed after the above one, to change the size of isolated
-                        #nodes to zero, and also their label to ""
-                        
-                        if(input$radMultiplexModel == "MULTIPLEX_IS_EDGECOLORED"){
+                }
+
+                if(input$chkNODE_ISOLATED_HIDE){
+                    #this piece of code must be executed after the above one, to change the size of isolated
+                    #nodes to zero, and also their label to ""
+                    
+                    if(input$radMultiplexModel == "MULTIPLEX_IS_EDGECOLORED"){
+                        arrayStrength <- graph.strength(g[[l]],mode="total")
+                        V(g[[l]])[arrayStrength==0.]$size <- 0
+                        V(g[[l]])[arrayStrength==0.]$label <- ""
+                    }else{
+                        if(input$chkNODE_ISOLATED_HIDE_INTERLINKS){
+                            #account for degree in the multiplex
+                            
+                            arrayStrength <- graph.strength(g.multi,mode="total")
+                            idxtohide <- which(arrayStrength==0.)
+                            inlayers <- floor((idxtohide-1)/Nodes) + 1
+                            innodes <- (idxtohide-1) %% Nodes + 1
+
+                            idxs <- which(inlayers==l)
+                            nodes2hide <- which(V(g[[l]]) %in% innodes[idxs])
+                            V(g[[l]])[nodes2hide]$size <- 0
+                            V(g[[l]])[nodes2hide]$label <- ""
+                        }else{
+                            #do not account for interlinks, just intralinks
                             arrayStrength <- graph.strength(g[[l]],mode="total")
                             V(g[[l]])[arrayStrength==0.]$size <- 0
                             V(g[[l]])[arrayStrength==0.]$label <- ""
-                        }else{
-                            if(input$chkNODE_ISOLATED_HIDE_INTERLINKS){
-                                #account for degree in the multiplex
-                                
-                                arrayStrength <- graph.strength(g.multi,mode="total")
-                                idxtohide <- which(arrayStrength==0.)
-                                inlayers <- floor((idxtohide-1)/Nodes) + 1
-                                innodes <- (idxtohide-1) %% Nodes + 1
-
-                                idxs <- which(inlayers==l)
-                                nodes2hide <- which(V(g[[l]]) %in% innodes[idxs])
-                                V(g[[l]])[nodes2hide]$size <- 0
-                                V(g[[l]])[nodes2hide]$label <- ""
-                            }else{
-                                #do not account for interlinks, just intralinks
-                                arrayStrength <- graph.strength(g[[l]],mode="total")
-                                V(g[[l]])[arrayStrength==0.]$size <- 0
-                                V(g[[l]])[arrayStrength==0.]$label <- ""
-                            }
                         }
                     }
+                }
 
+                V(g[[l]])$shape <- "circle"
+                V(g[[l]])$shape[V(g[[l]])$size==0] <- "none"                    
+                E(g[[l]])$color <- addalpha(E(g[[l]])$color, as.numeric(input$txtEDGE_TRANSP))
+                V(g[[l]])$color <- addalpha(V(g[[l]])$color, as.numeric(input$txtNODE_TRANSP))
+                V(g[[l]])$framecolor <- input$txtNODE_FRAME_COLOR
+
+                if(input$txtNODE_FRAME_COLOR==""){ V(g[[l]])$framecolor <- V(g[[l]])$color }
+
+
+                #saving default values for later usage
+                defaultVsize[[l]] <<- V(g[[l]])$size
+                defaultVcolor[[l]] <<- V(g[[l]])$color
+                defaultEsize[[l]] <<- E(g[[l]])$size
+                defaultEcolor[[l]] <<- E(g[[l]])$color
+
+                if(input$chkPLOT_WITH_RGL){
                     print("  openGL phase...")
-
-                    #saving default values for later usage
-                    defaultVsize[[l]] <<- V(g[[l]])$size
-                    defaultVcolor[[l]] <<- V(g[[l]])$color
-                    defaultEsize[[l]] <<- E(g[[l]])$size
-                    defaultEcolor[[l]] <<- E(g[[l]])$color
 
                     #plot the graph with openGL    
                     #print(layouts[[l]])
@@ -3824,33 +4021,57 @@ shinyServer(function(input, output, session) {
                                         edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
                                         edge.curved=E(g[[l]])$curve,
                                         rescale=F)
+                }else{
+                    print("  Standard device output...")
 
-                    print(paste("  Layout of layer: finished."))
+                    #plot the graph with openGL    
+                    #print(layouts[[l]])
+                    plot(g[[l]], layout=layouts[[l]],
+                                    vertex.size=V(g[[l]])$size, 
+                                    vertex.shape=V(g[[l]])$shape,
+                                    vertex.color=V(g[[l]])$color,
+                                    vertex.frame.color=V(g[[l]])$framecolor,
+                                    vertex.label=V(g[[l]])$label,
+                                    vertex.label.dist=as.numeric(input$txtNODE_LABELS_DISTANCE), #,+ 0.01*V(g[[l]])$size,
+                                    vertex.label.font=2,
+                                    vertex.label.cex=as.numeric(input$txtNODE_LABELS_FONT_SIZE), 
+                                    vertex.label.color=V(g[[l]])$vertex.label.color,
+                                    edge.width=E(g[[l]])$size, 
+                                    edge.color=E(g[[l]])$color, 
+                                    edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
+                                    edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
+                                    edge.curved=E(g[[l]])$curve,
+                                    rescale=F, add=T)
+                                    
+                        title(main=input$txtPLOT_TITLE, sub=input$txtPLOT_SUBTITLE)
                 }
-                
-                if(input$chkINTERLINK_SHOW && LAYERS>1){
-                    if(input$radMultiplexModel!="MULTIPLEX_IS_EDGECOLORED"){
-                        print("Adding interlayer links.")
+                print(paste("  Layout of layer: finished."))
+            }
+            
+            if(input$chkINTERLINK_SHOW && LAYERS>1){
+                if(input$radMultiplexModel!="MULTIPLEX_IS_EDGECOLORED"){
+                    print("Adding interlayer links.")
 
-                        #set to 0 the width of intra-layer links
-                        E(g.multi)$width <- as.numeric(input$txtINTERLINK_WIDTH)*E(g.multi)$weight
-                        E(g.multi)[which(multilayerEdges[,2]==multilayerEdges[,4])]$width <- 0
-                        
-                        #the same for interlinks from and to inactive layers 
-                        for(l in vecInactiveLayers){
-                            E(g.multi)[which(multilayerEdges[,2]==l | multilayerEdges[,4]==l)]$width <- 0
-                        }
-                        
-                        #setup the layout for g.multi by merging the layout of each layer, in order
-                        layout.multi <<- matrix(0, ncol=3, nrow=Nodes*LAYERS)
-                        
-                        for(l in 1:LAYERS){
-                            layout.multi[ (1 + (l-1)*Nodes):(l*Nodes), 1] <<- layouts[[l]][, 1]
-                            layout.multi[ (1 + (l-1)*Nodes):(l*Nodes), 2] <<- layouts[[l]][, 2]
-                            layout.multi[ (1 + (l-1)*Nodes):(l*Nodes), 3] <<- layouts[[l]][, 3]
-                        }
-    
-                        #Print the interlinks by superimposing the g.multi
+                    #set to 0 the width of intra-layer links
+                    E(g.multi)$width <- as.numeric(input$txtINTERLINK_WIDTH)*E(g.multi)$weight
+                    E(g.multi)[which(multilayerEdges[,2]==multilayerEdges[,4])]$width <- 0
+                    
+                    #the same for interlinks from and to inactive layers 
+                    for(l in vecInactiveLayers){
+                        E(g.multi)[which(multilayerEdges[,2]==l | multilayerEdges[,4]==l)]$width <- 0
+                    }
+                    
+                    #setup the layout for g.multi by merging the layout of each layer, in order
+                    layout.multi <<- matrix(0, ncol=3, nrow=Nodes*LAYERS)
+                    
+                    for(l in 1:LAYERS){
+                        layout.multi[ (1 + (l-1)*Nodes):(l*Nodes), 1] <<- layouts[[l]][, 1]
+                        layout.multi[ (1 + (l-1)*Nodes):(l*Nodes), 2] <<- layouts[[l]][, 2]
+                        layout.multi[ (1 + (l-1)*Nodes):(l*Nodes), 3] <<- layouts[[l]][, 3]
+                    }
+
+                    #Print the interlinks by superimposing the g.multi
+                    if(input$chkPLOT_WITH_RGL){
                         rglplot(g.multi, layout=layout.multi,
                                             vertex.size=0, 
                                             vertex.label="",
@@ -3860,20 +4081,44 @@ shinyServer(function(input, output, session) {
                                             edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
                                             edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
                                             edge.curved=as.numeric(input$txtEDGE_BENDING),
-                                            edge.lty = input$txtINTERLINK_TYPE,
+                                            edge.lty = input$selINTERLINK_TYPE,
                                             rescale=F)
-                        #edge/node transparancy not yet supported by rglplot
-                        #alpha=as.numeric(input$txtINTERLINK_TRANSP))
-                    }                
+                    }else{
+                        plot(g.multi, layout=layout.multi,
+                                    vertex.size=0, 
+                                    vertex.shape="none",
+                                    vertex.label="",
+                                    vertex.label.cex=0,
+                                    edge.width=E(g.multi)$width, 
+                                    edge.color=addalpha(input$txtINTERLINK_COLOR,as.numeric(input$txtINTERLINK_TRANSP)), 
+                                    edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
+                                    edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
+                                    edge.curved=as.numeric(input$txtEDGE_BENDING),
+                                    edge.lty = input$selINTERLINK_TYPE,
+                                    rescale=F, add=T)
+                    }
+                    #edge/node transparancy not yet supported by rglplot
+                    #alpha=as.numeric(input$txtINTERLINK_TRANSP))
                 }                
+            }                
 
-                                    
-
-                #Call the visualization of other graphics
+                                
+            if(input$chkPLOT_WITH_RGL){
+                #Call the visualization of other RGL graphics
                 FinalizeRenderingMultiplex(progress)
-                
-                progress$set(message = 'Rendering Completed!', value = 1)
-                Sys.sleep(2)
+            }
+            
+            progress$set(message = 'Rendering Completed!', value = 1)
+            Sys.sleep(2)
+    	 }
+    	 
+        observe({
+            if(input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
+    
+            if(btnRenderNetworksValue==input$btnRenderNetworks) return()
+            
+            isolate({    
+                makeRendering()
             
                 btnRenderNetworksValue <<- input$btnRenderNetworks
             })
@@ -4333,7 +4578,7 @@ shinyServer(function(input, output, session) {
 #                                    layerLinesZ[i,],
 #                                    lwd=as.numeric(input$txtINTERLINK_WIDTH), 
 #                                    col=input$txtINTERLINK_COLOR, 
-#                                    lty=input$txtINTERLINK_TYPE,
+#                                    lty=input$selINTERLINK_TYPE,
 #                                    alpha=as.numeric(input$txtINTERLINK_TRANSP))
 #                            }
 #                        }
@@ -5116,11 +5361,33 @@ shinyServer(function(input, output, session) {
     
                 FILE_RGL_SNAPSHOT <- buildPath("export",paste(input$txtProjectName,"_",as.character(format(Sys.time(), "%d-%m-%Y_%H%M%S")),".pdf",sep=""))
                 rgl.postscript(FILE_RGL_SNAPSHOT,"pdf",drawText=TRUE)
-                                
+
                 progress$set(message = paste('Image exported to',FILE_RGL_SNAPSHOT), value = 1)
                 Sys.sleep(5)
     
                 btnExportRenderingPDFValue <<- input$btnExportRenderingPDF
+            })
+        })
+
+        observe({
+            if(input$btnExportRenderingSVG==0 || input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
+    
+            if(btnExportRenderingSVGValue==input$btnExportRenderingSVG) return()
+    
+            isolate({
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
+    
+                progress$set(message = 'Start exporting...', value = 0.05)
+                Sys.sleep(1)
+    
+                FILE_RGL_SNAPSHOT <- buildPath("export",paste(input$txtProjectName,"_",as.character(format(Sys.time(), "%d-%m-%Y_%H%M%S")),".svg",sep=""))
+                rgl.postscript(FILE_RGL_SNAPSHOT,"svg",drawText=TRUE)
+
+                progress$set(message = paste('Image exported to',FILE_RGL_SNAPSHOT), value = 1)
+                Sys.sleep(5)
+    
+                btnExportRenderingSVGValue <<- input$btnExportRenderingSVG
             })
         })
 
@@ -5145,7 +5412,73 @@ shinyServer(function(input, output, session) {
                 btnExportRenderingWebValue <<- input$btnExportRenderingWeb
             })
         })
-        
+
+
+
+
+        observe({
+            if(input$btnExportRenderingClassicPDF==0 || input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
+    
+            if(btnExportRenderingClassicPDFValue==input$btnExportRenderingClassicPDF) return()
+    
+            isolate({
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
+    
+                progress$set(message = 'Start exporting...', value = 0.05)
+                Sys.sleep(1)
+    
+                FILE_OUTPUT <- buildPath("export",paste(input$txtProjectName,"_",as.character(format(Sys.time(), "%d-%m-%Y_%H%M%S")),".pdf",sep=""))
+
+                width <- as.numeric(input$txtExportRenderingClassicPNGWidth)
+                height <- as.numeric(input$txtExportRenderingClassicPNGHeight)
+
+                pdf(file=FILE_OUTPUT, width=width, height=height)
+                makeRendering()
+                dev.off()
+                
+                progress$set(message = paste('Image exported to',FILE_OUTPUT), value = 1)
+                Sys.sleep(5)
+    
+                btnExportRenderingClassicPDFValue <<- input$btnExportRenderingClassicPDF
+            })
+        })
+
+        observe({
+            if(input$btnExportRenderingClassicPNG==0 || input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
+    
+            if(btnExportRenderingClassicPNGValue==input$btnExportRenderingClassicPNG) return()
+    
+            isolate({
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
+    
+                progress$set(message = 'Start exporting...', value = 0.05)
+                Sys.sleep(1)
+    
+                FILE_OUTPUT <- buildPath("export",paste(input$txtProjectName,"_",as.character(format(Sys.time(), "%d-%m-%Y_%H%M%S")),".png",sep=""))
+
+                width <- as.numeric(input$txtExportRenderingClassicPNGWidth)
+                height <- as.numeric(input$txtExportRenderingClassicPNGHeight)
+                dpi <- as.numeric(input$txtExportRenderingClassicPNGResolution)
+
+                png(filename=FILE_OUTPUT, width=width, height=height, res=dpi)
+                makeRendering()
+                dev.off()
+
+                progress$set(message = paste('Image exported to',FILE_OUTPUT), value = 1)
+                Sys.sleep(5)
+    
+                btnExportRenderingClassicPNGValue <<- input$btnExportRenderingClassicPNG
+            })
+        })
+
+
+
+
+
+
+
         #this is to setup the pageable table output
         googleVisMotifsSummaryTableOptions <- reactive({
             #other options here:

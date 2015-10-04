@@ -1,3 +1,10 @@
+### 4 October 2015
+
+Manlio De Domenico:
+
+Added full support to alternative output device, different from RGL
+
+
 ### 3 October 2015
 
 Manlio De Domenico
