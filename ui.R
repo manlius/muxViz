@@ -18,8 +18,8 @@ paletteWeb <- "<a href='http://www.colorschemer.com/online.html' target='_blank'
 #http://www.statsblogs.com/2013/12/15/visualization-of-2012-crime-rates-of-different-states-in-the-us-using-rcharts/
 
 paletteChoiceArray <- sort(row.names(brewer.pal.info[1]))
-muxVizVersion <- "1.0.0"
-muxVizUpdate <- "13 Sep 2015"
+muxVizVersion <- "1.0.2"
+muxVizUpdate <- "4 Oct 2015"
 
 octaveCheck <- function(){
     res <- system("octave -v", ignore.stdout = F, ignore.stderr = F, intern=F)

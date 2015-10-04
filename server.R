@@ -127,8 +127,8 @@ communityOK <- F
 
 
 welcomeFunction <- function(){
-    muxVizVersion <- "1.0.0"
-    muxVizUpdate <- "13 Sep 2015"
+    muxVizVersion <- "1.0.2"
+    muxVizUpdate <- "4 Oct 2015"
 
     cat("\n")    
     cat(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n")
