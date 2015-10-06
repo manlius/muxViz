@@ -313,4 +313,4 @@ I am in debt with Alex Arenas for proposing this project, with Mason A. Porter a
 
 I would like to thank Inderjit S. Jutla, Lucas G. S. Jeub, and Peter J. Mucha for making their code about multislice community detection available. 
 
-Finally, I would like to acknowledge the precious help of Serafina Agnello in designing and testing the Graphical User Interface of muxViz.
+Finally, I would like to acknowledge the precious help of Alephsys Lab in designing the workflow and in realizing the Graphical User Interface of muxViz.
