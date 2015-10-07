@@ -211,7 +211,7 @@ is a typical weighted extended edges list. For label-based extended edges lists,
 ##### Format of a layout file
 
 
-The first line of the file must specify the name of the correponding node attributes. Allowed attributes:
+The first line of the file must specify the name of the corresponding node attributes. Allowed attributes:
 
 - nodeID:      [mandatory] numerical integer id to identify each node
 - nodeLabel: [optional] string specifying the label attribute
@@ -228,7 +228,7 @@ The properties of each node in the multilayer must be specified or default value
 ##### Format of a layer-info file
 
 
-The first line of the file must specify the name of the correponding layer attributes. Allowed attributes:
+The first line of the file must specify the name of the corresponding layer attributes. Allowed attributes:
 
 - layerID:      [mandatory] numerical integer id to identify each layer
 - layerLabel: [optional] string specifying the label attribute
@@ -241,7 +241,7 @@ This module allows to build nice animated visualizations corresponding to dynami
 
 The idea is to feed the module with a 'timeline' file where the change of the state of nodes and edges in the multilayer network are specified at each time step. The 'state' of an object can be altered by changing its color and/or its size. For instance, in the case of an epidemics spreading in a country, the size of each node (e.g., a metapopulation describing a city) can be proportional to the population and the color can encode the amount of infected people. This description allows a wide variety of dynamics to be represented and visualized: for instance, setting the size of nodes and edges to zero when required, it is possible to visualize a time-varying multilayer network where nodes and edges appear or disappear over time.
 
-The first line of the file must specify the name of the correponding timeline attributes. Allowed attributes:
+The first line of the file must specify the name of the corresponding timeline attributes. Allowed attributes:
 
 - timeStep: [mandatory] numerical integer id to identify time steps
 - labelStep: [mandatory] string specifying the snapshot label
