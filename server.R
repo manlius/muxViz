@@ -1582,7 +1582,9 @@ shinyServer(function(input, output, session) {
                         height <- as.numeric(input$txtExportRenderingClassicPNGHeight)
                         dpi <- as.numeric(input$txtExportRenderingClassicPNGResolution)
         
-                        png(filename=FILE_RGL_SNAPSHOT, width=width, height=height, res=dpi)
+                        if(input$chkTIMELINE_RENDER_TO_FILE){
+                            png(filename=FILE_RGL_SNAPSHOT, width=width, height=height, res=dpi)
+                        }
 
                         par(mar=c(0, 0, 0, 0), xaxs='i', yaxs='i') 
                         par(oma=c(0, 0, 0, 0))
@@ -1623,6 +1625,12 @@ shinyServer(function(input, output, session) {
                         V(g[[l]])$shape[V(g[[l]])$size==0] <- "none"                    
                         V(g[[l]])$framecolor <- input$txtNODE_FRAME_COLOR
                         if(input$txtNODE_FRAME_COLOR==""){ V(g[[l]])$framecolor <- V(g[[l]])$color }
+                        
+                        if(input$chkNODE_LABELS_SHOW_WRAP){
+                            V(g[[l]])$label2 <- lapply(lapply(V(g[[l]])$label, function(x) strwrap(x,as.numeric(input$txtNODE_LABELS_WRAP))), function(x) paste(x, collapse='\n'))
+                        }else{
+                            V(g[[l]])$label2 <- V(g[[l]])$label
+                        }
         
                         if(input$chkPLOT_WITH_RGL){
                             print("      openGL phase...")
@@ -1654,7 +1662,7 @@ shinyServer(function(input, output, session) {
                                             vertex.shape=V(g[[l]])$shape,
                                             vertex.color=V(g[[l]])$color,
                                             vertex.frame.color=V(g[[l]])$framecolor,
-                                            vertex.label=V(g[[l]])$label,
+                                            vertex.label=V(g[[l]])$label2,
                                             vertex.label.dist=as.numeric(input$txtNODE_LABELS_DISTANCE), #,+ 0.01*V(g[[l]])$size,
                                             vertex.label.font=2,
                                             vertex.label.cex=as.numeric(input$txtNODE_LABELS_FONT_SIZE), 
@@ -1739,7 +1747,9 @@ shinyServer(function(input, output, session) {
                     
                         rgl.snapshot(FILE_RGL_SNAPSHOT) 
                     }else{
-                        dev.off()
+                        if(input$chkTIMELINE_RENDER_TO_FILE){
+                            dev.off()
+                        }
                     }
                     #Sys.sleep(1)
                 }
@@ -3677,15 +3687,17 @@ shinyServer(function(input, output, session) {
                     }
                 }            
 
-                #rotate the view, if needed
-                thx <- as.numeric(input$txtPLOT_ROTX)
-                thy <- as.numeric(input$txtPLOT_ROTY)
-                thz <- as.numeric(input$txtPLOT_ROTZ)
-                for(l in 1:(LAYERS+1)){
-                    if(thx>0.){ layouts[[l]] <<- t( Rotx(thx) %*% t(layouts[[l]]) ) }
-                    if(thy>0.){ layouts[[l]] <<- t( Roty(thy) %*% t(layouts[[l]]) ) }
-                    if(thz>0.){ layouts[[l]] <<- t( Rotz(thz) %*% t(layouts[[l]]) ) }
-                }            
+                if(!input$chkPLOT_WITH_RGL){
+                    #rotate the view, if needed
+                    thx <- as.numeric(input$txtPLOT_ROTX)
+                    thy <- as.numeric(input$txtPLOT_ROTY)
+                    thz <- as.numeric(input$txtPLOT_ROTZ)
+                    for(l in 1:(LAYERS+1)){
+                        if(thx>0.){ layouts[[l]] <<- t( Rotx(thx) %*% t(layouts[[l]]) ) }
+                        if(thy>0.){ layouts[[l]] <<- t( Roty(thy) %*% t(layouts[[l]]) ) }
+                        if(thz>0.){ layouts[[l]] <<- t( Rotz(thz) %*% t(layouts[[l]]) ) }
+                    }            
+                }
 
                 progress$set(message = 'Layout Completed!', value = 1)
                 Sys.sleep(2)
@@ -3995,6 +4007,12 @@ shinyServer(function(input, output, session) {
 
                 if(input$txtNODE_FRAME_COLOR==""){ V(g[[l]])$framecolor <- V(g[[l]])$color }
 
+                if(input$chkNODE_LABELS_SHOW_WRAP){
+                    V(g[[l]])$label2 <- lapply(lapply(V(g[[l]])$label, function(x) strwrap(x,as.numeric(input$txtNODE_LABELS_WRAP))), function(x) paste(x, collapse='\n'))
+                }else{
+                    V(g[[l]])$label2 <- V(g[[l]])$label
+                }
+
 
                 #saving default values for later usage
                 defaultVsize[[l]] <<- V(g[[l]])$size
@@ -4031,7 +4049,7 @@ shinyServer(function(input, output, session) {
                                     vertex.shape=V(g[[l]])$shape,
                                     vertex.color=V(g[[l]])$color,
                                     vertex.frame.color=V(g[[l]])$framecolor,
-                                    vertex.label=V(g[[l]])$label,
+                                    vertex.label=V(g[[l]])$label2,
                                     vertex.label.dist=as.numeric(input$txtNODE_LABELS_DISTANCE), #,+ 0.01*V(g[[l]])$size,
                                     vertex.label.font=2,
                                     vertex.label.cex=as.numeric(input$txtNODE_LABELS_FONT_SIZE), 
