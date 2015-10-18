@@ -211,7 +211,7 @@ is a typical weighted extended edges list. For label-based extended edges lists,
 ##### Format of a layout file
 
 
-The first line of the file must specify the name of the correponding node attributes. Allowed attributes:
+The first line of the file must specify the name of the corresponding node attributes. Allowed attributes:
 
 - nodeID:      [mandatory] numerical integer id to identify each node
 - nodeLabel: [optional] string specifying the label attribute
