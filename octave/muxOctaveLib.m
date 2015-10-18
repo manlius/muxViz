@@ -517,12 +517,19 @@ endfunction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+function BinaryMatrix = binarizeMatrix(Matrix)
+    BinaryMatrix = double(Matrix|Matrix);
+endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 function MultiDegreeVector = GetMultiDegree(SupraAdjacencyMatrix,Layers,Nodes,Flags)
     %   References: 
     %   M. De Domenico et al, Phys. Rev. X 3, 041022 (2013)
     
-    MultiInDegreeVector = GetMultiInDegree(SupraAdjacencyMatrix,Layers,Nodes,Flags);
-    MultiOutDegreeVector = GetMultiOutDegree(SupraAdjacencyMatrix,Layers,Nodes,Flags);
+    MultiInDegreeVector = GetMultiInDegree(binarizeMatrix(SupraAdjacencyMatrix),Layers,Nodes,Flags);
+    MultiOutDegreeVector = GetMultiOutDegree(binarizeMatrix(SupraAdjacencyMatrix),Layers,Nodes,Flags);
     
     if ismember("U",Flags)
         MultiDegreeVector = (MultiInDegreeVector + MultiOutDegreeVector)/2;
@@ -541,7 +548,7 @@ function MultiOutDegreeVector = GetMultiOutDegree(SupraAdjacencyMatrix,Layers,No
     
     if ismember("U",Flags)        
         %we proceed by considering the interlayers separately
-        BlockTensor = SupraAdjacencyToBlockTensor(SupraAdjacencyMatrix,Layers,Nodes);
+        BlockTensor = SupraAdjacencyToBlockTensor(binarizeMatrix(SupraAdjacencyMatrix),Layers,Nodes);
         
         MultiOutDegreeVector = sparse(Nodes,1);
 
@@ -559,7 +566,7 @@ function MultiOutDegreeVector = GetMultiOutDegree(SupraAdjacencyMatrix,Layers,No
             endfor
         endfor
     else
-        SupraDegree = SupraAdjacencyMatrix*ones(Nodes*Layers,1); 
+        SupraDegree = binarizeMatrix(SupraAdjacencyMatrix)*ones(Nodes*Layers,1); 
 
         MultiOutDegreeVector = sum(reshape(SupraDegree,Nodes,Layers),2);
     endif
@@ -575,10 +582,10 @@ function MultiInDegreeVector = GetMultiInDegree(SupraAdjacencyMatrix,Layers,Node
     
     if ismember("U",Flags)
         %using the following would consider multiple times the interlinks
-        %SupraDegree = (SupraAdjacencyMatrix*ones(Nodes*Layers,1) + (ones(1,Nodes*Layers)*SupraAdjacencyMatrix)')/2;
+        %SupraDegree = (binarizeMatrix(SupraAdjacencyMatrix)*ones(Nodes*Layers,1) + (ones(1,Nodes*Layers)*binarizeMatrix(SupraAdjacencyMatrix))')/2;
         
         %we proceed by considering the interlayers separately
-        BlockTensor = SupraAdjacencyToBlockTensor(SupraAdjacencyMatrix,Layers,Nodes);
+        BlockTensor = SupraAdjacencyToBlockTensor(binarizeMatrix(SupraAdjacencyMatrix),Layers,Nodes);
         
         MultiInDegreeVector = sparse(Nodes,1);
 
@@ -596,7 +603,7 @@ function MultiInDegreeVector = GetMultiInDegree(SupraAdjacencyMatrix,Layers,Node
             endfor
         endfor
     else
-        SupraDegree = (ones(1,Nodes*Layers)*SupraAdjacencyMatrix)';
+        SupraDegree = (ones(1,Nodes*Layers)*binarizeMatrix(SupraAdjacencyMatrix))';
 
         MultiInDegreeVector = sum(reshape(SupraDegree,Nodes,Layers),2);
     endif
@@ -609,8 +616,8 @@ function MultiDegreeVector = GetMultiDegreeSum(SupraAdjacencyMatrix,Layers,Nodes
     %   References: 
     %   M. De Domenico et al, Phys. Rev. X 3, 041022 (2013)
 
-    MultiInDegreeVector = GetMultiInDegreeSum(SupraAdjacencyMatrix,Layers,Nodes,Flags);
-    MultiOutDegreeVector = GetMultiOutDegreeSum(SupraAdjacencyMatrix,Layers,Nodes,Flags);
+    MultiInDegreeVector = GetMultiInDegreeSum(binarizeMatrix(SupraAdjacencyMatrix),Layers,Nodes,Flags);
+    MultiOutDegreeVector = GetMultiOutDegreeSum(binarizeMatrix(SupraAdjacencyMatrix),Layers,Nodes,Flags);
     
     if ismember("U",Flags)
         MultiDegreeVector = (MultiInDegreeVector + MultiOutDegreeVector)/2;
@@ -628,7 +635,7 @@ function MultiOutDegreeVector = GetMultiOutDegreeSum(SupraAdjacencyMatrix,Layers
     %   M. De Domenico et al, Phys. Rev. X 3, 041022 (2013)
 
 
-    SupraDegree = SupraAdjacencyMatrix*ones(Nodes*Layers,1);    
+    SupraDegree = binarizeMatrix(SupraAdjacencyMatrix)*ones(Nodes*Layers,1);    
     MultiOutDegreeVector = sum(reshape(SupraDegree,Nodes,Layers),2);
 endfunction
 
@@ -641,9 +648,144 @@ function MultiInDegreeVector = GetMultiInDegreeSum(SupraAdjacencyMatrix,Layers,N
     %   M. De Domenico et al, Phys. Rev. X 3, 041022 (2013)
 
     
-    SupraDegree = (ones(1,Nodes*Layers)*SupraAdjacencyMatrix)';    
+    SupraDegree = (ones(1,Nodes*Layers)*binarizeMatrix(SupraAdjacencyMatrix))';    
     MultiInDegreeVector = sum(reshape(SupraDegree,Nodes,Layers),2);
 endfunction
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function MultiStrengthVector = GetMultiStrength(SupraAdjacencyMatrix,Layers,Nodes,Flags)
+    %   References: 
+    %   M. De Domenico et al, Phys. Rev. X 3, 041022 (2013)
+    
+    MultiInStrengthVector = GetMultiInStrength(SupraAdjacencyMatrix,Layers,Nodes,Flags);
+    MultiOutStrengthVector = GetMultiOutStrength(SupraAdjacencyMatrix,Layers,Nodes,Flags);
+    
+    if ismember("U",Flags)
+        MultiStrengthVector = (MultiInStrengthVector + MultiOutStrengthVector)/2;
+    else
+        MultiStrengthVector = MultiInStrengthVector + MultiOutStrengthVector;
+    endif
+endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function MultiOutStrengthVector = GetMultiOutStrength(SupraAdjacencyMatrix,Layers,Nodes,Flags)    
+    %   References: 
+    %   M. De Domenico et al, Phys. Rev. X 3, 041022 (2013)
+
+    
+    if ismember("U",Flags)        
+        %we proceed by considering the interlayers separately
+        BlockTensor = SupraAdjacencyToBlockTensor(SupraAdjacencyMatrix,Layers,Nodes);
+        
+        MultiOutStrengthVector = sparse(Nodes,1);
+
+        %with the matrix U we reweight interlinks corresponding to same replicas
+        U = ones(Nodes,Nodes);
+        U(logical(speye(size(U)))) = 1/2;
+
+        for i = 1:Layers
+            for j = 1:Layers
+                if i==j
+                    MultiOutStrengthVector += (BlockTensor{i,j}-diag(diag(BlockTensor{i,j})))*ones(Nodes,1) + diag(BlockTensor{i,j})*0.5;
+                else
+                    MultiOutStrengthVector += (BlockTensor{i,j} .* U)*ones(Nodes,1);
+                endif
+            endfor
+        endfor
+    else
+        SupraStrength = SupraAdjacencyMatrix*ones(Nodes*Layers,1); 
+
+        MultiOutStrengthVector = sum(reshape(SupraStrength,Nodes,Layers),2);
+    endif
+endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function MultiInStrengthVector = GetMultiInStrength(SupraAdjacencyMatrix,Layers,Nodes,Flags)
+    %   References: 
+    %   M. De Domenico et al, Phys. Rev. X 3, 041022 (2013)
+
+    
+    if ismember("U",Flags)
+        %using the following would consider multiple times the interlinks
+        %SupraStrength = (SupraAdjacencyMatrix*ones(Nodes*Layers,1) + (ones(1,Nodes*Layers)*SupraAdjacencyMatrix)')/2;
+        
+        %we proceed by considering the interlayers separately
+        BlockTensor = SupraAdjacencyToBlockTensor(SupraAdjacencyMatrix,Layers,Nodes);
+        
+        MultiInStrengthVector = sparse(Nodes,1);
+
+        %with the matrix U we reweight interlinks corresponding to same replicas
+        U = ones(Nodes,Nodes);
+        U(logical(speye(size(U)))) = 1/2;
+
+        for i = 1:Layers
+            for j = 1:Layers
+                if i==j
+                    MultiInStrengthVector += (ones(1,Nodes)*(BlockTensor{i,j}-diag(diag(BlockTensor{i,j}))))' + diag(BlockTensor{i,j})*0.5;
+                else
+                    MultiInStrengthVector += (ones(1,Nodes)*(BlockTensor{i,j} .* U))';
+                endif
+            endfor
+        endfor
+    else
+        SupraStrength = (ones(1,Nodes*Layers)*SupraAdjacencyMatrix)';
+
+        MultiInStrengthVector = sum(reshape(SupraStrength,Nodes,Layers),2);
+    endif
+endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function MultiStrengthVector = GetMultiStrengthSum(SupraAdjacencyMatrix,Layers,Nodes,Flags)
+    %   References: 
+    %   M. De Domenico et al, Phys. Rev. X 3, 041022 (2013)
+
+    MultiInStrengthVector = GetMultiInStrengthSum(SupraAdjacencyMatrix,Layers,Nodes,Flags);
+    MultiOutStrengthVector = GetMultiOutStrengthSum(SupraAdjacencyMatrix,Layers,Nodes,Flags);
+    
+    if ismember("U",Flags)
+        MultiStrengthVector = (MultiInStrengthVector + MultiOutStrengthVector)/2;
+    else
+        MultiStrengthVector = MultiInStrengthVector + MultiOutStrengthVector;
+    endif
+endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function MultiOutStrengthVector = GetMultiOutStrengthSum(SupraAdjacencyMatrix,Layers,Nodes,Flags)    
+    %this Strength include multiple times the interlinks
+    %   References: 
+    %   M. De Domenico et al, Phys. Rev. X 3, 041022 (2013)
+
+
+    SupraStrength = SupraAdjacencyMatrix*ones(Nodes*Layers,1);    
+    MultiOutStrengthVector = sum(reshape(SupraStrength,Nodes,Layers),2);
+endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function MultiInStrengthVector = GetMultiInStrengthSum(SupraAdjacencyMatrix,Layers,Nodes,Flags)
+    %this Strength include multiple times the interlinks
+    %   References: 
+    %   M. De Domenico et al, Phys. Rev. X 3, 041022 (2013)
+
+    
+    SupraStrength = (ones(1,Nodes*Layers)*SupraAdjacencyMatrix)';    
+    MultiInStrengthVector = sum(reshape(SupraStrength,Nodes,Layers),2);
+endfunction
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

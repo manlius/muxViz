@@ -1,3 +1,10 @@
+### 18 October 2015
+
+Manlio De Domenico:
+
+Added support for standard degree centrality even in case of weighted networks
+
+
 ### 4 October 2015
 
 Manlio De Domenico:

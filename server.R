@@ -19,7 +19,7 @@ library(gplots)
 library(rCharts)
 library(ggplot2)
 library(d3Network)
-
+source("version.R")
 
 ##################################################
 # Global variables
@@ -127,8 +127,6 @@ communityOK <- F
 
 
 welcomeFunction <- function(){
-    muxVizVersion <- "1.0.2"
-    muxVizUpdate <- "4 Oct 2015"
 
     cat("\n")    
     cat(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n")
@@ -2162,7 +2160,7 @@ shinyServer(function(input, output, session) {
                 ###############
                 ## Centrality
                 ###############
-                if(input$chkNODE_CENTRALITY_STRENGTH || input$chkNODE_CENTRALITY_PAGERANK || input$chkNODE_CENTRALITY_EIGENVECTOR || input$chkNODE_CENTRALITY_HUB || input$chkNODE_CENTRALITY_AUTHORITY || input$chkNODE_CENTRALITY_KATZ || input$chkNODE_CENTRALITY_KCORE || input$chkNODE_CENTRALITY_MULTIPLEXITY){
+                if(input$chkNODE_CENTRALITY_DEGREE || input$chkNODE_CENTRALITY_STRENGTH || input$chkNODE_CENTRALITY_PAGERANK || input$chkNODE_CENTRALITY_EIGENVECTOR || input$chkNODE_CENTRALITY_HUB || input$chkNODE_CENTRALITY_AUTHORITY || input$chkNODE_CENTRALITY_KATZ || input$chkNODE_CENTRALITY_KCORE || input$chkNODE_CENTRALITY_MULTIPLEXITY){
     
                     progress$set(message = 'Calculating centrality...', value = 0.05)
                     listDiagnostics <<- NULL
@@ -4673,16 +4671,16 @@ shinyServer(function(input, output, session) {
                     if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
                         createOctaveConfigFile()
                         #call octave
-                        system("octave -qf octave/muxMultisliceCentralityDegree.m",intern=T)
+                        system("octave -qf octave/muxMultisliceCentralityStrength.m",intern=T)
                         #read output.
-                        resultFile <- paste(input$txtProjectName,"_centrality_degree.txt",sep="")
+                        resultFile <- paste(input$txtProjectName,"_centrality_strength.txt",sep="")
                         centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
                         for(l in 1:LAYERS){
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Strength = centralityVector))
                         }
                         if(file.exists(resultFile)) file.remove(resultFile)
         
-                        resultFile <- paste(input$txtProjectName,"_centrality_degree_aggregate.txt",sep="")
+                        resultFile <- paste(input$txtProjectName,"_centrality_strength_aggregate.txt",sep="")
                         centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
                         l <- LAYERS+1
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Strength = centralityVector))
@@ -4716,16 +4714,16 @@ shinyServer(function(input, output, session) {
                         if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
                             createOctaveConfigFile()
                             #call octave
-                            system("octave -qf octave/muxMultisliceCentralityInDegree.m",intern=T)
+                            system("octave -qf octave/muxMultisliceCentralityInStrength.m",intern=T)
                             #read output.
-                            resultFile <- paste(input$txtProjectName,"_centrality_indegree.txt",sep="")
+                            resultFile <- paste(input$txtProjectName,"_centrality_instrength.txt",sep="")
                             centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
                             for(l in 1:LAYERS){
                                 tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthIn = centralityVector))
                             }
                             if(file.exists(resultFile)) file.remove(resultFile)
             
-                            resultFile <- paste(input$txtProjectName,"_centrality_indegree_aggregate.txt",sep="")
+                            resultFile <- paste(input$txtProjectName,"_centrality_instrength_aggregate.txt",sep="")
                             centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
                             l <- LAYERS+1
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthIn = centralityVector))
@@ -4766,16 +4764,16 @@ shinyServer(function(input, output, session) {
                         if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
                             createOctaveConfigFile()
                             #call octave
-                            system("octave -qf octave/muxMultisliceCentralityOutDegree.m",intern=T)
+                            system("octave -qf octave/muxMultisliceCentralityOutStrength.m",intern=T)
                             #read output.
-                            resultFile <- paste(input$txtProjectName,"_centrality_outdegree.txt",sep="")
+                            resultFile <- paste(input$txtProjectName,"_centrality_outstrength.txt",sep="")
                             centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
                             for(l in 1:LAYERS){
                                 tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthOut = centralityVector))
                             }
                             if(file.exists(resultFile)) file.remove(resultFile)
             
-                            resultFile <- paste(input$txtProjectName,"_centrality_outdegree_aggregate.txt",sep="")
+                            resultFile <- paste(input$txtProjectName,"_centrality_outstrength_aggregate.txt",sep="")
                             centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
                             l <- LAYERS+1
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthOut = centralityVector))
@@ -4803,6 +4801,146 @@ shinyServer(function(input, output, session) {
                     }
                     l <- (LAYERS+1)
                     tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthOut = rep("-",Nodes)))
+                }
+
+                if(input$chkNODE_CENTRALITY_DEGREE){
+                    progress2 <- shiny::Progress$new(session)
+                    on.exit(progress2$close())
+                    progress2$set(message = paste('Current: Degree...'), value = 0.5)
+                    
+                    if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
+                        createOctaveConfigFile()
+                        #call octave
+                        system("octave -qf octave/muxMultisliceCentralityDegree.m",intern=T)
+                        #read output.
+                        resultFile <- paste(input$txtProjectName,"_centrality_degree.txt",sep="")
+                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                        for(l in 1:LAYERS){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Degree = centralityVector))
+                        }
+                        if(file.exists(resultFile)) file.remove(resultFile)
+        
+                        resultFile <- paste(input$txtProjectName,"_centrality_degree_aggregate.txt",sep="")
+                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                        l <- LAYERS+1
+                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Degree = centralityVector))
+                        if(file.exists(resultFile)) file.remove(resultFile)
+                    }else{
+                        #for an interdependent network, it is enough to calculate centrality in the aggregate
+                        #http://igraph.sourceforge.net/doc/R/degree.html
+                        centralityVector <- degree(g[[LAYERS+1]],mode="total")
+                        for(l in 1:(LAYERS+1)){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Degree = centralityVector))
+                        }
+                    }
+                    
+                    progress2$set(message = paste('Current: Degree... Done!'), value = 1)
+                    Sys.sleep(1)
+                    progress2$close()
+                }else{
+                    for(l in 1:LAYERS){
+                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Degree = rep("-",Nodes)))
+                    }
+                    l <- (LAYERS+1)
+                    tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Degree = rep("-",Nodes)))
+                }
+    
+                if(input$chkNODE_CENTRALITY_DEGREE){
+                    progress2 <- shiny::Progress$new(session)
+                    on.exit(progress2$close())
+                    progress2$set(message = paste('Current: In-Degree...'), value = 0.5)
+                    
+                    if(DIRECTED){
+                        if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
+                            createOctaveConfigFile()
+                            #call octave
+                            system("octave -qf octave/muxMultisliceCentralityInDegree.m",intern=T)
+                            #read output.
+                            resultFile <- paste(input$txtProjectName,"_centrality_indegree.txt",sep="")
+                            centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                            for(l in 1:LAYERS){
+                                tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeIn = centralityVector))
+                            }
+                            if(file.exists(resultFile)) file.remove(resultFile)
+            
+                            resultFile <- paste(input$txtProjectName,"_centrality_indegree_aggregate.txt",sep="")
+                            centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                            l <- LAYERS+1
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeIn = centralityVector))
+                            if(file.exists(resultFile)) file.remove(resultFile)
+                        }else{
+                            #for an interdependent network, it is enough to calculate centrality in the aggregate
+                            #http://igraph.sourceforge.net/doc/R/degree.html
+                            centralityVector <- degree(g[[LAYERS+1]],mode="in")
+                            for(l in 1:(LAYERS+1)){
+                                tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeIn = centralityVector))
+                            }
+
+                        }
+                    }else{
+                        for(l in 1:(LAYERS+1)){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeIn = tmplistDiagnostics[[l]]$Degree))
+                        }
+                    }
+
+                    progress2$set(message = paste('Current: In-Degree... Done!'), value = 1)
+                    Sys.sleep(1)
+                    progress2$close()
+
+                }else{
+                    for(l in 1:LAYERS){
+                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeIn = rep("-",Nodes)))
+                    }
+                    l <- (LAYERS+1)
+                    tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeIn = rep("-",Nodes)))
+                }
+    
+                if(input$chkNODE_CENTRALITY_DEGREE){
+                    progress2 <- shiny::Progress$new(session)
+                    on.exit(progress2$close())
+                    progress2$set(message = paste('Current: Out-Degree...'), value = 0.5)
+
+                    if(DIRECTED){
+                        if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
+                            createOctaveConfigFile()
+                            #call octave
+                            system("octave -qf octave/muxMultisliceCentralityOutDegree.m",intern=T)
+                            #read output.
+                            resultFile <- paste(input$txtProjectName,"_centrality_outdegree.txt",sep="")
+                            centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                            for(l in 1:LAYERS){
+                                tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeOut = centralityVector))
+                            }
+                            if(file.exists(resultFile)) file.remove(resultFile)
+            
+                            resultFile <- paste(input$txtProjectName,"_centrality_outdegree_aggregate.txt",sep="")
+                            centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                            l <- LAYERS+1
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeOut = centralityVector))
+                            if(file.exists(resultFile)) file.remove(resultFile)
+                        }else{
+                            #for an interdependent network, it is enough to calculate centrality in the aggregate
+                            #http://igraph.sourceforge.net/doc/R/degree.html
+                            centralityVector <- degree(g[[LAYERS+1]],mode="out")
+                            for(l in 1:(LAYERS+1)){
+                                tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeOut = centralityVector))
+                            }
+                        }
+                    }else{
+                        for(l in 1:(LAYERS+1)){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeOut = tmplistDiagnostics[[l]]$Degree))
+                        }
+                    }
+
+                    progress2$set(message = paste('Current: Out-Degree... Done!'), value = 1)
+                    Sys.sleep(1)
+                    progress2$close()
+                }else{
+                    for(l in 1:LAYERS){
+                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeOut = rep("-",Nodes)))
+                    }
+                    l <- (LAYERS+1)
+                    tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeOut = rep("-",Nodes)))
                 }
                 
                 if(input$chkNODE_CENTRALITY_PAGERANK){
@@ -5167,6 +5305,29 @@ shinyServer(function(input, output, session) {
 
                                                         
                 for(l in 1:(LAYERS+1)){
+                    if(input$chkNODE_CENTRALITY_DEGREE){
+                        progress <- shiny::Progress$new(session)
+                        on.exit(progress$close())
+                        progress$set(message = paste('Current: Degree  for layer',l,'...'), value = 0.5)
+
+                        #http://igraph.sourceforge.net/doc/R/degree.html
+                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Degree = degree(g[[l]],mode="total")))
+                        if(DIRECTED){
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeIn = degree(g[[l]],mode="in")))
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeOut = degree(g[[l]],mode="out")))
+                        }else{
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeIn = tmplistDiagnostics[[l]]$Degree))
+                            tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeOut = tmplistDiagnostics[[l]]$Degree))   
+                        }
+                        progress$set(message = paste('Current: Degree  for layer',l,'... Done!'), value = 1)
+                        Sys.sleep(1)
+                        progress$close()
+                    }else{
+                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Degree = rep("-",Nodes)))
+                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeIn = rep("-",Nodes)))
+                        tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeOut = rep("-",Nodes)))
+                    }
+                    
                     if(input$chkNODE_CENTRALITY_STRENGTH){
                         progress <- shiny::Progress$new(session)
                         on.exit(progress$close())

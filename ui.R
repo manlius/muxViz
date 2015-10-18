@@ -4,7 +4,7 @@ library(markdown)
 library(shinydashboard)
 library(rCharts)
 #library(shinyIncubator)
-
+source("version.R")
 
 #RGB colors table
 #http://www.javascripter.net/faq/rgbtohex.htm
@@ -18,8 +18,6 @@ paletteWeb <- "<a href='http://www.colorschemer.com/online.html' target='_blank'
 #http://www.statsblogs.com/2013/12/15/visualization-of-2012-crime-rates-of-different-states-in-the-us-using-rcharts/
 
 paletteChoiceArray <- sort(row.names(brewer.pal.info[1]))
-muxVizVersion <- "1.0.2"
-muxVizUpdate <- "4 Oct 2015"
 
 octaveCheck <- function(){
     res <- system("octave -v", ignore.stdout = F, ignore.stderr = F, intern=F)
@@ -527,7 +525,8 @@ shinyUI(bootstrapPage(
                                 column(width = 5,
                                     myBox("Descriptors", "basic",
                                         #HTML('<h4>Centrality</h4>'),
-                                        checkboxInput("chkNODE_CENTRALITY_STRENGTH","Degree (strength for weighted networks; in-going, out-going and total)",TRUE),
+                                        checkboxInput("chkNODE_CENTRALITY_DEGREE","Degree (in-going, out-going and total)",TRUE),
+                                        checkboxInput("chkNODE_CENTRALITY_STRENGTH","Strength (in-going, out-going and total)",F),
                                         checkboxInput("chkNODE_CENTRALITY_PAGERANK","PageRank",F),
                                         checkboxInput("chkNODE_CENTRALITY_EIGENVECTOR","Eigenvector",F),
                                         checkboxInput("chkNODE_CENTRALITY_HUB","Hub",F),
@@ -1327,6 +1326,7 @@ shinyUI(bootstrapPage(
                                 HTML("</center>")
                                 ),
                             HTML("<center>"),
+                            checkboxInput("chkTIMELINE_RENDER_TO_FILE","Render snapshots to file",FALSE),
                             actionButton("btnRenderDynamicsSnapshots", "Render Dynamics Snapshots"),
                             hr(),
                             actionButton("btnFFMPEGDynamicsSnapshots", "Make Video (require ffmpeg)"),
