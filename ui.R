@@ -861,6 +861,16 @@ shinyUI(bootstrapPage(
                                             HTML("</center>"),
                                             helpText("It could be necessary to close the rgl window before rendering again.")
                                             )
+                                        ),
+                                    conditionalPanel(condition="!input.chkPLOT_WITH_RGL",
+                                        myBox("Window relative margins","basic",
+                                            HTML("(Note: <strong><font color='red'>must apply the layout again</font></strong>)"),
+                                            helpText("Increase (f > 1) or decrease (0 < f < 1) the margins using relative factors."),
+                                            textInput('txtMARGIN_LEFT', label='Left factor f:', "1"),
+                                            textInput('txtMARGIN_RIGHT', label='Right factor f:', "1"),
+                                            textInput('txtMARGIN_TOP', label='Top factor f:', "1"),
+                                            textInput('txtMARGIN_BOTTOM', label='Bottom factor f:', "1")
+                                            )
                                         )
                                     ),
                                 column(5,
@@ -874,7 +884,7 @@ shinyUI(bootstrapPage(
                                             HTML('For non-RGL visualization, rotate by angle (degrees) around (<font color="red">must apply the layout again</font>):'),
                                             tags$br(),
                                             textInputRow('txtPLOT_ROTX', label=HTML('X-axis:'), "0"),
-                                            textInputRow('txtPLOT_ROTY', label=HTML('Y-axis:'), "120"),
+                                            textInputRow('txtPLOT_ROTY', label=HTML('Y-axis:'), "60"),
                                             textInputRow('txtPLOT_ROTZ', label=HTML('Z-axis:'), "0"),
                                             helpText("Note: order of rotations is (x,y,z)."),
                                             
@@ -884,8 +894,8 @@ shinyUI(bootstrapPage(
 #                                                    Custom='PLOT_NONRGL_QUICK_LAYOUT_NONE'),
 #                                                    selected='PLOT_NONRGL_QUICK_LAYOUT_HORIZONTAL', inline=TRUE
 #                                                ),
-                                            helpText("Horizontal layout: x=0°, y=120°, z=0°, shift>0."),
-                                            helpText("Vertical layout: x=120°, y=90°, z=-90°, shift=0")
+                                            helpText("Horizontal layout: x=0°, y=60°, z=0°, shift>0."),
+                                            helpText("Vertical layout: x=60°, y=45°, z=-45°, shift=0")
                                             ),
                                         textInput('txtLAYER_SHIFT', label=HTML('Shift layers (along horizontal axis to improve perspective, <font color="red">must apply the layout again</font>) by:'), "0.8"),
                                         textInput('txtLAYER_SCALE', label=HTML('Scale layers (<font color="red">must apply the layout again</font>) by:'), "4"),

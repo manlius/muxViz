@@ -13,7 +13,7 @@ if(!require(shiny)){
     devtools::install_github("rstudio/shiny-incubator")
 }else{
     #check the version, and in case update to the latest one
-    if(packageDescription("shiny")$Version!="0.12.1" || packageDescription("shiny")$Version!="0.12.2"){
+    if(packageDescription("shiny")$Version!="0.12.1" && packageDescription("shiny")$Version!="0.12.2"){
         #install.packages("shiny")        
         library(devtools)
         install.packages("shiny")

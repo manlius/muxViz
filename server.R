@@ -227,35 +227,38 @@ addalpha <- function(colors, alpha=1.0) {
 
 #http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
 Rotx <- function(th){ 
-    th<-th*pi/360.
-    Rx<-matrix(nrow=3,ncol=3,0)
-    Rx[2,2] <- cos(th)
-    Rx[2,3] <- -sin(th)
-    Rx[3,2] <- -Rx[2,3]
-    Rx[3,3] <- Rx[1,1]
+    th <- th*pi/180.
+    if(th<0) th <- 2*pi + th
+    Rx <- matrix(nrow=3,ncol=3,0)
     Rx[1,1] <- 1
+    Rx[2,2] <- cos(th)
+    Rx[3,3] <- cos(th)
+    Rx[2,3] <- -sin(th)
+    Rx[3,2] <- sin(th)
     return(Rx) 
 }
 
 Roty <- function(th){ 
-    th<-th*pi/360.
-    Ry<-matrix(nrow=3,ncol=3,0)
+    th <- th*pi/180.
+    if(th<0) th <- 2*pi + th
+    Ry <- matrix(nrow=3,ncol=3,0)
     Ry[1,1] <- cos(th)
-    Ry[1,3] <- sin(th)
-    Ry[3,1] <- -Ry[1,3]
-    Ry[3,3] <- Ry[1,1]
     Ry[2,2] <- 1
+    Ry[3,3] <- cos(th)
+    Ry[1,3] <- sin(th)
+    Ry[3,1] <- -sin(th)
     return(Ry) 
 }
 
 Rotz <- function(th){ 
-    th<-th*pi/360.
+    th <- th*pi/180.
+    if(th<0) th <- 2*pi + th
     Rz<-matrix(nrow=3,ncol=3,0)
     Rz[1,1] <- cos(th)
-    Rz[1,2] <- -sin(th)
-    Rz[2,1] <- -Rz[1,2]
-    Rz[2,2] <- Rz[1,1]
+    Rz[2,2] <- cos(th)
     Rz[3,3] <- 1
+    Rz[1,2] <- -sin(th)
+    Rz[2,1] <- sin(th)
     return(Rz) 
 }
 
@@ -1157,7 +1160,7 @@ shinyServer(function(input, output, session) {
                     }                
                     #generate the network object
                     g[[l]] <<- graph.empty(directed=DIRECTED, n=Nodes)
-                    AdjMatrix[[l]] <<- get.adjacency(g[[l]]) #I use this to avoid class incompatibility 
+                    AdjMatrix[[l]] <<- get.adjacency(g[[l]]) #I use this to avoid class incompatibility 
                 }else{
                     if(ncol(layerEdges[[l]])==2){
                         layerEdges[[l]] <<- cbind(layerEdges[[l]], rep(1, nrow(layerEdges[[l]])))
@@ -3691,9 +3694,9 @@ shinyServer(function(input, output, session) {
                     thy <- as.numeric(input$txtPLOT_ROTY)
                     thz <- as.numeric(input$txtPLOT_ROTZ)
                     for(l in 1:(LAYERS+1)){
-                        if(thx>0.){ layouts[[l]] <<- t( Rotx(thx) %*% t(layouts[[l]]) ) }
-                        if(thy>0.){ layouts[[l]] <<- t( Roty(thy) %*% t(layouts[[l]]) ) }
-                        if(thz>0.){ layouts[[l]] <<- t( Rotz(thz) %*% t(layouts[[l]]) ) }
+                        layouts[[l]] <<- t( Rotx(thx) %*% t(layouts[[l]]) ) 
+                        layouts[[l]] <<- t( Roty(thy) %*% t(layouts[[l]]) ) 
+                        layouts[[l]] <<- t( Rotz(thz) %*% t(layouts[[l]]) ) 
                     }            
                 }
 
@@ -3751,10 +3754,10 @@ shinyServer(function(input, output, session) {
                     ymax.tmp <- max(ymax.tmp, max(layouts[[l]][,2]))
                 }
                 
-                xmin.tmp <- min(xmin.tmp*0.95, xmin.tmp*1.05)
-                xmax.tmp <- max(xmax.tmp*0.95, xmax.tmp*1.05)
-                ymin.tmp <- min(ymin.tmp*0.95, ymin.tmp*1.05)
-                ymax.tmp <- max(ymax.tmp*0.95, ymax.tmp*1.05)
+                xmin.tmp <- min(xmin.tmp*0.9, xmin.tmp*1.1)
+                xmax.tmp <- max(xmax.tmp*0.9, xmax.tmp*1.1)
+                ymin.tmp <- min(ymin.tmp*0.9, ymin.tmp*1.1)
+                ymax.tmp <- max(ymax.tmp*0.9, ymax.tmp*1.1)
                 
                 plot(x=NULL, y=NULL, type="n", 
                     xlim=c(xmin.tmp,xmax.tmp), ylim=c(ymin.tmp,ymax.tmp)
