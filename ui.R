@@ -4,11 +4,13 @@ library(markdown)
 library(shinydashboard)
 library(rCharts)
 #library(shinyIncubator)
+library(digest)
 source("version.R")
 
 #RGB colors table
 #http://www.javascripter.net/faq/rgbtohex.htm
 paletteWeb <- "<a href='http://www.colorschemer.com/online.html' target='_blank'>Online Color Palette</a>, <a href='http://colorbrewer2.org'>Online Color Scheme</a>"
+myBoxCnt <- 0
 
 #http://getbootstrap.com/components/#glyphicons
 #http://fontawesome.io/icons/
@@ -88,11 +90,12 @@ muxbenchCheck <- function(){
 
 
 myBox <- function(Title, Type="basic", ...){
+    myBoxCnt <<- myBoxCnt + 1
     if(Type=="basic"){
         return(
-            div(style="background-color: #FFFFFF; border-width: 1px; border-style: solid; border-color: #3286AD; margin: 10px 5px 10px 5px; -moz-border-radius: 15px; border-radius: 15px;",
-                div(style="background-color: #3286AD; color: #FFFFFF; -moz-border-top-right-radius: 15px; -moz-border-top-left-radius: 15px; border-top-left-radius: 15px; border-top-right-radius: 15px; text-align: center; font-family: 'Arial';", HTML(paste0("<font size='+1'><strong>",Title,"</strong></font>"))),
-                div(style="padding: 5px 5px 5px 5px;",
+            div(style="background-color: #FFFFFF; border-width: 1px; border-style: solid; border-color: #3286AD; margin: 10px 5px 10px 5px; -moz-border-radius: 15px; border-radius: 15px;", 
+                div(style="background-color: #3286AD; color: #FFFFFF; -moz-border-top-right-radius: 15px; -moz-border-top-left-radius: 15px; border-top-left-radius: 15px; border-top-right-radius: 15px; text-align: center; font-family: 'Arial';", HTML(paste0("<font size='+1'><strong>",Title,"</strong></font>&nbsp;<i id=\"btnRollBox",myBoxCnt,"\" class=\"fa fa-caret-square-o-up\" onclick=\"rollBox(",paste0("btnRollBox",myBoxCnt,", RollBox",myBoxCnt),")\"></i>"))),
+                div(style="padding: 5px 5px 5px 5px;", id=paste0("RollBox",myBoxCnt),
                     list(...)
                 )
             )
@@ -100,7 +103,7 @@ myBox <- function(Title, Type="basic", ...){
     }
     if(Type=="info"){
         return(
-            div(style="background-color: #FFFFFF; border-width: 1px; border-style: solid; border-color: #165400; margin: 10px 5px 10px 5px; -moz-border-radius: 15px; border-radius: 15px;",
+            div(style="background-color: #FFFFFF; border-width: 1px; border-style: solid; border-color: #165400; margin: 10px 5px 10px 5px; -moz-border-radius: 15px; border-radius: 15px;", 
                 div(style="background-color: #165400; color: #FFFFFF; -moz-border-top-right-radius: 15px; -moz-border-top-left-radius: 15px; border-top-left-radius: 15px; border-top-right-radius: 15px; text-align: center; font-family: 'Arial';", HTML(paste0("<font size='+1'><strong>",Title,"</strong></font>"))),
                 div(style="padding: 5px 5px 5px 5px;",
                     list(...)
@@ -128,6 +131,7 @@ shinyUI(bootstrapPage(
     tags$head(tags$link(rel='stylesheet', type='text/css', href='styles.css')),
     # Load D3.js
     tags$head(tags$script(src = 'http://d3js.org/d3.v3.min.js')),
+    tags$head(tags$script(src = "muxviz.js")),
     tags$head(tags$title("muxViz")),
     #headerPanel("muxViz Graphical User Interface"),
 
@@ -473,7 +477,7 @@ shinyUI(bootstrapPage(
                                     column(width=5,
                                         myBox("Graphical Options","basic",
                                             checkboxInput('chkEXPORT_MATRIX_PLOT', HTML('Export each layer as an image (<font color="red">slow for larger networks</font>)'), FALSE),
-                                            selectInput("selAssortativityTypeColorPalette", HTML("Color palette to use (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
+                                            selectInput("selAssortativityTypeColorPalette", HTML("Color palette to use (see Graphics > Colors):"), 
                                                 choices = paletteChoiceArray)
                                             ),
                                         HTML("<center>"),
@@ -516,7 +520,7 @@ shinyUI(bootstrapPage(
                             fluidRow(
                                 column(width = 5,
                                     myBox("Framework", "basic",
-                                        checkboxInput("chkNODE_CENTRALITY_MULTIPLEX","Use tensorial calculation (uncheck this for calculation in each layer separately)",TRUE)
+                                        checkboxInput("chkNODE_CENTRALITY_MULTIPLEX","Use tensorial calculation (uncheck this for calculation of centrality in each layer separately. This will not delete previous calculations, if any)",TRUE)
                                     ),
                                     HTML("<center>"),
                                     actionButton("btnCalculateCentralityDiagnostics", "Calculate Centrality Diagnostics"),
@@ -544,8 +548,16 @@ shinyUI(bootstrapPage(
                                 conditionalPanel("input.centralityTablePageable==true",
                                         uiOutput("numOutputCentralityTableNodesPerPage")
                                     ),
-                                htmlOutput("centralityTable"),
-                                downloadButton('downCentralityTable', 'Export'),
+                                tabsetPanel(
+                                    tabPanel("Multilayer",
+                                        htmlOutput("centralityTable"),
+                                        downloadButton('downCentralityTable', 'Export')
+                                        ),
+                                    tabPanel("Single layer",
+                                        htmlOutput("centralityTableSingleLayer"),
+                                        downloadButton('downCentralityTableSingleLayer', 'Export')
+                                        )                                        
+                                    ),
                                 tags$hr(),
                                 fluidRow(
                                     column(width = 4,
@@ -613,6 +625,7 @@ shinyUI(bootstrapPage(
                                                     )
                                                 ),
                                             conditionalPanel(condition="input.radMultiplexModel!='MULTIPLEX_IS_EDGECOLORED'",
+                                                helpText("The following algorithms work for single and interdependent network only. There is still no support for community detection for interconnected multiplex and general multilayer networks."),
                                                 radioButtons('radCommunityAlgorithm', '',
                                                     c(Infomap='COMMUNITY_INFOMAP',
                                                         Louvain='COMMUNITY_LOUVAIN',
@@ -696,12 +709,12 @@ shinyUI(bootstrapPage(
                                         myBox("Graphical Options","basic",                                        
                                             uiOutput("selAnularVizOutputFeatureID"),
                                             uiOutput("selAnularVizOutputLayerID"),
-                                            textInput("txtANULAR_VIZ_RCORE",label="Radius of the core","0.3"),
-                                            textInput("txtANULAR_VIZ_RING_DISPLACEMENT",label="Distance between rings","0.01"),
+                                            textInputRow("txtANULAR_VIZ_RCORE",label="Core radius:","0.3"),
+                                            textInputRow("txtANULAR_VIZ_RING_DISPLACEMENT",label="Rings distance:","0.01"),
                                             checkboxInput("chkANULAR_VIZ_CELL_BORDER","Show cell border",FALSE),
                                             checkboxInput("chkANULAR_VIZ_SHOW_NODE_LABEL","Show node IDs around the annular representation",FALSE),
-                                            textInput("txtANULAR_VIZ_FONT_SIZE",label="Font size:","1.5"),
-                                            selectInput("selAnularColorPalette", HTML("Color palette to use (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
+                                            textInputRow("txtANULAR_VIZ_FONT_SIZE",label="Font size:","1.5"),
+                                            selectInput("selAnularColorPalette", HTML("Color palette to use (see Graphics > Colors):"), 
                                                 choices = paletteChoiceArray)
                                             )
                                         )
@@ -829,8 +842,19 @@ shinyUI(bootstrapPage(
                                                 Independent='LAYOUT_INDEPENDENT'),
                                                 selected='LAYOUT_MULTIPLEX', inline=TRUE
                                             ),
-                                        #this is a dynamic object changing because of input
-                                        uiOutput("selOutputLayerID"),
+                                        conditionalPanel(condition="input.radLayoutType=='LAYOUT_MULTIPLEX'",
+                                            helpText("Specify the template method:"),
+                                            radioButtons('radLayoutTypeMultiplex', '',
+                                                c(Aggregate='LAYOUT_MULTIPLEX_AGGREGATE',
+                                                    Union='LAYOUT_MULTIPLEX_UNION',
+                                                    Intersection='LAYOUT_MULTIPLEX_INTERSECTION'),
+                                                    selected='LAYOUT_MULTIPLEX_AGGREGATE', inline=FALSE
+                                                )
+                                            ),
+                                        conditionalPanel(condition="input.radLayoutType=='LAYOUT_BY_LAYER_ID'",
+                                            #this is a dynamic object changing because of input
+                                            uiOutput("selOutputLayerID")
+                                            ),
                                         textInput("txtLAYOUT_MAXITER", 
                                             label=HTML("Maximum number of iterations:"), 
                                             "1000"
@@ -849,7 +873,7 @@ shinyUI(bootstrapPage(
                                         #HTML('<h4>Options for the rendering of the multiplex</h4>'),
                                         textInput('txtPLOT_TITLE', label='Plot title:', ""),
                                         textInput('txtPLOT_SUBTITLE', label='Plot subtitle:', ""),
-                                        textInput('txtBACKGROUND_COLOR', label='Background color (any valid R type):', "white")
+                                        colourInput("colBACKGROUND_COLOR", "Background color (any valid R type)", "white")
                                         ),
                                     conditionalPanel(condition="input.chkPLOT_WITH_RGL",
                                         myBox("Light Options (RGL)","basic",
@@ -897,9 +921,10 @@ shinyUI(bootstrapPage(
                                             helpText("Horizontal layout: x=0°, y=60°, z=0°, shift>0."),
                                             helpText("Vertical layout: x=60°, y=45°, z=-45°, shift=0")
                                             ),
-                                        textInput('txtLAYER_SHIFT', label=HTML('Shift layers (along horizontal axis to improve perspective, <font color="red">must apply the layout again</font>) by:'), "0.8"),
+                                        textInput('txtLAYER_SHIFT_X', label=HTML('Shift layers (translation along x-axis, <font color="red">must apply the layout again</font>) by:'), "0.8"),
+                                        textInput('txtLAYER_SHIFT_Y', label=HTML('Shift layers (translation along y-axis, <font color="red">must apply the layout again</font>) by:'), "0"),
                                         textInput('txtLAYER_SCALE', label=HTML('Scale layers (<font color="red">must apply the layout again</font>) by:'), "4"),
-                                        textInput('txtLAYER_SPACE', label=HTML('Space between layers (<font color="red">must apply the layout again</font>) by:'), "3")
+                                        textInput('txtLAYER_SPACE', label=HTML('Space between layers (translation along z-axis, <font color="red">must apply the layout again</font>) by:'), "3")
                                         )
                                     )
                                 )
@@ -910,8 +935,7 @@ shinyUI(bootstrapPage(
                                     column(5,
                                         myBox("Inter-link Options","basic",
                                             checkboxInput("chkINTERLINK_SHOW",HTML("Show inter-links (<font color='red'>resource consuming</font>, recommended for small networks):"),TRUE),
-                                            #textInput('txtINTERLINK_SHOW_FRACTION', label='Show only this random fraction of inter-links (from 0 to 1):', "0.2"),
-                                            textInput('txtINTERLINK_COLOR', label='Inter-link color (any valid R type):', "#D8D8D8"),
+                                            colourInput("colINTERLINK_COLOR", "Inter-link color (any valid R type)", "#D8D8D8"),
                                             selectInput('selINTERLINK_TYPE', 'Inter-link line style:', choices=                                                c("dotted", "solid", "dashed", "dotdash", "longdash", "twodash")),                                                
                                             textInput('txtINTERLINK_WIDTH', label='Inter-link width:', "0.4"),
                                             textInput('txtINTERLINK_TRANSP', label='Inter-link transparency (from 0 to 1; 1 means full color):', "0.2")
@@ -930,7 +954,7 @@ shinyUI(bootstrapPage(
                                         myBox("Layer Options", "basic",
                                             checkboxInput("chkLAYER_SHOW","Show layers:",TRUE),
                                             textInput('txtLAYER_LABEL_PREFIX', label='Layer label prefix (overwritten by label, if any, provided with the config file):', "L"),
-                                            textInput('txtLAYER_COLOR', label='Layer color (any valid R type; use commas to indicate a color for each layer):', "gray"),
+                                            colourInput("colLAYER_COLOR", "Layer color (any valid R type; use commas to indicate a color for each layer):", "grey"),
                                             textInput('txtLAYER_TRANSP', label='Layer transparency (from 0 to 1; 1 means full color; use commas to indicate a value for each layer):', "0.08"),
                                             HTML("Show labels on:"),
                                             checkboxInput("chkLAYER_ID_SHOW_TOPLEFT","top-left",FALSE),
@@ -946,7 +970,7 @@ shinyUI(bootstrapPage(
                                         myBox("Aggregate Options", "basic",
                                             checkboxInput("chkAGGREGATE_SHOW",HTML("Show aggregate network as separate layer (<font color='red'>must apply the layout again</font>):"),FALSE),
                                             textInput('txtLAYER_AGGREGATE_LABEL_PREFIX', label='Aggregate layer label:', "Aggregate"),
-                                            textInput('txtLAYER_AGGREGATE_COLOR', label='Aggregate layer color (any valid R type):', "blue"),
+                                            colourInput("colLAYER_AGGREGATE_COLOR", "Aggregate layer color (any valid R type):", "blue"),
                                             textInput('txtLAYER_AGGREGATE_TRANSP', label='Aggregate layer transparency (from 0 to 1; 1 means full color):', "0.08")
                                             )
                                         ),
@@ -979,7 +1003,9 @@ shinyUI(bootstrapPage(
                                     myBox("Node Size", "basic",              
                                         conditionalPanel(condition="input.btnCalculateCentralityDiagnostics==0",
                                             radioButtons('radNodeSizeType', 'Node size proportional to:',
-                                                c(Uniform='NODE_SIZE_PROPORTIONAL_TO_UNIFORM'),
+                                                c(Uniform='NODE_SIZE_PROPORTIONAL_TO_UNIFORM',
+                                                   External='NODE_SIZE_PROPORTIONAL_TO_EXTERNAL'
+                                                    ),
                                                     selected='NODE_SIZE_PROPORTIONAL_TO_UNIFORM'
                                                 )
                                             ),
@@ -992,7 +1018,8 @@ shinyUI(bootstrapPage(
                                                 LogLog='NODE_SIZE_PROPORTIONAL_TYPE_LOGLOG'),
                                                 selected='NODE_SIZE_PROPORTIONAL_TYPE_LOGLOG', inline=TRUE
                                             ),
-                                        textInput('txtNODE_DEFAULT_SIZE', label='Default size (used for fine tuning of Uniform, Log and LogLog option):', "10")
+                                        helpText("Fine tuning of Uniform, External, Log and LogLog options."),
+                                        textInputRow('txtNODE_DEFAULT_SIZE', label='Default size:', "10")
                                         )
                                     ),
                                 column(5,
@@ -1003,10 +1030,14 @@ shinyUI(bootstrapPage(
                                                 #Component='NODE_COLOR_COMPONENT',
                                                 Centrality='NODE_COLOR_CENTRALITY',
                                                 TopRank='NODE_COLOR_TOPRANK',
-                                                Uniform='NODE_COLOR_UNIFORM'),
+                                                Uniform='NODE_COLOR_UNIFORM',
+                                                External='NODE_COLOR_EXTERNAL'),
                                                 selected='NODE_COLOR_UNIFORM'
                                             ),
                                         hr(),
+                                        conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_EXTERNAL'",
+                                            colourInput("colNodeColorFileDefaultNodesColor", "Default color for unspecified nodes (any valid R type):", "#959595")
+                                            ),
                                         conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_CENTRALITY' && input.btnCalculateCentralityDiagnostics>0",
                                             uiOutput("selVizNodeColorOutputID"),
                                             radioButtons('radNodeColorType2', 'Type of proportionality:',
@@ -1015,7 +1046,7 @@ shinyUI(bootstrapPage(
                                                     LogLog='NODE_COLOR_PROPORTIONAL_TYPE_LOGLOG'),
                                                     selected='NODE_COLOR_PROPORTIONAL_TYPE_NORMAL'
                                                 ),
-                                            selectInput("selCentralityColorPalette", HTML("Color palette for coloring by centrality (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
+                                            selectInput("selCentralityColorPalette", HTML("Color palette for coloring by centrality (see Graphics > Colors):"), 
                                                 choices = as.vector(paletteChoiceArray)),
                                             textInputRow("txtNODE_COLOR_CENTRALITY_BINS", label="Bins:", "30")
                                             ),
@@ -1023,26 +1054,26 @@ shinyUI(bootstrapPage(
                                             helpText("You need to calculate diagnostics before using this option.")
                                             ),                                            
                                         conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_RANDOM'",
-                                            selectInput("selMultiplexColorPalette", HTML("Color palette for nodes' default color (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
+                                            selectInput("selMultiplexColorPalette", HTML("Color palette for nodes' default color (see Graphics > Colors):"), 
                                                 choices = append(as.vector(paletteChoiceArray),"random"))
                                             ),
                                         conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_UNIFORM'",
-                                            textInput('txtNODE_COLOR_UNIFORM_COLOR', label='Color (any valid R type):', "#F2F2F2")
+                                            colourInput("colNODE_COLOR_UNIFORM_COLOR", "Color (any valid R type):", "#F2F2F2")
                                             ),
                                         conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_TOPRANK' && input.btnCalculateCentralityDiagnostics>0",
                                             uiOutput("selVizNodeColorTopOutputID"),
                                             textInput('txtNODE_COLOR_TOP', label='Number of top-ranked nodes to consider (monoplex or multiplex centrality is considered, according to latest calculation):', "5"),
-                                            textInput('txtNODE_COLOR_TOP_COLOR_TOP', label='Color of top-ranked nodes (any valid R type):', "#FF0000"),
-                                            textInput('txtNODE_COLOR_TOP_COLOR_OTHERS', label='Color of the other nodes and all edges (any valid R type):', "#F2F2F2"),         
+                                            colourInput("colNODE_COLOR_TOP_COLOR_TOP", "Color of top-ranked nodes (any valid R type):", "#FF0000"),
+                                            colourInput('colNODE_COLOR_TOP_COLOR_OTHERS', 'Color of the other nodes and all edges (any valid R type):', "#F2F2F2"),         
                                             checkboxInput("chkNODE_LABELS_SHOW_ONLY_TOP","Show nodes labels only for top-ranked nodes:",TRUE),                   
-                                            textInput('txtNODE_COLOR_TOP_LABELS_FONT_COLOR', label='Color of nodes labels (any valid R type):', "#000000")
+                                            colourInput('colNODE_COLOR_TOP_LABELS_FONT_COLOR', 'Color of nodes labels (any valid R type):', "#000000")
                                             ),
                                         conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_TOPRANK' && input.btnCalculateCentralityDiagnostics==0",
                                             helpText("You need to calculate diagnostics before using this option.")
                                             ),                                            
                                         conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_COMMUNITY' && input.btnCalculateCommunityDiagnostics>0",    
                                             textInput("txtCOMMUNITY_MIN_SIZE",label="Color-code with the same RGB all nodes in communities smaller than (useful for evidencing larger communities, not valid for the multiplex):","1"),
-                                            selectInput("selCommunityColorPalette", HTML("Color palette for coloring communities (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
+                                            selectInput("selCommunityColorPalette", HTML("Color palette for coloring communities (see Graphics > Colors):"), 
                                                 choices = append(as.vector(paletteChoiceArray),"random"))
                                             ),
                                         conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_COMMUNITY' && input.btnCalculateCommunityDiagnostics==0",
@@ -1059,16 +1090,32 @@ shinyUI(bootstrapPage(
                                             checkboxInput("chkNODE_ISOLATED_HIDE_INTERLINKS","Find isolated nodes while accounting for interlayer links",TRUE)
                                             ),
                                         textInput('txtNODE_TRANSP', label='Node transparency (from 0 to 1; 1 means full color):', "0.8"),
-                                        textInput("txtNODE_FRAME_COLOR", label="Node frame color (any valid R type; keep it blank to use the same as node color):",""),
+                                        textInput("txtNODE_FRAME_COLOR", "Node frame color (any valid R type; for non-RGL device; keep it blank to use the same as node color):",""),
                                         checkboxInput("chkNODE_LABELS_SHOW","Show nodes labels (recommended only for small networks):",FALSE),
-                                        checkboxInput("chkNODE_LABELS_SHOW_WRAP","Wrap labels",FALSE),
-                                        conditionalPanel(condition="input.chkNODE_LABELS_SHOW_WRAP",
-                                            textInput('txtNODE_LABELS_WRAP', label='Wrap length (with respect to blank spaces)', "10"),
-                                            textInput('txtNODE_LABELS_WRAP_OFFSET', label='Wrap offset (usually 0; use this to fine-tune the distance between wrapped labels)', "0")
-                                            ),
-                                        textInput('txtNODE_LABELS_DISTANCE', label='Distance of labels from nodes:', "1."),
-                                        textInput('txtNODE_LABELS_FONT_SIZE', label='Size of nodes labels :', "0.5"),
-                                        textInput('txtNODE_LABELS_FONT_COLOR', label='Color of nodes labels (any valid R type):', "#2F2F2F")
+                                        conditionalPanel("input.chkNODE_LABELS_SHOW",
+                                            checkboxInput("chkNODE_LABELS_SHOW_WRAP","Wrap labels",FALSE),
+                                            conditionalPanel(condition="input.chkNODE_LABELS_SHOW_WRAP",
+                                                textInput('txtNODE_LABELS_WRAP', label='Wrap length (with respect to blank spaces)', "10"),
+                                                textInput('txtNODE_LABELS_WRAP_OFFSET', label='Wrap offset (usually 0; use this to fine-tune the distance between wrapped labels)', "0")
+                                                ),
+                                            textInput('txtNODE_LABELS_DISTANCE', label='Distance of labels from nodes:', "1."),
+                                            textInput('txtNODE_LABELS_FONT_SIZE', label='Size of nodes labels :', "0.5"),
+                                            colourInput('colNODE_LABELS_FONT_COLOR', 'Color of nodes labels (any valid R type):', "#2F2F2F")
+                                            )
+                                        )
+                                    ),
+                                column(5,
+                                    conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_EXTERNAL' || input.selVizNodeSizeID=='External' || input.radNodeSizeType=='NODE_SIZE_PROPORTIONAL_TO_EXTERNAL'",
+                                        myBox("External color/size", "basic",    
+                                            helpText("Use an external file. Expected format (including mandatory header) is: nodeID layerID color size"),
+                                            #checkboxInput('chkNodeColorFileHeader', 'Header', TRUE),
+                                            textInput("txtNodeColorFileSep", label=HTML("Separator (default: blank space):"), " "),
+                                            fileInput('nodecolor_file', HTML('<strong>* Open the file:</strong>'),
+                                                    accept=c('text/csv', 'text/comma-separated-values,text/plain', '.csv')),
+                                            HTML("<center>"),
+                                            actionButton("btnImportNodeColor", "Import"),
+                                            HTML("</center>")
+                                            )
                                         )
                                     )
                                 )
@@ -1092,13 +1139,21 @@ shinyUI(bootstrapPage(
                                         )
                                     ),
                                 column(5,
+                                    myBox("Edge Color", "basic",
+                                        helpText("Some node-coloring methods allow to customize edge color."),
+                                        colourInput('colEDGE_COLOR', 'Edge color (any valid R type):', "#F2F2F2")
+                                        )
+                                    )
+                                ),
+                            fluidRow(
+                                column(5,
                                     myBox("Other Options", "basic",
                                         textInput('txtEDGE_BENDING', label='Bending factor (0 means straight; max 1):', "0"),
                                         textInput('txtEDGE_TRANSP', label='Edge transparency (from 0 to 1; 1 means full color):', "0.2"),
-                                        textInput('txtLAYER_ARROW_SIZE', label='Arrow size:', "0.2"),
-                                        textInput('txtLAYER_ARROW_WIDTH', label='Arrow width:', "0.2")
+                                        textInputRow('txtLAYER_ARROW_SIZE', label='Arrow size:', "0.2"),
+                                        textInputRow('txtLAYER_ARROW_WIDTH', label='Arrow width:', "0.2")
                                         )
-                                    )
+                                    )                                
                                 )
                             ),
                         tabPanel("Export",
@@ -1200,7 +1255,7 @@ shinyUI(bootstrapPage(
                                 ),
                             column(5,
                                 myBox("Graphical Options", "basic",
-                                    selectInput("selReducibilityColorPalette", HTML("Color palette to use (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
+                                    selectInput("selReducibilityColorPalette", HTML("Color palette to use (see Graphics > Colors):"), 
                                         choices = paletteChoiceArray),
                                     textInput("txtREDUCIBILITY_HEATMAP_FONT_SIZE",label="Font size:","1.5")
                                     ),
@@ -1280,7 +1335,7 @@ shinyUI(bootstrapPage(
                             myBox("Graphical options", "basic",
                                 selectInput("selMotifResultsSortBy", HTML("<strong>Sort by:</strong>"), 
                                     choices = c("Frequency", "Z-score", "p-value")),
-                                    selectInput("selMotifColorPalette", HTML("Color palette for coloring edges (<a href='colorbrewer.html' target='_blank'>see palettes and their codes</a>):"), 
+                                    selectInput("selMotifColorPalette", HTML("Color palette for coloring edges (see Graphics > Colors):"), 
                                             choices = append(as.vector(paletteChoiceArray),"random")),
                                     helpText("(Note that if you change the palette and restart the analysis, you might need to empty your browser cache to see the correct results)")
                                 ),
@@ -1345,9 +1400,9 @@ shinyUI(bootstrapPage(
                         column(5,
                             myBox("Graphical Options", "basic",
                                 textInput("txtTimelineDefaultNodesSize", label=HTML("Default size of all nodes (leave this blank to use the Rendering setup):"), "10"),
-                                textInput("txtTimelineDefaultNodesColor", label=HTML("Default color of all nodes (any valid R type; leave this blank to use the Rendering setup):"), "#959595"),
+                                colourInput("colTimelineDefaultNodesColor", HTML("Default color of all nodes (any valid R type; leave this blank to use the Rendering setup):"), "#959595"),
                                 textInput("txtTimelineDefaultEdgesSize", label=HTML("Default size of all edges (leave this blank to use the Rendering setup):"), "1"),
-                                textInput("txtTimelineDefaultEdgesColor", label=HTML("Default color of all edges (any valid R type; leave this blank to use the Rendering setup):"), "#959595")
+                                colourInput("colTimelineDefaultEdgesColor", HTML("Default color of all edges (any valid R type; leave this blank to use the Rendering setup):"), "#959595")
                                 #tags$hr(),
                                 #textInput("txtFFMPEG_PATH",label="Full path of your ffmpeg binary to make the video (if not valid, video will not be made):",""),
                                 #textInput("txtFFMPEG_FLAGS",label="Parameters to be passed to ffmpeg (if not valid, video will not be made):",""),
@@ -1365,6 +1420,21 @@ shinyUI(bootstrapPage(
                                 '<br>'
                                 ))
                             )
+                        )
+                    )
+                )
+            ),
+        tabPanel("Graphics",
+            mainPanel(
+                tabsetPanel(
+                    tabPanel("Points",
+                        HTML("<img src='img/pointtypes.png' alt=''/>")
+                        ),
+                    tabPanel("Lines",
+                        HTML("<img src='img/linetypes.png' alt=''/>")
+                        ),
+                    tabPanel("Colors",
+                        HTML("<img src='img/colorpalettes.png' alt=''/>")
                         )
                     )
                 )

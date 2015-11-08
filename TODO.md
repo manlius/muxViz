@@ -27,6 +27,8 @@ The following list reflects the possible improvements of muxViz.
 
 - Layered visualization of adjacency matrices in a 3D environment
 
+- In the 2D rendering, allow for different types of node shape. 
+
 
 #### Low priority
 

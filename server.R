@@ -19,248 +19,10 @@ library(gplots)
 library(rCharts)
 library(ggplot2)
 library(d3Network)
+library(session)
 source("version.R")
+source("global.R")
 
-##################################################
-# Global variables
-##################################################
-
-#This is to avoid pushing a button and starting all the other ones..
-btnCalculateMotifsValue <- 0
-btnCalculateCorrelationDiagnosticsValue <- 0
-btnCalculateCentralityDiagnosticsValue <- 0
-btnCentralityDiagnosticsAnalysisValue <- 0
-btnCalculateCommunityDiagnosticsValue <- 0
-btnImportNetworksValue <- 0
-btnImportTimelineValue <- 0
-btnRenderDynamicsSnapshotsValue <- 0
-#btnFFMPEGDynamicsSnapshotsValue <- 0
-btnApplyLayoutValue <- 0
-btnRenderNetworksValue <- 0
-btnExportRenderingValue <- 0
-btnExportRenderingSVGValue <- 0
-btnExportRenderingPDFValue <- 0
-btnExportRenderingWebValue <- 0
-btnExportRenderingClassicPNGValue <- 0
-btnExportRenderingClassicPDFValue <- 0
-btnAnularVizValue <- 0
-btnCalculateReducibilityValue <- 0
-btnSaveSessionValue <- 0
-btnResetLightsValue <- 0
-btnRenderNetworkOfLayersValue <- 0
-
-#Other variables
-fileInput <- NULL
-LAYERS <- 0
-multilayerEdges <- NULL
-layerEdges <- vector("list",LAYERS+1)
-fileName <- vector("list",LAYERS)
-layerLabel <- vector("list",LAYERS+1)
-layerColor <- vector("list",LAYERS)
-layerColorAlpha <- vector("list",LAYERS)
-layerLayoutFile <- vector("list",LAYERS)
-layerLayout <- vector("list",LAYERS+1)
-nodesLabel <- vector("list",LAYERS+1)
-layout.non <- NULL
-layerTable <- NULL
-g <- vector("list",LAYERS+1)
-g.multi <- NULL
-layout.multi <- NULL
-AdjMatrix.multi <- NULL
-layouts <- vector("list",LAYERS+1)
-AdjMatrix <- vector("list",LAYERS+1)
-
-listDiagnosticsSingleLayer <- data.frame()
-listDiagnostics <- data.frame()
-listCommunities <- data.frame()
-listDiagnosticsMerge <- data.frame()
-sumCommunitiesMerge <- data.frame()
-listCommunitiesMerge <- data.frame()
-listInterPearson <- data.frame()
-listInterSpearman <- data.frame()
-listOverlap <- data.frame()
-listMotifs <- data.frame()
-
-#the timeline for visualization of dynamical processes
-dfTimeline <- data.frame()
-
-#default properties (color and size) of the network
-defaultVsize <- vector("list",LAYERS+1)
-defaultEsize <- vector("list",LAYERS+1)
-defaultVcolor <- vector("list",LAYERS+1)
-defaultEcolor <- vector("list",LAYERS+1)
-
-#other global vars
-LAYOUT_BY_LAYER_ID <- 0
-LAYOUT_EXTERNAL <- F
-GEOGRAPHIC_LAYOUT <- F
-LAYOUT_INDEPENDENT <- F
-LAYOUT_DIMENSION <- 2
-XMAX <- -1e10
-YMAX <- -1e10
-ZMAX <- -1e10
-XMIN <- 1e10
-YMIN <- 1e10
-ZMIN <- 1e10
-LONGMAX <- -1e10
-LATMAX <- -1e10
-LONGMIN <- 1e10
-LATMIN <- 1e10
-commonRunif <- 1
-
-minNodeID <- -1
-maxNodeID <- -1
-offsetNode <- -1
-Nodes <- 0
-Edges <- 0
-
-orientationRGL <- NULL
-
-#==== Network type
-DIRECTED <- F
-WEIGHTED <- F
-
-diagnosticsMultiplexOK <- F
-diagnosticsSingleLayerOK <- F
-diagnosticsOK <- F
-communityOK <- F
-
-
-welcomeFunction <- function(){
-
-    cat("\n")    
-    cat(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n")
-    cat("::: Welcome to muxViz\n")
-    #cat("==========================\n")
-    cat(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n")
-    cat("\n")
-    cat(":: muxViz: Tool for Multilayer Analysis and Visualization\n")
-    cat(":: Copyright (C) 2013-2015 Manlio De Domenico\n")
-    cat(":: School of Computer Science and Mathematics\n")
-    cat(":: Universitat Rovira i Virgili (Tarragona, Spain)\n")
-    cat("\n")
-    cat(":: This software is released under GNU GPL v3:\n")
-    cat(":: http://www.gnu.org/copyleft/gpl.html\n")
-    cat("\n")
-    cat(paste(":: Version:",muxVizVersion,"\n"))
-    cat(paste(":: Last update:",muxVizUpdate,"\n"))
-    cat("\n")
-    cat(paste(":: You are running from",Sys.info()["sysname"],"\n"))
-    cat(paste("::",Sys.info()["version"],"\n"))
-    cat(paste("::",version["version.string"][[1]],"\n"))
-    cat("\n")
-}
-
-buildPath <- function(folder,objname){
-    if( Sys.info()["sysname"]=="Windows" ){
-        return( paste(getwd(),folder,objname,sep="\\") )
-    }else{
-        return( paste(getwd(),folder,objname,sep="/") )        
-    }
-}
-
-concatenatePath <- function(folder,objname){
-    if( Sys.info()["sysname"]=="Windows" ){
-        return( paste(folder,objname,sep="\\") )
-    }else{
-        return( paste(folder,objname,sep="/") )        
-    }
-}
-
-getExecutablePath <- function(exec_name){
-    path <- ""
-    if( Sys.info()["sysname"]=="Windows" ){
-        path <- buildPath("bin",paste0(exec_name,"_windows"))    
-    }else if( Sys.info()["sysname"]=="Linux" ){
-        path <- buildPath("bin",paste0(exec_name,"_linux"))
-    }else{
-        path <- buildPath("bin",paste0(exec_name,"_macosx"))
-    }
-    
-    return(path)
-}
-
-text3dwrap <- function( coordsMatrix3D, labels, wraplength, wrapoffset, layerscale, adj, color, family, cex){
-    #insert a "\n" in very long lines, for later processing
-    labels <- unlist(lapply(labels, function(x) paste(strwrap(x,wraplength), collapse="\n")))
-
-    dy <- layerscale/(8*sqrt(Nodes)) + wrapoffset
-    
-    #look for lines where the char "\n" is present
-    res <- grep("\n",labels)
-    if(length(res)>0){
-        #if any..
-        newCoordsMatrix3D <- coordsMatrix3D[-res,]
-        newLabels <- labels[-res]
-       
-        for(idx in res){
-            labels.tmp <- strsplit(labels[idx], '\n')[[1]]
-            
-            for(n in 1:length(labels.tmp)){
-                
-                x <- coordsMatrix3D[idx,1]
-                y <- coordsMatrix3D[idx,2] - dy*(n-1)
-                z <- coordsMatrix3D[idx,3]
-
-                newCoordsMatrix3D <- rbind( newCoordsMatrix3D, t(as.matrix(c(x,y,z))) )
-                newLabels <- c( newLabels, labels.tmp[n] )
-            }
-        }
-        
-        text3d(newCoordsMatrix3D, text=newLabels, adj=adj, color=color, family=family, cex=cex)
-        print( cbind(newCoordsMatrix3D, newLabels) )
-    }else{
-        #nothing to do, just plot
-        text3d(coordsMatrix3D, text=labels, adj=adj, color=color, family=family, cex=cex)
-        print( cbind(coordsMatrix3D, labels) )
-    }
-}
-
-addalpha <- function(colors, alpha=1.0) {
-  r <- col2rgb(colors, alpha=T)
-  # Apply alpha
-  r[4,] <- alpha*255
-  r <- r/255.0
-  return(rgb(r[1,], r[2,], r[3,], r[4,]))
-}
-
-
-#http://inside.mines.edu/fs_home/gmurray/ArbitraryAxisRotation/
-Rotx <- function(th){ 
-    th <- th*pi/180.
-    if(th<0) th <- 2*pi + th
-    Rx <- matrix(nrow=3,ncol=3,0)
-    Rx[1,1] <- 1
-    Rx[2,2] <- cos(th)
-    Rx[3,3] <- cos(th)
-    Rx[2,3] <- -sin(th)
-    Rx[3,2] <- sin(th)
-    return(Rx) 
-}
-
-Roty <- function(th){ 
-    th <- th*pi/180.
-    if(th<0) th <- 2*pi + th
-    Ry <- matrix(nrow=3,ncol=3,0)
-    Ry[1,1] <- cos(th)
-    Ry[2,2] <- 1
-    Ry[3,3] <- cos(th)
-    Ry[1,3] <- sin(th)
-    Ry[3,1] <- -sin(th)
-    return(Ry) 
-}
-
-Rotz <- function(th){ 
-    th <- th*pi/180.
-    if(th<0) th <- 2*pi + th
-    Rz<-matrix(nrow=3,ncol=3,0)
-    Rz[1,1] <- cos(th)
-    Rz[2,2] <- cos(th)
-    Rz[3,3] <- 1
-    Rz[1,2] <- -sin(th)
-    Rz[2,1] <- sin(th)
-    return(Rz) 
-}
 
 #to open/save a session.. still experimental
 #https://github.com/jcheng5/shiny-resume
@@ -272,6 +34,8 @@ Rotz <- function(th){
 
 shinyServer(function(input, output, session) {
     welcomeFunction()
+    
+    
    
     commonRunif <<- runif(1)
     #commonRunif <- 0.0148374617565423
@@ -528,6 +292,7 @@ shinyServer(function(input, output, session) {
                                 if("nodeLabel" %in% colnames(layerTable)){
                                     layerTable$nodeID <- 1:nrow(layerTable)
                                     convTable = setNames(layerTable$nodeID, as.character(layerTable$nodeLabel))
+                                    nodeLabelSeqIdConvTable <<- convTable
                                     for(i in 1:2) layerEdges[[l]][,i] <<- convTable[ as.character(unlist(layerEdges[[l]][,i])) ]
                                     
                                     write.table(layerEdges[[l]], paste(fileName[[l]][1],".rel",sep=""), quote=F, row.names=F, col.names=F)
@@ -955,13 +720,21 @@ shinyServer(function(input, output, session) {
         output$selVizNodeSizeOutputID <- renderUI({
             if (input$btnImportNetworks == 0 || input$btnCalculateCentralityDiagnostics == 0 || length(input$project_file)==0)
                 return(NULL)
-    
-            tmpChoice <- "Uniform"
             
-            for( attrib in attributes(listDiagnostics[[1]])$names ){        
-                if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+            tmpChoice <- c("Uniform","External")
+            
+            if(diagnosticsMultiplexOK){
+                for( attrib in attributes(listDiagnostics[[1]])$names ){        
+                    if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,paste0("Multi-",attrib))
+                }
             }
             
+            if(diagnosticsSingleLayerOK){
+                for( attrib in attributes(listDiagnosticsSingleLayer[[1]])$names ){        
+                    if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnosticsSingleLayer[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+                }                
+            }
+                        
             selectInput("selVizNodeSizeID", HTML("Node size proportional to:"), 
                 choices = tmpChoice
                 )
@@ -973,9 +746,17 @@ shinyServer(function(input, output, session) {
                 return(NULL)
     
             tmpChoice <- NULL
+
+            if(diagnosticsMultiplexOK){
+                for( attrib in attributes(listDiagnostics[[1]])$names ){        
+                    if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,paste0("Multi-",attrib))
+                }
+            }
             
-            for( attrib in attributes(listDiagnostics[[1]])$names ){        
-                if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+            if(diagnosticsSingleLayerOK){
+                for( attrib in attributes(listDiagnosticsSingleLayer[[1]])$names ){        
+                    if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnosticsSingleLayer[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+                }                
             }
             
             selectInput("selVizNodeColorID", HTML("Node color proportional to:"), 
@@ -990,8 +771,16 @@ shinyServer(function(input, output, session) {
     
             tmpChoice <- NULL
             
-            for( attrib in attributes(listDiagnostics[[1]])$names ){        
-                if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+            if(diagnosticsMultiplexOK){
+                for( attrib in attributes(listDiagnostics[[1]])$names ){        
+                    if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,paste0("Multi-",attrib))
+                }
+            }
+            
+            if(diagnosticsSingleLayerOK){
+                for( attrib in attributes(listDiagnosticsSingleLayer[[1]])$names ){        
+                    if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnosticsSingleLayer[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+                }                
             }
             
             selectInput("selVizNodeColorTopID", HTML("Rank calculated from:"), 
@@ -1022,8 +811,14 @@ shinyServer(function(input, output, session) {
     
             tmpChoice <- NULL
             
-            for( attrib in attributes(listDiagnostics[[1]])$names ){        
-                if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+            if(diagnosticsMultiplexOK){
+                for( attrib in attributes(listDiagnostics[[1]])$names ){        
+                    if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+                }
+            }else{
+                for( attrib in attributes(listDiagnosticsSingleLayer[[1]])$names ){        
+                    if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnosticsSingleLayer[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+                }                
             }
             
             selectInput("selDiagnosticsCentralityVizID", HTML("Select the centrality descriptor to analyze:"), 
@@ -1037,10 +832,16 @@ shinyServer(function(input, output, session) {
     
             tmpChoice <- NULL
             
-            for( attrib in attributes(listDiagnostics[[1]])$names ){        
-                if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+            if(diagnosticsMultiplexOK){
+                for( attrib in attributes(listDiagnostics[[1]])$names ){        
+                    if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+                }
+            }else{
+                for( attrib in attributes(listDiagnosticsSingleLayer[[1]])$names ){        
+                    if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnosticsSingleLayer[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+                }                
             }
-            
+
             selectInput("selDiagnosticsCentralityVizScatterID", HTML("Select the centrality descriptor to analyze:"), 
                 choices = tmpChoice
                 )
@@ -1053,10 +854,16 @@ shinyServer(function(input, output, session) {
     
             tmpChoice <- "Uniform"
             
-            for( attrib in attributes(listDiagnostics[[1]])$names ){        
-                if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+            if(diagnosticsMultiplexOK){
+                for( attrib in attributes(listDiagnostics[[1]])$names ){        
+                    if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnostics[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+                }
+            }else{
+                for( attrib in attributes(listDiagnosticsSingleLayer[[1]])$names ){        
+                    if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") && length(unique(listDiagnosticsSingleLayer[[1]][,attrib]))>1 ) tmpChoice <- c(tmpChoice,attrib)
+                }                
             }
-            
+                        
             selectInput("selDiagnosticsCentralityVizScatterSizeID", HTML("Circle radius proportional to:"), 
                 choices = tmpChoice
                 )
@@ -1407,8 +1214,8 @@ shinyServer(function(input, output, session) {
                 timestepsList <- sort(unique(dfTimeline$timeStep))
 
                 #re-set the default color and size
-                if(length(input$txtTimelineDefaultNodesColor)>0){
-                    for(l in 1:(LAYERS+1)) V(g[[l]])$color <- input$txtTimelineDefaultNodesColor
+                if(length(input$colTimelineDefaultNodesColor)>0){
+                    for(l in 1:(LAYERS+1)) V(g[[l]])$color <- input$colTimelineDefaultNodesColor
                 }else{
                     for(l in 1:(LAYERS+1)) V(g[[l]])$color <- defaultVcolor[[l]]
                 }
@@ -1466,8 +1273,8 @@ shinyServer(function(input, output, session) {
                     }
                 }
 
-                if(length(input$txtTimelineDefaultEdgesColor)>0){
-                    for(l in 1:(LAYERS+1)) E(g[[l]])$color <- input$txtTimelineDefaultEdgesColor
+                if(length(input$colTimelineDefaultEdgesColor)>0){
+                    for(l in 1:(LAYERS+1)) E(g[[l]])$color <- input$colTimelineDefaultEdgesColor
                 }else{
                     for(l in 1:(LAYERS+1)) E(g[[l]])$color <- defaultEcolor[[l]]
                 }
@@ -1593,7 +1400,7 @@ shinyServer(function(input, output, session) {
                         plot(x=NULL, y=NULL, type="n", 
                             xlim=c(xmin.tmp,xmax.tmp), ylim=c(ymin.tmp,ymax.tmp)
                             )
-                        rect(par("usr")[1], par("usr")[3], par("usr")[2], par("usr")[4], col =input$txtBACKGROUND_COLOR)
+                        rect(par("usr")[1], par("usr")[3], par("usr")[2], par("usr")[4], col =input$colBACKGROUND_COLOR)
 
                     }
 
@@ -1620,7 +1427,7 @@ shinyServer(function(input, output, session) {
                         }
 
                         #other assignments                        
-                        V(g[[l]])$vertex.label.color <- input$txtNODE_LABELS_FONT_COLOR
+                        V(g[[l]])$vertex.label.color <- input$colNODE_LABELS_FONT_COLOR
                         E(g[[l]])$curve<- as.numeric(input$txtEDGE_BENDING)
                         V(g[[l]])$shape <- "circle"
                         V(g[[l]])$shape[V(g[[l]])$size==0] <- "none"                    
@@ -1710,7 +1517,7 @@ shinyServer(function(input, output, session) {
                                                     vertex.label="",
                                                     vertex.label.cex=0,
                                                     edge.width=E(g.multi)$width, 
-                                                    edge.color=input$txtINTERLINK_COLOR, 
+                                                    edge.color=input$colINTERLINK_COLOR, 
                                                     edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
                                                     edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
                                                     edge.curved=as.numeric(input$txtEDGE_BENDING),
@@ -1725,7 +1532,7 @@ shinyServer(function(input, output, session) {
                                             vertex.label="",
                                             vertex.label.cex=0,
                                             edge.width=E(g.multi)$width, 
-                                            edge.color=addalpha(input$txtINTERLINK_COLOR,as.numeric(input$txtINTERLINK_TRANSP)), 
+                                            edge.color=addalpha(input$colINTERLINK_COLOR,as.numeric(input$txtINTERLINK_TRANSP)), 
                                             edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
                                             edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
                                             edge.curved=as.numeric(input$txtEDGE_BENDING),
@@ -2164,41 +1971,62 @@ shinyServer(function(input, output, session) {
                 ## Centrality
                 ###############
                 if(input$chkNODE_CENTRALITY_DEGREE || input$chkNODE_CENTRALITY_STRENGTH || input$chkNODE_CENTRALITY_PAGERANK || input$chkNODE_CENTRALITY_EIGENVECTOR || input$chkNODE_CENTRALITY_HUB || input$chkNODE_CENTRALITY_AUTHORITY || input$chkNODE_CENTRALITY_KATZ || input$chkNODE_CENTRALITY_KCORE || input$chkNODE_CENTRALITY_MULTIPLEXITY){
-    
+
                     progress$set(message = 'Calculating centrality...', value = 0.05)
-                    listDiagnostics <<- NULL
                     diagnosticsOK <<- T
-                    listDiagnosticsMerge <<- NULL
+                    #do not reinitialize the following, because it would delete previous calculations and this is a problem
+                    #if one wants to work with both single-layer and multiplex calculations
+                    #listDiagnostics <<- NULL
+                    #listDiagnosticsMerge <<- NULL
+                    #listDiagnosticsMergeSingleLayer <<- NULL
                     
                     if(input$chkNODE_CENTRALITY_MULTIPLEX){
                         #calculation in the multiplex. For the moment the output is obtained calling octave.
                         #the output will be stored in [[l]] for the multiplex and [[LAYERS+1]] for the aggregated.
                         listDiagnostics <<- GetCentralityDataFrameArray("Multiplex") 
                         diagnosticsMultiplexOK <<- T
+                        
+                        for(l in 1:(LAYERS+1)){
+                            listDiagnosticsMerge <<- rbind(listDiagnosticsMerge,listDiagnostics[[l]])
+                        }             
+
                     }else{
                         #calculation per layer. No needs to specify the weight attribute because the g objects
                         #are built assuming weighted input (where weight is 1 for binary networks), and each measure
                         #assume by default the weight attribute of E(g)
                         
-                        listDiagnostics <<- GetCentralityDataFrameArray("SingleLayer")
+                        listDiagnosticsSingleLayer <<- GetCentralityDataFrameArray("SingleLayer")
                         diagnosticsSingleLayerOK <<- T
+                        
+                        for(l in 1:(LAYERS+1)){
+                            listDiagnosticsMergeSingleLayer <<- rbind(listDiagnosticsMergeSingleLayer,listDiagnosticsSingleLayer[[l]])
+                        }             
+
                     }
-    
-                    for(l in 1:(LAYERS+1)){
-                        listDiagnosticsMerge <<- rbind(listDiagnosticsMerge,listDiagnostics[[l]])
-                    }                            
+
     
                     progress$set(message = 'Creating tables...', value = 0.95)
                     Sys.sleep(1)
-                    
-                    #Fill the table summarizing centrality 
-                    output$centralityTable <- renderGvis({
-                        if(input$btnCalculateCentralityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                        
-                        return(gvisTable(listDiagnosticsMerge,options=list(page='enable',pageSize=Nodes)))
-                        #googleVisCentralityTableOptions()))
-                    })   
+
+                    if(input$chkNODE_CENTRALITY_MULTIPLEX){
+                        #Fill the table summarizing centrality 
+                        output$centralityTable <- renderGvis({
+                            if(input$btnCalculateCentralityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                                return(NULL)
+                            
+                            return(gvisTable(listDiagnosticsMerge,options=list(page='enable',pageSize=Nodes)))
+                            #googleVisCentralityTableOptions()))
+                        })   
+                    }else{
+                        #Fill the table summarizing centrality 
+                        output$centralityTableSingleLayer <- renderGvis({
+                            if(input$btnCalculateCentralityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                                return(NULL)
+                            
+                            return(gvisTable(listDiagnosticsMergeSingleLayer,options=list(page='enable',pageSize=Nodes)))
+                            #googleVisCentralityTableOptions()))
+                        })                           
+                    }
                 }
                 
                 btnCalculateCentralityDiagnosticsValue <<- input$btnCalculateCentralityDiagnostics
@@ -2767,7 +2595,7 @@ shinyServer(function(input, output, session) {
         })
     
       	################################################
-      	# Diagnostics centralty plots
+      	# Diagnostics centrality plots
       	################################################
 
         observe({
@@ -2792,8 +2620,8 @@ shinyServer(function(input, output, session) {
 
                         if( (attrib!="Node" && attrib!="Label" && attrib!="Layer") ){
                             if( all(listDiagnosticsSingleLayer[[1]][,attrib]==rep("-",Nodes)) && all(listDiagnostics[[1]][,attrib]!=rep("-",Nodes)) ){
-                                print(listDiagnosticsSingleLayer[[1]][,attrib]) 
-                                print(listDiagnostics[[1]][,attrib])
+                                #print(listDiagnosticsSingleLayer[[1]][,attrib]) 
+                                #print(listDiagnostics[[1]][,attrib])
                                 diagnosticsSingleLayerOK <<- FALSE
                                 break
                             }
@@ -3300,7 +3128,21 @@ shinyServer(function(input, output, session) {
                         }else{
                             #Aggregate graph from aggregate adjacency matrix
                             progress$set(message = 'Calculating aggregated...', value = 0.1)
-                            gAggr <- graph.adjacency(AdjMatrix[[LAYERS+1]], weighted=T)
+                            
+                            #todo: here the code for the three template methods
+                            if(input$radLayoutTypeMultiplex=="LAYOUT_MULTIPLEX_AGGREGATE"){
+                                gAggr <- graph.adjacency(AdjMatrix[[LAYERS+1]], weighted=T)
+                            }else if(input$radLayoutTypeMultiplex=="LAYOUT_MULTIPLEX_UNION"){
+                                gAggr <- graph.adjacency(AdjMatrix[[LAYERS+1]], weighted=NULL)
+                            }else if(input$radLayoutTypeMultiplex=="LAYOUT_MULTIPLEX_INTERSECTION"){
+                                Adj.tmp <- AdjMatrix[[1]]
+                                for(l2 in 2:LAYERS){
+                                    Adj.tmp <- pmin( Adj.tmp, AdjMatrix[[l2]] )
+                                }
+                                gAggr <- graph.adjacency(Adj.tmp, weighted=NULL)                                
+                            }
+                            
+                            
                             print("Aggregate network created. Proceeding with layout to obtain coordinates for each layer.")
                         }
                         
@@ -3524,8 +3366,8 @@ shinyServer(function(input, output, session) {
                         #}
                         deltaX <- 0
                         deltaY <- 0
-                        layouts[[l]][,1] <<- as.numeric(input$txtLAYER_SCALE)*(layouts[[l]][,1] - XMIN + deltaX)/(XMAX-XMIN) - 1 + (l-1)*as.numeric(input$txtLAYER_SHIFT)
-                        layouts[[l]][,2] <<- as.numeric(input$txtLAYER_SCALE)*(layouts[[l]][,2] - YMIN + deltaY)/(YMAX-YMIN) - 1
+                        layouts[[l]][,1] <<- as.numeric(input$txtLAYER_SCALE)*(layouts[[l]][,1] - XMIN + deltaX)/(XMAX-XMIN) - 1 + (l-1)*as.numeric(input$txtLAYER_SHIFT_X)
+                        layouts[[l]][,2] <<- as.numeric(input$txtLAYER_SCALE)*(layouts[[l]][,2] - YMIN + deltaY)/(YMAX-YMIN) - 1 + (l-1)*as.numeric(input$txtLAYER_SHIFT_Y)
         
                         if(LAYERS>1){
                             if(input$chkPLOT_AS_EDGE_COLORED){
@@ -3577,7 +3419,7 @@ shinyServer(function(input, output, session) {
                             scal <- as.numeric(input$txtLAYER_SCALE)
                             rescx <- scal/(XMAX-XMIN)
                             rescy <- scal/(YMAX-YMIN)
-                            #shift <- as.numeric(input$txtLAYER_SHIFT) #useless for this layout
+                            #shift <- as.numeric(input$txtLAYER_SHIFT_X) #useless for this layout
                             space <- as.numeric(input$txtLAYER_SPACE)
 
                             shiftx <- (cols*scal + cols*space)/2
@@ -3659,7 +3501,7 @@ shinyServer(function(input, output, session) {
                                 scal <- as.numeric(input$txtLAYER_SCALE)
                                 rescx <- scal/(XMAX-XMIN)
                                 rescy <- scal/(YMAX-YMIN)
-                                #shift <- as.numeric(input$txtLAYER_SHIFT) #useless for this layout
+                                #shift <- as.numeric(input$txtLAYER_SHIFT_X) #useless for this layout
                                 space <- as.numeric(input$txtLAYER_SPACE)
 
                                 shiftx <- (cols*scal + cols*space)/2
@@ -3693,11 +3535,12 @@ shinyServer(function(input, output, session) {
                     thx <- as.numeric(input$txtPLOT_ROTX)
                     thy <- as.numeric(input$txtPLOT_ROTY)
                     thz <- as.numeric(input$txtPLOT_ROTZ)
+                    
                     for(l in 1:(LAYERS+1)){
                         layouts[[l]] <<- t( Rotx(thx) %*% t(layouts[[l]]) ) 
                         layouts[[l]] <<- t( Roty(thy) %*% t(layouts[[l]]) ) 
                         layouts[[l]] <<- t( Rotz(thz) %*% t(layouts[[l]]) ) 
-                    }            
+                    }                          
                 }
 
                 progress$set(message = 'Layout Completed!', value = 1)
@@ -3762,18 +3605,18 @@ shinyServer(function(input, output, session) {
                 plot(x=NULL, y=NULL, type="n", 
                     xlim=c(xmin.tmp,xmax.tmp), ylim=c(ymin.tmp,ymax.tmp)
                     )
-                rect(par("usr")[1], par("usr")[3], par("usr")[2], par("usr")[4], col =input$txtBACKGROUND_COLOR)
+                rect(par("usr")[1], par("usr")[3], par("usr")[2], par("usr")[4], col =input$colBACKGROUND_COLOR)
             }
             
             #layer color
-            layer.color <- strsplit(input$txtLAYER_COLOR,",")[[1]]
+            layer.color <- strsplit(input$colLAYER_COLOR,",")[[1]]
             if(length(layer.color)==LAYERS){
                 for(l in 1:LAYERS){
                     layerColor[[l]] <<- layer.color[l]
                 }
             }else{
                 for(l in 1:LAYERS){
-                    layerColor[[l]] <<- input$txtLAYER_COLOR
+                    layerColor[[l]] <<- input$colLAYER_COLOR
                 }                    
             }
 
@@ -3815,7 +3658,7 @@ shinyServer(function(input, output, session) {
                     print(paste("Layer: Aggregate"))    
                 }
                 #V(g[[l]])$vertex.label.color <- rgb(47,47,47,0,maxColorValue = 255)
-                V(g[[l]])$vertex.label.color <- input$txtNODE_LABELS_FONT_COLOR
+                V(g[[l]])$vertex.label.color <- input$colNODE_LABELS_FONT_COLOR
 
                 #this set the transparency level of edges and nodes.. it can be customized
                 #E(g[[l]])$alpha <- floor(as.numeric(input$txtEDGE_TRANSP)*255)
@@ -3834,24 +3677,55 @@ shinyServer(function(input, output, session) {
                 }
             
                 arrayDiagnostics <- 1
+                #if the GUI shows only the UNIFORM and EXTERNAL option
+                if(input$radNodeSizeType=="NODE_SIZE_PROPORTIONAL_TO_UNIFORM"){
+                    arrayDiagnostics <- rep(1,Nodes)
+                }
+                if(input$radNodeSizeType=="NODE_SIZE_PROPORTIONAL_TO_EXTERNAL"){
+                    if(externalNodeSizeFlag){
+                        #setting default size for all nodes
+                        arrayDiagnostics <- rep(1,Nodes)
 
+                        #set the size for nodes specified in the external table
+                        size.set <- externalNodeColorTable[ externalNodeColorTable$layerID==l, ]
+                        if(nrow(size.set)>0){
+                            arrayDiagnostics[ size.set$nodeID ] <- size.set$size
+                        }
+                    }
+                }
+                #overwrite arrayDiagnostics if centrality have been calculated
                 if(diagnosticsOK){
                     if(input$btnCalculateCentralityDiagnostics>0){
                         #the GUI is visualizing the list of possibilities
                         attrib <- input$selVizNodeSizeID
                         if(attrib=="Uniform"){
                             arrayDiagnostics <- rep(1,Nodes)
+                            V(g[[l]])$size <- as.numeric(input$txtNODE_DEFAULT_SIZE)
+                        }else if(attrib=="External"){
+                            if(externalNodeSizeFlag){
+                                #setting default size for all nodes
+                                arrayDiagnostics <- rep(1,Nodes)
+        
+                                #set the size for nodes specified in the external table
+                                size.set <- externalNodeColorTable[ externalNodeColorTable$layerID==l, ]
+                                if(nrow(size.set)>0){
+                                    arrayDiagnostics[ size.set$nodeID ] <- size.set$size
+                                }
+                            }
                         }else{
-                            arrayDiagnostics <- as.numeric(listDiagnostics[[l]][attrib][,1])
+                            if( length(grep("Multi-",attrib))>0 ){
+                                arrayDiagnostics <- as.numeric(listDiagnostics[[l]][ gsub("Multi-","",attrib) ][,1])
+                            }else{
+                                arrayDiagnostics <- as.numeric(listDiagnosticsSingleLayer[[l]][ attrib ][,1])
+                            }
                         }
                     }else{
-                        #the GUI shows only the UNIFORM option
-                        if(input$radNodeSizeType=="NODE_SIZE_PROPORTIONAL_TO_UNIFORM"){
-                            arrayDiagnostics <- rep(1,Nodes)
-                        }
+                        arrayDiagnostics <- rep(1,Nodes)
                     }
+                }else{
+                    arrayDiagnostics <- rep(1,Nodes)
                 }
-                                
+                
                 if(input$radNodeSizeType2=="NODE_SIZE_PROPORTIONAL_TYPE_NORMAL"){
                     V(g[[l]])$size <- as.numeric(input$txtNODE_DEFAULT_SIZE)*arrayDiagnostics
                 }else if(input$radNodeSizeType2=="NODE_SIZE_PROPORTIONAL_TYPE_LOG"){
@@ -3877,7 +3751,26 @@ shinyServer(function(input, output, session) {
                 }
 
                 #Node coloring
-                if(input$radNodeColor=="NODE_COLOR_COMMUNITY"){
+                if(input$radNodeColor=="NODE_COLOR_EXTERNAL"){
+                    if(externalNodeColorFlag){
+                        E(g[[l]])$color <- as.character(input$colEDGE_COLOR)
+
+                        #setting default color for all nodes
+                        V(g[[l]])$color <- as.character(input$colNodeColorFileDefaultNodesColor)
+
+                        #set the color for nodes specified in the external table
+                        color.set <- externalNodeColorTable[ externalNodeColorTable$layerID==l, ]
+                        
+                        if(nrow(color.set)>0){
+                            V(g[[l]])$color[ color.set$nodeID ] <- color.set$color                        
+#                        }else{
+#                            progress2 <- shiny::Progress$new(session)
+#                            on.exit(progress2$close())
+#                            progress2$set(message = paste('Warning! No color specified for nodes in layer',l), value = 0.5)
+#                            Sys.sleep(3)
+                        }
+                    }
+                }else if(input$radNodeColor=="NODE_COLOR_COMMUNITY"){
                     if(communityOK){
                         if(input$btnCalculateCommunityDiagnostics>0){
                             if(input$radCommunityAlgorithm!="COMMUNITY_MULTIPLEX"){
@@ -3895,6 +3788,7 @@ shinyServer(function(input, output, session) {
                 }else if(input$radNodeColor=="NODE_COLOR_COMPONENT"){
                     if(input$chkPERFORM_COMPONENT_DETECTION && input$btnCalculateComponentDiagnostics>0){
                         #todo
+                        #this should be calculated/done per layer or in the multiplex. Give the two options as for centrality etc
                     }
                 }else if(input$radNodeColor=="NODE_COLOR_RANDOM"){
                     #colorset for the multiplex                
@@ -3925,15 +3819,21 @@ shinyServer(function(input, output, session) {
                         V(g[[l]])$color <- colorPalette[l]
                     }
                 }else if(input$radNodeColor=="NODE_COLOR_UNIFORM"){
-                    E(g[[l]])$color <- input$txtNODE_COLOR_UNIFORM_COLOR
-                    V(g[[l]])$color <- input$txtNODE_COLOR_UNIFORM_COLOR
+                    E(g[[l]])$color <- input$colNODE_COLOR_UNIFORM_COLOR
+                    V(g[[l]])$color <- input$colNODE_COLOR_UNIFORM_COLOR
                 }else if(input$radNodeColor=="NODE_COLOR_CENTRALITY"){
                     if(diagnosticsOK){
                         bins <- as.numeric(input$txtNODE_COLOR_CENTRALITY_BINS)
                         colorPalette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selCentralityColorPalette],input$selCentralityColorPalette))(bins)
 
                         attrib <- input$selVizNodeColorID
-                        values <- as.numeric(listDiagnostics[[l]][attrib][,1])  
+                        values <- NULL
+
+                        if( length(grep("Multi-",attrib))>0 ){
+                            values <- as.numeric(listDiagnostics[[l]][ gsub("Multi-","",attrib) ][,1])
+                        }else{
+                            values <- as.numeric(listDiagnosticsSingleLayer[[l]][ attrib ][,1])
+                        }
                         
                         if(input$radNodeColorType2=="NODE_COLOR_PROPORTIONAL_TYPE_LOG"){
                             values <- 1+2*log(1+values)
@@ -3944,7 +3844,7 @@ shinyServer(function(input, output, session) {
                         values <- 1 + (bins-1)*(values - min(values, na.rm=T))/(max(values, na.rm=T) - min(values, na.rm=T))
                         values <- floor(values)
                         
-                        E(g[[l]])$color <- "#F2F2F2"
+                        E(g[[l]])$color <- as.character(input$colEDGE_COLOR)
                         V(g[[l]])$color <- colorPalette[ values ]
                     }
                 }else if(input$radNodeColor=="NODE_COLOR_TOPRANK"){
@@ -3952,19 +3852,26 @@ shinyServer(function(input, output, session) {
                         if(input$btnCalculateCentralityDiagnostics>0 && as.numeric(input$txtNODE_COLOR_TOP)>0){
                             numTop <- as.numeric(input$txtNODE_COLOR_TOP)
                             attrib <- input$selVizNodeColorTopID
-                            values <- as.numeric(listDiagnostics[[l]][attrib][,1])  
+                            values <- NULL
+                            
+                            if( length(grep("Multi-",attrib))>0 ){
+                                values <- as.numeric(listDiagnostics[[l]][ gsub("Multi-","",attrib) ][,1])
+                            }else{
+                                values <- as.numeric(listDiagnosticsSingleLayer[[l]][ attrib ][,1])
+                            }
+
                             topNodes <- head(rev(order(values)),numTop)
                             #V(g[[l]])$color <- rgb(169,169,169, V(g[[l]])$alpha, maxColorValue=255)
                             #E(g[[l]])$color <- rgb(169,169,169, V(g[[l]])$alpha, maxColorValue=255)
-                            V(g[[l]])$color <- input$txtNODE_COLOR_TOP_COLOR_OTHERS
-                            E(g[[l]])$color <- input$txtNODE_COLOR_TOP_COLOR_OTHERS
+                            V(g[[l]])$color <- input$colNODE_COLOR_TOP_COLOR_OTHERS
+                            E(g[[l]])$color <- input$colNODE_COLOR_TOP_COLOR_OTHERS
                             #V(g[[l]])[topNodes]$color <- rgb(255, 0, 0, V(g[[l]])[topNodes]$alpha, maxColorValue=255)
-                            V(g[[l]])[topNodes]$color <- input$txtNODE_COLOR_TOP_COLOR_TOP
+                            V(g[[l]])[topNodes]$color <- input$colNODE_COLOR_TOP_COLOR_TOP
                             
                             if(input$chkNODE_LABELS_SHOW_ONLY_TOP){
                                 V(g[[l]])$label <- ""
                                 V(g[[l]])[topNodes]$label <- nodesLabel[[l]][topNodes]
-                                V(g[[l]])[topNodes]$vertex.label.color <- input$txtNODE_COLOR_TOP_LABELS_FONT_COLOR
+                                V(g[[l]])[topNodes]$vertex.label.color <- input$colNODE_COLOR_TOP_LABELS_FONT_COLOR
                             }
                         }
                     }
@@ -4096,7 +4003,7 @@ shinyServer(function(input, output, session) {
                                             vertex.label="",
                                             vertex.label.cex=0,
                                             edge.width=E(g.multi)$width, 
-                                            edge.color=input$txtINTERLINK_COLOR, 
+                                            edge.color=input$colINTERLINK_COLOR, 
                                             edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
                                             edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
                                             edge.curved=as.numeric(input$txtEDGE_BENDING),
@@ -4109,7 +4016,7 @@ shinyServer(function(input, output, session) {
                                     vertex.label="",
                                     vertex.label.cex=0,
                                     edge.width=E(g.multi)$width, 
-                                    edge.color=addalpha(input$txtINTERLINK_COLOR,as.numeric(input$txtINTERLINK_TRANSP)), 
+                                    edge.color=addalpha(input$colINTERLINK_COLOR,as.numeric(input$txtINTERLINK_TRANSP)), 
                                     edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
                                     edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
                                     edge.curved=as.numeric(input$txtEDGE_BENDING),
@@ -4227,8 +4134,8 @@ shinyServer(function(input, output, session) {
                             d <- 1
                         }
                 
-                        x <- c(-1,-1,-1+as.numeric(input$txtLAYER_SCALE),-1+as.numeric(input$txtLAYER_SCALE)) + (l-1)*as.numeric(input$txtLAYER_SHIFT)
-                        y <- c(-1+as.numeric(input$txtLAYER_SCALE),-1,-1,-1+as.numeric(input$txtLAYER_SCALE))
+                        x <- c(-1,-1,-1+as.numeric(input$txtLAYER_SCALE),-1+as.numeric(input$txtLAYER_SCALE)) + (l-1)*as.numeric(input$txtLAYER_SHIFT_X)
+                        y <- c(-1+as.numeric(input$txtLAYER_SCALE),-1,-1,-1+as.numeric(input$txtLAYER_SCALE)) + (l-1)*as.numeric(input$txtLAYER_SHIFT_Y)
                         z <- c(d,d,d,d)
 
                         if(LAYOUT_DIMENSION==2){
@@ -4243,9 +4150,9 @@ shinyServer(function(input, output, session) {
                                 if(input$chkAGGREGATE_SHOW && LAYERS>1){
                                     #planes3d(0,0,1, -d , alpha=LAYER_AGGREGATE_TRANSP, col=LAYER_AGGREGATE_COLOR)
                                     if(GEOGRAPHIC_LAYOUT && input$chkGEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW){
-                                        quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_AGGREGATE_TRANSP), col=input$txtLAYER_AGGREGATE_COLOR,texcoords=cbind(c(0,0,1,1), -c(0,1,1,0)), texture=fileNamePNG)
+                                        quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_AGGREGATE_TRANSP), col=input$colLAYER_AGGREGATE_COLOR,texcoords=cbind(c(0,0,1,1), -c(0,1,1,0)), texture=fileNamePNG)
                                     }else{
-                                        quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_AGGREGATE_TRANSP), col=input$txtLAYER_AGGREGATE_COLOR)                    
+                                        quads3d(x,y,z, alpha=as.numeric(input$txtLAYER_AGGREGATE_TRANSP), col=input$colLAYER_AGGREGATE_COLOR)                    
                                     }
                                 }else{
                                     next
@@ -4253,16 +4160,16 @@ shinyServer(function(input, output, session) {
                             }
                                             
                             if(input$chkLAYER_ID_SHOW_BOTTOMLEFT){
-                                text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT), -1, d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                                text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT_X), -1+(l-1)*as.numeric(input$txtLAYER_SHIFT_Y), d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
                             }
                             if(input$chkLAYER_ID_SHOW_TOPLEFT){
-                                text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT), -1 + as.numeric(input$txtLAYER_SCALE), d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                                text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT_X), -1 +(l-1)*as.numeric(input$txtLAYER_SHIFT_Y) + as.numeric(input$txtLAYER_SCALE), d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
                             }
                             if(input$chkLAYER_ID_SHOW_BOTTOMRIGHT){
-                                text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT)+as.numeric(input$txtLAYER_SCALE), -1, d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                                text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT_X)+as.numeric(input$txtLAYER_SCALE), -1 +(l-1)*as.numeric(input$txtLAYER_SHIFT_Y), d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
                             }
                             if(input$chkLAYER_ID_SHOW_TOPRIGHT){
-                                text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT)+as.numeric(input$txtLAYER_SCALE), -1 + as.numeric(input$txtLAYER_SCALE), d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
+                                text3d(-1+(l-1)*as.numeric(input$txtLAYER_SHIFT_X)+as.numeric(input$txtLAYER_SCALE), -1 + as.numeric(input$txtLAYER_SCALE) +(l-1)*as.numeric(input$txtLAYER_SHIFT_Y), d+0.1,text=layerLabel[[l]][1],adj = 0.2, color="black", family="sans", cex=as.numeric(input$txtLAYER_ID_FONTSIZE))
                             }
                         }
                     }
@@ -4284,7 +4191,7 @@ shinyServer(function(input, output, session) {
                             scal <- as.numeric(input$txtLAYER_SCALE)
                             rescx <- scal/(XMAX-XMIN)
                             rescy <- scal/(YMAX-YMIN)
-                            #shift <- as.numeric(input$txtLAYER_SHIFT) #useless for this layout
+                            #shift <- as.numeric(input$txtLAYER_SHIFT_X) #useless for this layout
                             space <- as.numeric(input$txtLAYER_SPACE)
 
                             shiftx <- cols*(scal + space)/2
@@ -4364,7 +4271,7 @@ shinyServer(function(input, output, session) {
                         if(LAYERS>1){                            
 
                             scal <- as.numeric(input$txtLAYER_SCALE)
-                            #shift <- as.numeric(input$txtLAYER_SHIFT) #useless for this layout
+                            #shift <- as.numeric(input$txtLAYER_SHIFT_X) #useless for this layout
                             #space <- as.numeric(input$txtLAYER_SPACE)
                               
                             #this should have been already calculated and stored..  
@@ -4444,7 +4351,7 @@ shinyServer(function(input, output, session) {
                                 scal <- as.numeric(input$txtLAYER_SCALE)
                                 rescx <- scal/(XMAX-XMIN)
                                 rescy <- scal/(YMAX-YMIN)
-                                #shift <- as.numeric(input$txtLAYER_SHIFT) #useless for this layout
+                                #shift <- as.numeric(input$txtLAYER_SHIFT_X) #useless for this layout
                                 space <- as.numeric(input$txtLAYER_SPACE)
 
                                 shiftx <- cols*(scal + space)/2
@@ -4558,7 +4465,7 @@ shinyServer(function(input, output, session) {
                                            as.numeric(input$txtNODE_LABELS_WRAP_OFFSET),
                                            as.numeric(input$txtLAYER_SCALE),
                                            as.numeric(input$txtNODE_LABELS_DISTANCE), 
-                                           input$txtNODE_LABELS_FONT_COLOR, 
+                                           input$colNODE_LABELS_FONT_COLOR, 
                                            "sans", 
                                            as.numeric(input$txtNODE_LABELS_FONT_SIZE)
                                            )
@@ -4567,7 +4474,7 @@ shinyServer(function(input, output, session) {
                             text3d(layouts[[l]],
                                        text=this.labels,
                                        adj = as.numeric(input$txtNODE_LABELS_DISTANCE), 
-                                       color=input$txtNODE_LABELS_FONT_COLOR, 
+                                       color=input$colNODE_LABELS_FONT_COLOR, 
                                        family="sans", 
                                        cex=as.numeric(input$txtNODE_LABELS_FONT_SIZE)
                                        )
@@ -4585,7 +4492,7 @@ shinyServer(function(input, output, session) {
 #                        layerLinesY <- matrix(c(0),nrow=Nodes,ncol=2)
 #                        layerLinesZ <- matrix(c(0),nrow=Nodes,ncol=2)
 #            
-#                        layerLinesX <- cbind(layouts[[l]][,1] + (l-1)*as.numeric(input$txtLAYER_SHIFT),layouts[[l+1]][,1] + l*as.numeric(input$txtLAYER_SHIFT))
+#                        layerLinesX <- cbind(layouts[[l]][,1] + (l-1)*as.numeric(input$txtLAYER_SHIFT_X),layouts[[l+1]][,1] + l*as.numeric(input$txtLAYER_SHIFT_X))
 #                        layerLinesY <- cbind(layouts[[l]][,2],layouts[[l+1]][,2])
 #                        layerLinesZ <- cbind(layouts[[l]][,3],layouts[[l+1]][,3])
 #            
@@ -4596,7 +4503,7 @@ shinyServer(function(input, output, session) {
 #                                    layerLinesY[i,],
 #                                    layerLinesZ[i,],
 #                                    lwd=as.numeric(input$txtINTERLINK_WIDTH), 
-#                                    col=input$txtINTERLINK_COLOR, 
+#                                    col=input$colINTERLINK_COLOR, 
 #                                    lty=input$selINTERLINK_TYPE,
 #                                    alpha=as.numeric(input$txtINTERLINK_TRANSP))
 #                            }
@@ -4632,7 +4539,7 @@ shinyServer(function(input, output, session) {
                 #par3D(orientationRGL)
             }
                         
-            bg3d(input$txtBACKGROUND_COLOR)
+            bg3d(input$colBACKGROUND_COLOR)
             title3d(input$txtPLOT_TITLE, input$txtPLOT_SUBTITLE,'','','')
             
             if(input$chkPLOT_LIGHT){
@@ -5488,24 +5395,63 @@ shinyServer(function(input, output, session) {
         #######################################
         ## Export
         #######################################
-        
-        #observe({
-            #if(input$btnImportNetworks == 0 || LAYERS<=0) return()
-            
-            #if(btnSaveSessionValue==input$btnSaveSession) return()
-            
-            #isolate({
-                #progress <- shiny::Progress$new(session)
-                #on.exit(progress$close())
-                #progress$set(message = 'Saving current session...', value = 0.05)
-            #    print(ls(all.names = TRUE))
-            #    save(list = ls(all.names = TRUE), file = "~/Desktop/test.RData", envir = .GlobalEnv)
-                #progress$set(message = 'Session correctly saved!', value = 1)
-                #Sys.sleep(5)
-            #    btnSaveSessionValue <<- input$btnSaveSession
-            #})
 
-        #})
+#        observe({
+#            if(input$btnImportNetworks == 0 || LAYERS<=0) return()
+#            if(btnSaveSessionValue==input$btnSaveSession) return()
+#
+#            isolate({
+#                progress <- shiny::Progress$new(session)
+#                on.exit(progress$close())
+#                progress$set(message = 'Saving muxViz session...', value = 0.2)
+#                Sys.sleep(1)
+#
+#                
+#                outfile <- concatenatePath("sessions", paste0(input$txtProjectName,".mux"))
+#                outlist <- list()
+#                
+#                #http://stackoverflow.com/questions/28166730/how-to-convert-shiny-input-values-into-a-shiny-output-table
+#                elementList <- NULL
+#                for(el in list(reactiveValuesToList(input))){
+#                    elementList <- attributes(el)
+#                }
+#        
+#                df.input <- data.frame(id=rep("",length(elementList$names)), 
+#                                                   type=rep("",length(elementList$names)), 
+#                                                   value=rep("",length(elementList$names)))
+#                
+#                df.input$id <- as.character(df.input$id)
+#                df.input$value <- as.character(df.input$value)
+#
+#                for(r in 1:length(elementList$names)){
+#                    df.input[r,]$id <- as.character(elementList$names[r])
+#                    df.input[r,]$value <- as.character(reactiveValuesToList(input)[ df.input[r,]$id ])
+#                }
+#                #updateCheckboxInput(session, "chkMULTIPLEX_OVERLAPPING", value=F)
+#                #updateSelectInput(session, "selMotifColorPalette", selected="Spectral")
+#
+#                globalList <- ls(all = TRUE)
+#                df.global <- data.frame(id=globalList, 
+#                                                     type=rep("globalvar",length(globalList)), 
+#                                                     value=rep("",length(globalList)))
+#
+#                df.global$id <- as.character(df.global$id)
+#                df.global$type <- as.character(df.global$type)
+#                df.global$value <- as.character(df.global$value)
+#                df.input$id <- as.character(df.input$id)
+#                df.input$type <- as.character(df.input$type)
+#                df.input$value <- as.character(df.input$value)
+#
+#                #print( rbind(df.input, df.global) )
+#                resout <- rbind(df.input, df.global)
+#                saveRDS(resout, file = outfile)
+#                progress$set(detail = paste('Session correctly saved to',outfile), value = 1)
+#                Sys.sleep(2)
+#                
+#                btnSaveSessionValue <<- input$btnSaveSession
+#            })
+#        })
+        
         
         observe({
             if(input$btnExportRendering==0 || input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
@@ -5782,6 +5728,27 @@ shinyServer(function(input, output, session) {
                 )                
             }
         })
+
+        googleVisCentralityTableSingleLayerOptions <- reactive({
+            #other options here:
+            #http://www.inside-r.org/packages/cran/googleVis/docs/gvisTable
+            if(input$btnCalculateCentralityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                return()
+            
+            if(is.null(input$centralityTablePageSize)){
+                list(
+                    #page=ifelse(input$centralityTablePageable==TRUE,'enable','disable'),
+                    pageSize=Nodes,
+                    width=550
+                )
+            }else{
+                list(
+                    #page=ifelse(input$centralityTablePageable==TRUE,'enable','disable'),
+                    pageSize=as.numeric(input$centralityTablePageSize),
+                    width=550
+                )                
+            }
+        })
     
         #this is to setup the pageable table output
         googleVisEdgelistTableOptions <- reactive({
@@ -5827,6 +5794,18 @@ shinyServer(function(input, output, session) {
                     return(NULL)
                 }else{
                     write.table(listDiagnosticsMerge, file, sep = ";", row.names = FALSE) 
+                }
+            }
+        )
+
+        output$downCentralityTableSingleLayer <- downloadHandler(    
+            filename = function() { paste0(input$txtProjectName, "_centrality_perLayer_table.csv") },
+            content = function(file) { 
+
+                if(input$btnCalculateCentralityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0){
+                    return(NULL)
+                }else{
+                    write.table(listDiagnosticsMergeSingleLayer, file, sep = ";", row.names = FALSE) 
                 }
             }
         )
@@ -5890,6 +5869,74 @@ shinyServer(function(input, output, session) {
                 }
             }
         )
+
+        observe({
+            if(input$btnImportNodeColor==0)
+                return()
+    
+            isolate({
+                progress <- shiny::Progress$new()
+                on.exit(progress$close())
+                progress$set(message = 'Importing external attributes for nodes...', value = 0.2)
+                Sys.sleep(1)
+
+                if(length(input$nodecolor_file)>0){
+                    if(!file.exists(input$nodecolor_file$datapath)){
+                        progress2 <- shiny::Progress$new(session)
+                        on.exit(progress2$close())
+                        progress2$set(message = paste('ERROR! File',input$nodecolor_file$datapath,'does not exist.'), value = 0.01)
+                        Sys.sleep(10)
+                        return(NULL)
+                    }
+                    externalNodeColorTable <<- read.table(input$nodecolor_file$datapath, sep=as.character(input$txtNodeColorFileSep), header=T)
+
+                    if(!"nodeID" %in% colnames(externalNodeColorTable)){
+                        progress2 <- shiny::Progress$new(session)
+                        on.exit(progress2$close())
+                        progress2$set(message = paste('ERROR! Missing nodeID in external file.'), value = 0.01)
+                        Sys.sleep(10)
+                        return(NULL)                        
+                    }
+                    if(!"layerID" %in% colnames(externalNodeColorTable)){
+                        progress2 <- shiny::Progress$new(session)
+                        on.exit(progress2$close())
+                        progress2$set(message = paste('ERROR! Missing layerID in external file.'), value = 0.01)
+                        Sys.sleep(10)
+                        return(NULL)                                                
+                    }
+                    
+                    if("color" %in% colnames(externalNodeColorTable)){
+                        externalNodeColorFlag <<- TRUE
+                    }else{
+                        externalNodeColorFlag <<- FALSE
+                    }
+                    if("size" %in% colnames(externalNodeColorTable)){
+                        externalNodeSizeFlag <<- TRUE
+                    }else{
+                        externalNodeSizeFlag <<- FALSE
+                    }
+                                        
+                    if(input$chkEdgeListLabel){
+                        externalNodeColorTable$nodeLabel <<- externalNodeColorTable$nodeID
+                        externalNodeColorTable$nodeID <<- nodeLabelSeqIdConvTable[ externalNodeColorTable$nodeLabel ]
+                    }
+
+                    print(externalNodeColorTable)
+                    
+                    #progress$set(detail = 'Setting the colors...', value = 0.6)
+                    #Sys.sleep(1)
+                }else{
+                    btnImportNodeColorValue <<- input$btnImportNodeColor
+                    return()
+                }
+                
+                btnImportNodeColorValue <<- input$btnImportNodeColor
+                
+                progress$set(detail = 'Import Completed!', value = 1)
+                Sys.sleep(2)
+            })
+        })
+
 
 
                     

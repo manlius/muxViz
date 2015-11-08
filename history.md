@@ -1,3 +1,33 @@
+### 8 November 2015
+
+Manlio De Domenico:
+
+Major in Visualization:
+
+- Added the possibility to set custom color and size for nodes from external file (without needing to pass through the timeline, that was a bit weird temporary solution)
+- Added two new templates for aggregated information to be used for calculating nodes' layout. For instance, beside full aggregation, one could opt for edges union (unweighted version of aggregation) or edges intersection (a kind of overlap). 
+- Added possibility to size and color nodes according to multilayer or single-layer centrality, without restarting the session
+
+Major in GUI:
+
+- Added possibility to toggle boxes, it might be useful when some are not used
+- Added color picking tools thanks to shinyjs package
+
+Minor:
+
+- Solved minor bugs with uniform node sizing
+- Added a new Graphics menu, where allowed type of points and lines, as well as color palettes, are reported
+- Added possibility to shift layers along y-axis
+- Improved usability of the GUI
+ 
+
+### 27 October 2015
+
+Manlio De Domenico:
+
+Solved minor bug for rotations in 2D rendering
+
+
 ### 18 October 2015
 
 Manlio De Domenico:

@@ -20,6 +20,9 @@ if(!require(shiny)){
         #devtools::install_github("rstudio/shiny")
     }
 }
+if(!require(shinyjs)){
+    install.packages("shinyjs")
+}
 if(!require(shinydashboard)){
     install.packages("shinydashboard")
 }
