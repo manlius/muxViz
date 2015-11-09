@@ -26,6 +26,9 @@ if(!require(shinyjs)){
 if(!require(shinydashboard)){
     install.packages("shinydashboard")
 }
+if(!require(session)){
+    install.packages("session")
+}
 if(!require(markdown)){
     install.packages("markdown")
 }
