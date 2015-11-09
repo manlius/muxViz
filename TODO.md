@@ -21,22 +21,22 @@ The following list reflects the possible improvements of muxViz.
 
 #### Medium priority
 
-- Add possibility to control the border of layers (a possibility could be to add segments in appropriate positions)
-
 - Community-piechart in muxviz to show overlapping modules? (see [this paper](http://arxiv.org/abs/1408.2925) and also [multi-layer pie charts](http://www.r-bloggers.com/how-to-draw-venn-pie-agram-multi-layer-pie-chart-in-r/) for additional ideas)
 
 - Layered visualization of adjacency matrices in a 3D environment
+
+- Add possibility to control the border of layers (a possibility could be to add segments in appropriate positions)
 
 - In the 2D rendering, allow for different types of node shape. 
 
 
 #### Low priority
 
-- Reducibility: it could be useful to allow modifying font size and offset of label in reducibility dendrogram
-
 - Reducibility: the dendrogram could have colored branches like [this](http://stackoverflow.com/questions/18036094/how-to-create-a-dendrogram-with-colored-branches), possibly according to a threshold
 
 - Reducibility: possibility to generate a circular dendrogram and to apply cuts
+
+- Reducibility: it could be useful to allow modifying font size and offset of label in reducibility dendrogram
 
 - The timeline could be extended to allow "layer" as an entity
 
@@ -45,33 +45,33 @@ The following list reflects the possible improvements of muxViz.
 
 #### High priority
 
-- Additional centrality descriptors (betweenness, closeness, random walk betweenness, random walk closeness) should be included as soon as possible (see [this paper](http://dl.acm.org/citation.cfm?id=2615687) for some references). 
+- Multiplex Infomap? See the possibility to port or to make an interface as for FANMOD
 
 - Add support to calculation of [shortest paths](http://dl.acm.org/citation.cfm?id=2615687) and their visualization, giving possibility to specify origin/destination, width and color of the path
 
+- Connected components calculation (according to existing literature) and coloring. Code should be already done in muxNet for some cases. Plots of size distribution
+
 - Additional centrality descriptors: clustering/transitivity (see [paper1](http://arxiv.org/abs/1405.0425) [paper2](http://arxiv.org/abs/1308.3182) [paper3](http://arxiv.org/abs/1403.1546) [paper4](http://arxiv.org/abs/1307.6780))
 
-- Multiplex Infomap? See the possibility to port or to make a stand-alone package/plugin for igraph
-
-- Connected components calculation (according to existing literature) and coloring. Code should be already done in muxNet for some cases. Plots of size distribution
+- Additional centrality descriptors (betweenness, closeness, random walk betweenness, random walk closeness) should be included as soon as possible (see [this paper](http://dl.acm.org/citation.cfm?id=2615687) for some references). 
 
 #### Medium priority
 
 - The calculation of some centrality measures can be avoided when the multiplex is undirected (e.g., if the eigenvector centrality is calculated, HITS centrality would give the same result for undirected networks and we can exploit this to avoid re-calculation). This is already done for strength, for instance.
 
-- Update multislice community detection to the new version "Louvain Random"
-
 - Similarly to centrality analysis, it could be useful an interactive histogram for the size of communities in the multiplex, the aggregate and per layer
 
 - It could be interesting to allow scatter plots of descriptors calculated in the multiplex against those ones calculated in the aggregate or in each layer
-
-- Button in Export to export in one folder some files with all information (centrality, correlation, community). [web1](http://shiny.rstudio.com/articles/download.html) [web2](https://gist.github.com/SachaEpskamp/5796467)
 
 - Synthetic multilayer network generator: 
   1. rings, stars, Erdos-Renyi, scale-free, ...
   2. overlapping community ([paper](http://arxiv.org/abs/1408.2925))
   3. with given inter-layer assortativity ([paper](http://arxiv.org/abs/1311.2906))
   4. with given inter-layer edge intersection ([paper](http://arxiv.org/abs/1405.0425))
+
+- Button in Export to export in one folder some files with all information (centrality, correlation, community). [web1](http://shiny.rstudio.com/articles/download.html) [web2](https://gist.github.com/SachaEpskamp/5796467)
+
+- Update multislice community detection to the new version "Louvain Random"
 
 
 #### Low priority

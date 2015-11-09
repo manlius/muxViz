@@ -5,6 +5,7 @@ library(shinydashboard)
 library(rCharts)
 #library(shinyIncubator)
 library(digest)
+library(shinyjs)
 source("version.R")
 
 #RGB colors table
@@ -1428,13 +1429,16 @@ shinyUI(bootstrapPage(
             mainPanel(
                 tabsetPanel(
                     tabPanel("Points",
-                        HTML("<img src='img/pointtypes.png' alt=''/>")
+                        HTML("<img width='800' src='img/pointtypes.png' alt=''/>")
                         ),
                     tabPanel("Lines",
-                        HTML("<img src='img/linetypes.png' alt=''/>")
+                        HTML("<img width='800' src='img/linetypes.png' alt=''/>")
                         ),
                     tabPanel("Colors",
-                        HTML("<img src='img/colorpalettes.png' alt=''/>")
+                        HTML("<img width='800' src='img/colorpalettes.png' alt=''/>")
+                        ),
+                    tabPanel("Maps",
+                        HTML("<img width='800' src='img/backmaps.png' alt=''/>")
                         )
                     )
                 )
