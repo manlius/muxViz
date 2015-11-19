@@ -6,6 +6,7 @@ library(rCharts)
 #library(shinyIncubator)
 library(digest)
 library(shinyjs)
+library(d3heatmap)
 source("version.R")
 
 #RGB colors table
@@ -70,8 +71,8 @@ fanmodCheck <- function(){
 }
 
 multimapCheck <- function(){
-    res <- system(getExecutablePath("multimap"), ignore.stdout = F, ignore.stderr = F, intern=F)
-    if(res==0){
+    res <- system(getExecutablePath("multiplex-infomap"), ignore.stdout = F, ignore.stderr = F, intern=F)
+    if(res==255){
         return("<i class='fa fa-check'></i> Multimap found.<br>")
     }else{
         return("<i class='fa fa-warning'></i> Multimap not found. Only multislice community detection will be available.<br>")
@@ -149,7 +150,7 @@ shinyUI(bootstrapPage(
                     helpText(HTML(paste(version["version.string"][[1]]))),
                     hr(),
                     HTML(octaveCheck()),
-                    #HTML(multimapCheck()),
+                    HTML(multimapCheck()),
                     HTML(fanmodCheck())
                     #HTML(muxbenchCheck())
                 ),
@@ -410,8 +411,15 @@ shinyUI(bootstrapPage(
                                 outputId = 'projectCommunity',
                                 HTML(paste(
                                 'This module unveils the <a href="http://en.wikipedia.org/wiki/Community_structure" target="_blank">community structure</a> of the network.',
-                                '<h5>Multiplex</h5>',
-                                'This method uses the multislice community detection proposed by <a href="http://www.sciencemag.org/content/328/5980/876" target="_blank">Mucha et al</a> to partition the network accounting for the interconnected topology. The option ORDINAL considers a multiplex with interconnections existing only between a layer and its adjacent layers (ordered as imported), while the option CATEGORICAL considers a multiplex with interconnections existing between all pairs of layers. See also <a href="http://netwiki.amath.unc.edu/GenLouvain/GenLouvain" target="_blank"></a> for further details.',
+                                '<h5>Multiplex-Infomap</h5>',
+                                'This method uses community detection based on information flow proposed by <a href="http://journals.aps.org/prx/abstract/10.1103/PhysRevX.5.011027" target="_blank">De Domenico et al</a> to partition the network accounting for the interconnected topology. This algorithm can be applied to edge-colored networks with CATEGORICAL or ORDINAL interconnections, as well as all other multilayer topologies where interconnections are provided from the data. For edge-colored networks, the option ORDINAL considers a multiplex with interconnections existing only between a layer and its adjacent layers (ordered as imported), while the option CATEGORICAL considers a multiplex with interconnections existing between all pairs of layers.',
+                                '<hr>',
+                                '<strong>References</strong>:',
+                                '<ul>',
+                                '<li> M. De Domenico, A. Lancichinetti, A. Arenas and M. Rosvall, <i>Identifying modular flows on multilayer networks reveals highly overlapping organization in interconnected systems</i>, Physical Review X 5, 011027 (2015) [<a href="http://journals.aps.org/prx/abstract/10.1103/PhysRevX.5.011027" target="_blank">Open</a>]',
+                                '</ul>',                                
+                                '<h5>Multislice-ModMax (Multislice modularity maximization)</h5>',
+                                'This method uses the multislice community detection proposed by <a href="http://www.sciencemag.org/content/328/5980/876" target="_blank">Mucha et al</a> to partition the network accounting for the interconnected topology. The option ORDINAL considers a multiplex with interconnections existing only between a layer and its adjacent layers (ordered as imported), while the option CATEGORICAL considers a multiplex with interconnections existing between all pairs of layers. See also <a href="http://netwiki.amath.unc.edu/GenLouvain/GenLouvain" target="_blank"></a> for further details. The muxViz implementation can be applied only to edge-colored networks with CATEGORICAL or ORDINAL interconnections.',
                                 '<br>',
                                 'It is worth mentioning that this method (and its generalization to more complex interconnected topologies) can be described using the same tensorial formulation (see <a href="http://prx.aps.org/abstract/PRX/v3/i4/e041022" target="_blank">De Domenico et al</a>) adopted for the calculation of centrality diagnostics. For the current implementation:<br>',
                                 '<hr>',
@@ -457,8 +465,92 @@ shinyUI(bootstrapPage(
                             ),
                             conditionalPanel(condition="input.radMultiplexModel!='MULTIPLEX_IS_EDGECOLORED'",
                                 helpText("No options to set up for non-edge-colored network models.")
-                            )
-                        ),
+                                )
+                            ),
+                        tabPanel("Statistics",
+                            tabsetPanel(id="tabsetStatistics",
+                                tabPanel("Nodes",
+                                    fluidRow(
+                                        column(width = 4,
+                                            myBox("Nodes", "basic",
+                                                helpText("Number of non-isolated nodes per layer"),
+                                                checkboxInput(inputId = "nodeStatisticsLogy", label = "Log y", F),
+                                                HTML("<center>"),
+                                                actionButton("btnNodeStatistics", "Plot"),
+                                                HTML("</center>")
+                                                )
+                                            ),
+                                        column(width=6,
+                                            showOutput("nodeStatisticsPlot","nvd3") 
+                                            )
+                                        )
+                                    ),
+                                tabPanel("Edges",
+                                    fluidRow(
+                                        column(width = 4,
+                                            myBox("Edges", "basic",
+                                                helpText("Number of edges per layer"),
+                                                checkboxInput(inputId = "edgeStatisticsLogy", label = "Log y", F),
+                                                HTML("<center>"),
+                                                actionButton("btnEdgeStatistics", "Plot"),
+                                                HTML("</center>")
+                                                )
+                                            ),
+                                        column(width=6,
+                                            showOutput("edgeStatisticsPlot","nvd3")                                        
+                                            )
+                                        )
+                                    ),
+                                tabPanel("Density",
+                                    fluidRow(
+                                        column(width = 4,
+                                            myBox("Density", "basic",
+                                                helpText("Edges/node per layer"),
+                                                checkboxInput(inputId = "densityStatisticsLogy", label = "Log y", F),
+                                                HTML("<center>"),
+                                                actionButton("btnDensityStatistics", "Plot"),
+                                                HTML("</center>")
+                                                )
+                                            ),
+                                        column(width=6,
+                                            showOutput("densityStatisticsPlot","nvd3")                                        
+                                            )
+                                        )
+                                    ),
+                                tabPanel("Diameter",
+                                    fluidRow(
+                                        column(width = 4,
+                                            myBox("Diameter", "basic",
+                                                helpText("Diameter per layer"),
+                                                checkboxInput(inputId = "diameterStatisticsLogy", label = "Log y", F),
+                                                HTML("<center>"),
+                                                actionButton("btnDiameterStatistics", "Plot"),
+                                                HTML("</center>")
+                                                )
+                                            ),
+                                        column(width=6,
+                                            showOutput("diameterStatisticsPlot","nvd3")                                        
+                                            )
+                                        )
+                                    ),
+                                tabPanel("Mean Path Length",
+                                    fluidRow(
+                                        column(width = 4,
+                                            myBox("Mean Path Length", "basic",
+                                                helpText("Mean Path Length per layer"),
+                                                checkboxInput(inputId = "meanPathLengthStatisticsLogy", label = "Log y", F),
+                                                HTML("<center>"),
+                                                actionButton("btnMeanPathLengthStatistics", "Plot"),
+                                                HTML("</center>")
+                                                )
+                                            ),
+                                        column(width=6,
+                                            showOutput("meanPathLengthStatisticsPlot","nvd3")                                        
+                                            )
+                                        )                                
+                                    )
+                                )
+                            ),
                         tabPanel("Correlation",
                             conditionalPanel(condition="input.radMultiplexModel=='MULTIPLEX_IS_INTERDEPENDENT'",
                                 helpText("No options to set up for interdependent network models.")
@@ -468,11 +560,12 @@ shinyUI(bootstrapPage(
                                     column(width = 5,
                                         myBox("Inter-layer Correlation", "basic",
                                             #HTML('<h4>General diagnostics</h4>'),
-                                           checkboxInput('chkMULTIPLEX_OVERLAPPING', 'Mean global overlapping', TRUE),                
+                                            checkboxInput('chkMULTIPLEX_NODEOVERLAPPING', 'Mean global node overlapping', TRUE),
+                                            checkboxInput('chkMULTIPLEX_OVERLAPPING', 'Mean global edge overlapping', TRUE),
                                             checkboxInput('chkMULTIPLEX_INTERASSORTATIVITY_PEARSON', 'Inter-layer assortativity (Pearson correlation)', TRUE),
-                                        checkboxInput('chkMULTIPLEX_INTERASSORTATIVITY_SPEARMAN', 'Inter-layer assortativity (Spearman correlation)', TRUE),
-                                        selectInput("selAssortativityType", HTML("Assortativity type (T=Total, I=In-going, O=Out-going):"), 
-                                            choices = c("TT", "II", "OO", "IO", "OI"))
+                                            checkboxInput('chkMULTIPLEX_INTERASSORTATIVITY_SPEARMAN', 'Inter-layer assortativity (Spearman correlation)', TRUE),
+                                            selectInput("selAssortativityType", HTML("Assortativity type (T=Total, I=In-going, O=Out-going):"), 
+                                                choices = c("TT", "II", "OO", "IO", "OI"))
                                             )
                                         ),
                                     column(width=5,
@@ -488,11 +581,18 @@ shinyUI(bootstrapPage(
                                     ),
                                 tags$hr(),
                                 HTML('<h4>Global diagnostics</h4>'),
+                                conditionalPanel(condition="input.btnCalculateCorrelationDiagnostics>0 && input.chkMULTIPLEX_NODEOVERLAPPING",
+                                        HTML('<h5>Node Overlapping</h5>'),
+                                        imageOutput("overlappingNodeSummaryImage"),
+                                        htmlOutput("overlappingNodeSummaryTable"),    
+                                        downloadButton('downOverlappingNodeSummaryTable', 'Export'),
+                                        tags$hr()
+                                    ),                                
                                 conditionalPanel(condition="input.btnCalculateCorrelationDiagnostics>0 && input.chkMULTIPLEX_OVERLAPPING",
                                     htmlWidgetOutput(
                                                 outputId = 'globalDiagnosticsOverlapping',
                                                 HTML(paste(
-                                                '<h5>Overlapping</h5>',
+                                                '<h5>Edge Overlapping</h5>',
                                                 'Mean Global Overlapping: <span id="sumAvgGlobalOverlapping"></span><br>',
                                                 '<br>'
                                                 ))
@@ -607,55 +707,33 @@ shinyUI(bootstrapPage(
                                 )
                             ),
                         tabPanel("Community",
-                            conditionalPanel(condition="input.radMultiplexModel=='MULTIPLEX_IS_INTERDEPENDENT'",
-                                helpText("No options to set up for interdependent network models.")
-                            ),
-                            conditionalPanel(condition="input.radMultiplexModel!='MULTIPLEX_IS_INTERDEPENDENT'",
-                                fluidRow(
-                                    column(width = 5,
-                                        myBox("Algorithm", "basic",
-                                            #HTML('<h4>Algorithm to be used for Community Detection</h4>'),
-                                            conditionalPanel(condition="input.radMultiplexModel=='MULTIPLEX_IS_EDGECOLORED'",
-                                                radioButtons('radCommunityAlgorithm', '',
-                                                    c(Multiplex='COMMUNITY_MULTIPLEX',
-                                                        Infomap='COMMUNITY_INFOMAP',
-                                                        Louvain='COMMUNITY_LOUVAIN',
-                                                        Random_Walk_Trap='COMMUNITY_RANDOM_WALK_TRAP',
-                                                        Edge_Betweenness='COMMUNITY_EDGE_BETWEENNESS'),
-                                                        selected='COMMUNITY_MULTIPLEX'
-                                                    )
-                                                ),
-                                            conditionalPanel(condition="input.radMultiplexModel!='MULTIPLEX_IS_EDGECOLORED'",
-                                                helpText("The following algorithms work for single and interdependent network only. There is still no support for community detection for interconnected multiplex and general multilayer networks."),
-                                                radioButtons('radCommunityAlgorithm', '',
-                                                    c(Infomap='COMMUNITY_INFOMAP',
-                                                        Louvain='COMMUNITY_LOUVAIN',
-                                                        Random_Walk_Trap='COMMUNITY_RANDOM_WALK_TRAP',
-                                                        Edge_Betweenness='COMMUNITY_EDGE_BETWEENNESS'),
-                                                        selected='COMMUNITY_INFOMAP'
-                                                    )
-                                                ),
-                                            uiOutput("communityParameters")                                            
-                                            ),
-                                        HTML("<center>"),
-                                        actionButton("btnCalculateCommunityDiagnostics", "Calculate Community Structure"),
-                                        HTML("</center>")
-                                        )
-                                    ),
-                                tags$hr(),
-                                HTML('<h4>Communities</h4>'),
-                                conditionalPanel(condition="input.btnCalculateCommunityDiagnostics>0",
-                                    imageOutput("matCommunitySummaryImage"),
-                                    htmlOutput("communitySummaryTable"),
-                                    downloadButton('downCommunitySummaryTable', 'Export'),
-                                    tags$hr(),
-                                    checkboxInput(inputId = "communityTablePageable", label = "Pageable", TRUE),
-                                    conditionalPanel("input.communityTablePageable==true",
-                                        uiOutput("numOutputCommunityTableNodesPerPage")
-                                        ),  
-                                    htmlOutput("communityTable"),
-                                    downloadButton('downCommunityTable', 'Export')
+                            fluidRow(
+                                column(width = 5,
+                                    myBox("Algorithm", "basic",    
+                                        uiOutput("communityChoices"),
+                                        uiOutput("communityParameters")                                    
+                                        ),
+                                    HTML("<center>"),
+                                    actionButton("btnCalculateCommunityDiagnostics", "Calculate Community Structure"),
+                                    HTML("</center>")
                                     )
+                                ),
+                            tags$hr(),
+                            HTML('<h4>Communities</h4>'),
+                            conditionalPanel(condition="input.btnCalculateCommunityDiagnostics>0",
+                                selectInput("selCommunityHeatmapColorPalette", HTML("Color palette for coloring communities (see Graphics > Colors):"), choices = paletteChoiceArray),
+                                checkboxInput("chkCommunityHeatmapShowDendrogram", "Apply clustering"),
+                                uiOutput("communityHeatmapUI"),
+                                tags$br(),
+                                htmlOutput("communitySummaryTable"),
+                                downloadButton('downCommunitySummaryTable', 'Export'),
+                                tags$hr(),
+                                checkboxInput(inputId = "communityTablePageable", label = "Pageable", TRUE),
+                                conditionalPanel("input.communityTablePageable==true",
+                                    uiOutput("numOutputCommunityTableNodesPerPage")
+                                    ),  
+                                htmlOutput("communityTable"),
+                                downloadButton('downCommunityTable', 'Export')
                                 )  
                             ),
                         tabPanel("Network of layers",

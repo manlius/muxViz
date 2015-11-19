@@ -26,11 +26,14 @@ if(!require(shinyjs)){
 if(!require(shinydashboard)){
     install.packages("shinydashboard")
 }
+if(!require(markdown)){
+    install.packages("markdown")
+}
 if(!require(session)){
     install.packages("session")
 }
-if(!require(markdown)){
-    install.packages("markdown")
+if(!require(d3heatmap)){
+    devtools::install_github("rstudio/d3heatmap")
 }
 if(!require(ggplot2)){
     install.packages("ggplot2")

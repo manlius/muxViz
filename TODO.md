@@ -1,4 +1,4 @@
-muxViz 1.0
+muxViz 1.0.x
 ==========
 
 The following list reflects the possible improvements of muxViz. 
@@ -25,10 +25,6 @@ The following list reflects the possible improvements of muxViz.
 
 - Layered visualization of adjacency matrices in a 3D environment
 
-- Add possibility to control the border of layers (a possibility could be to add segments in appropriate positions)
-
-- In the 2D rendering, allow for different types of node shape. 
-
 
 #### Low priority
 
@@ -40,14 +36,18 @@ The following list reflects the possible improvements of muxViz.
 
 - The timeline could be extended to allow "layer" as an entity
 
+- Add possibility to control the border of layers (a possibility could be to add segments in appropriate positions)
+
+- In the 2D rendering, allow for different types of node shape. 
+
 
 ## TODO Analysis 
 
 #### High priority
 
-- Multiplex Infomap? See the possibility to port or to make an interface as for FANMOD
-
 - Add support to calculation of [shortest paths](http://dl.acm.org/citation.cfm?id=2615687) and their visualization, giving possibility to specify origin/destination, width and color of the path
+
+- In correlations, the matrix of shortest path could be calculated for each layer separately and then a similarity can be calculated
 
 - Connected components calculation (according to existing literature) and coloring. Code should be already done in muxNet for some cases. Plots of size distribution
 
@@ -70,8 +70,6 @@ The following list reflects the possible improvements of muxViz.
   4. with given inter-layer edge intersection ([paper](http://arxiv.org/abs/1405.0425))
 
 - Button in Export to export in one folder some files with all information (centrality, correlation, community). [web1](http://shiny.rstudio.com/articles/download.html) [web2](https://gist.github.com/SachaEpskamp/5796467)
-
-- Update multislice community detection to the new version "Louvain Random"
 
 
 #### Low priority

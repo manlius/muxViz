@@ -21,6 +21,7 @@ library(rCharts)
 library(ggplot2)
 library(d3Network)
 library(session)
+library(d3heatmap)
 source("version.R")
 source("global.R")
 
@@ -44,13 +45,48 @@ shinyServer(function(input, output, session) {
 
     result <- tryCatch({
 
-        output$communityParameters <- renderUI({
-            #control the parameters to show while choosing a community detection method
-            if(input$radCommunityAlgorithm == "COMMUNITY_MULTIPLEX" && input$radMultiplexModel=='MULTIPLEX_IS_EDGECOLORED'){
-                textInput("txtGamma", label=HTML("Resolution parameter (for multislice community detection):"), "1")
+
+        output$communityChoices <- renderUI({
+            if(input$radMultiplexModel=='MULTIPLEX_IS_EDGECOLORED'){
+                radioButtons('radCommunityAlgorithm', '',
+                    c(Multislice_ModMax='COMMUNITY_MULTIPLEX_MODMAX',
+                        Multiplex_Infomap='COMMUNITY_MULTIPLEX_INFOMAP',
+                        Infomap='COMMUNITY_INFOMAP',
+                        Louvain='COMMUNITY_LOUVAIN',
+                        Random_Walk_Trap='COMMUNITY_RANDOM_WALK_TRAP',
+                        Edge_Betweenness='COMMUNITY_EDGE_BETWEENNESS'),
+                        selected='COMMUNITY_MULTIPLEX_INFOMAP'
+                    )
+            }else{
+                radioButtons('radCommunityAlgorithm', '',
+                    c(Multiplex_Infomap='COMMUNITY_MULTIPLEX_INFOMAP',
+                        Infomap='COMMUNITY_INFOMAP',
+                        Louvain='COMMUNITY_LOUVAIN',
+                        Random_Walk_Trap='COMMUNITY_RANDOM_WALK_TRAP',
+                        Edge_Betweenness='COMMUNITY_EDGE_BETWEENNESS'),
+                        selected='COMMUNITY_MULTIPLEX_INFOMAP'
+                    )                
             }
         })
             
+            
+        output$communityParameters <- renderUI({
+            #control the parameters to show while choosing a community detection method
+            if(!is.null(input$radCommunityAlgorithm)){
+                if(input$radCommunityAlgorithm == "COMMUNITY_MULTIPLEX_MODMAX" && input$radMultiplexModel=='MULTIPLEX_IS_EDGECOLORED'){
+                    list(textInput("txtGamma", label=HTML("Resolution parameter:"), "1"),
+                         helpText("Hint: the inter-layer strength must be set from the 'Mux Set Up' tab")
+                        )
+                }else if(input$radCommunityAlgorithm == "COMMUNITY_MULTIPLEX_INFOMAP"  && input$radMultiplexModel=='MULTIPLEX_IS_EDGECOLORED'){
+                    list(textInput("txtMultimapTries", label=HTML("Number of independent runs:"), "10"),
+                        textInput("txtMultimapRelaxRate", label=HTML("Relax rate:"), "0.75")
+                    )
+                }else if(input$radCommunityAlgorithm == "COMMUNITY_MULTIPLEX_INFOMAP"  && input$radMultiplexModel!='MULTIPLEX_IS_EDGECOLORED'){
+                    textInput("txtMultimapTries", label=HTML("Number of independent runs:"), "10")
+                }
+            }
+        })
+        
         #Fill the table summarizing the config file
         output$dataTable <- renderDataTable({
             inFile <- "mux_dataset.csv"
@@ -987,8 +1023,6 @@ shinyServer(function(input, output, session) {
                         layerEdges[[l]][,2] <<- layerEdges[[l]][,2] + offsetNode
                     }
                 
-                    #todo: here the code for cutting/threshold, if any
-                
                     if(WEIGHTED){
                         if(input$chkRESCALE_WEIGHT){
                             if(ncol(layerEdges[[l]])==3){
@@ -1791,7 +1825,7 @@ shinyServer(function(input, output, session) {
                 if(input$chkMULTIPLEX_OVERLAPPING && LAYERS>1){
                     #create the config file for calling Octave's computation
                     createOctaveConfigFile()
-                    progress$set(message = 'Calculating overlapping...', value = 0.05)
+                    progress$set(message = 'Calculating edge overlapping...', value = 0.05)
                     
                     #call octave
                     system("octave -qf octave/muxMultisliceOverlapping.m",intern=T)
@@ -1824,7 +1858,7 @@ shinyServer(function(input, output, session) {
                     overlapMatrix <- matrix(scan(resultFile, n = LAYERS*LAYERS), ncol=LAYERS, nrow=LAYERS, byrow = TRUE, dimnames=list(NULL, Layer))
                     if(file.exists(resultFile)) file.remove(resultFile)
     
-                    outfile0 <- buildPath("tmp","image_overlap.png")
+                    outfile0 <- buildTmpPath("image_overlap.png")
                     png(outfile0, width=550, height=400)
                     rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selAssortativityTypeColorPalette],input$selAssortativityTypeColorPalette))
                     myImagePlot(overlapMatrix,xLabels=Layer,yLabels=Layer,title=c("Mean overlapping"),ColorRamp=rgb.palette(120))
@@ -1853,6 +1887,53 @@ shinyServer(function(input, output, session) {
                         gvisTable(overlapMatrix,options=googleVisOverlapMatrixSummaryTableOptions())
                     })   
                 }
+
+                if(input$chkMULTIPLEX_NODEOVERLAPPING && LAYERS>1){
+                    #create the config file for calling Octave's computation
+                    createOctaveConfigFile()
+                    progress$set(message = 'Calculating node overlapping...', value = 0.05)
+                                        
+                    #call octave
+                    system("octave -qf octave/muxMultisliceNodeOverlappingMatrix.m",intern=T)
+                    
+                    #read output.
+                    resultFile <- paste(input$txtProjectName,"_node-overlapping_matrix.txt",sep="")
+                    
+                    Layer <- NULL
+                    for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
+    
+                    overlapMatrix2 <- matrix(scan(resultFile, n = LAYERS*LAYERS), ncol=LAYERS, nrow=LAYERS, byrow = TRUE, dimnames=list(NULL, Layer))
+                    if(file.exists(resultFile)) file.remove(resultFile)
+    
+                    outfile01 <- buildTmpPath("image_node-overlap.png")
+                    png(outfile01, width=550, height=400)
+                    rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selAssortativityTypeColorPalette],input$selAssortativityTypeColorPalette))
+                    myImagePlot(overlapMatrix2,xLabels=Layer,yLabels=Layer,title=c("Mean node overlapping"),ColorRamp=rgb.palette(120))
+                #,zlim=c(-1,1)
+                    dev.off()
+    
+                   output$overlappingNodeSummaryImage <- renderImage({
+                        list(src = outfile01,
+                            contentType = 'image/png',
+                            width = 550,
+                            height = 400,
+                            alt = "")
+                          }, 
+                          deleteFile = FALSE
+                        )  
+                    #if(file.exists(outfile0)) file.remove(outfile0)
+    
+                    overlapMatrix2 <- data.frame(overlapMatrix2)
+                    overlapMatrix2 <- cbind(data.frame(Layer),overlapMatrix2)
+                    listNodeOverlap <<- overlapMatrix2
+    
+                    output$overlappingNodeSummaryTable <- renderGvis({
+                        if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                            return(NULL)
+                        
+                        gvisTable(overlapMatrix2,options=googleVisNodeOverlapMatrixSummaryTableOptions())
+                    })   
+                }
     
                 if(input$chkMULTIPLEX_INTERASSORTATIVITY_PEARSON && LAYERS>1){
                     progress$set(message = 'Calculating Pearson...', value = 0.05)
@@ -1872,7 +1953,7 @@ shinyServer(function(input, output, session) {
                     interPearson <- matrix(scan(resultFile, n = LAYERS*LAYERS), ncol=LAYERS, nrow=LAYERS, byrow = TRUE, dimnames=list(NULL, Layer))
                     if(file.exists(resultFile)) file.remove(resultFile)
     
-                    outfile <- buildPath("tmp","image_pearson.png")
+                    outfile <- buildTmpPath("image_pearson.png")
                     png(outfile, width=550, height=400)
                     rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selAssortativityTypeColorPalette],input$selAssortativityTypeColorPalette))
 
@@ -1921,7 +2002,7 @@ shinyServer(function(input, output, session) {
                     interSpearman <- matrix(scan(resultFile, n = LAYERS*LAYERS), ncol=LAYERS, nrow=LAYERS, byrow = TRUE, dimnames=list(NULL, Layer))
                     if(file.exists(resultFile)) file.remove(resultFile)
     
-                    outfile2 <- buildPath("tmp","image_spearman.png")
+                    outfile2 <- buildTmpPath("image_spearman.png")
                     png(outfile2, width=550, height=400)
                     rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selAssortativityTypeColorPalette],input$selAssortativityTypeColorPalette))
                     myImagePlot(interSpearman,xLabels=Layer,yLabels=Layer,title=c("Inter-layer assortativity: Spearman"),ColorRamp=rgb.palette(120))
@@ -2059,7 +2140,7 @@ shinyServer(function(input, output, session) {
                     sumCommunitiesMerge <<- NULL
                     communityOK <<- T
     
-                    if(input$radCommunityAlgorithm=="COMMUNITY_MULTIPLEX"){
+                    if(input$radCommunityAlgorithm=="COMMUNITY_MULTIPLEX_MODMAX"){
                         #calculation in the multiplex. For the moment the output is obtained calling octave.
                         #the output will be stored in [[l]] for the multiplex and [[LAYERS+1]] for the aggregated.
     
@@ -2101,16 +2182,28 @@ shinyServer(function(input, output, session) {
                         print(paste("  Modularity aggregate: ",wtmod_aggregate))
                         maxComAggr <- max(wmemb_membership_aggregate)
                         numCommsAggr <- maxComAggr
-                            
+
+                              
                         #eventual community merging, if any, here.
-    
-                        for(l in 1:LAYERS){                                                                        
-                            listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Community=wmemb_membership[,l]))
+                        #todo: this can be improved by finding isolated nodes at the very beginning
+                        isolatedNodes <- 0
+                        for(l in 1:LAYERS){
+                            final.memb <- rep(0, Nodes)
+                            idx.nonisolated <- which(degree(g[[l]], mode="total")>0)
+                            isolatedNodes <- isolatedNodes + Nodes - length(idx.nonisolated)
+                            final.memb[ idx.nonisolated ] <- wmemb_membership[idx.nonisolated,l]
+                            
+                            listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Community=final.memb))
                             listCommunitiesMerge <<- rbind(listCommunitiesMerge,listCommunities[[l]])
                         }
                         listCommunities[[LAYERS+1]] <<- cbind(listCommunities[[LAYERS+1]],data.frame(Community=wmemb_membership_aggregate))
                         listCommunitiesMerge <<- rbind(listCommunitiesMerge,listCommunities[[LAYERS+1]])
                         #print(listCommunities)
+                        
+                        if(as.numeric(input$txtOmega)==0){
+                            numComms <- numComms - isolatedNodes
+                        }
+                        
     
                         #Multiplex
                         l <- 1
@@ -2124,6 +2217,155 @@ shinyServer(function(input, output, session) {
                         sumCommunitiesMerge <<- rbind(sumCommunitiesMerge,sumCommunities[[l]])
     
                         #print(listCommunitiesMerge)
+                    }else if(input$radCommunityAlgorithm=="COMMUNITY_MULTIPLEX_INFOMAP"){
+                        for(l in 1:LAYERS){
+                            listCommunities[[l]] <<- data.frame(Layer = rep(paste(l,"Multi",sep="-"),Nodes))
+                            listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Node = 1:Nodes))
+                            listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Label=nodesLabel[[l]]))
+                        }
+                        l <- LAYERS+1
+                        listCommunities[[l]] <<- data.frame(Layer = rep("Aggr",Nodes))
+                        listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Node = 1:Nodes))
+                        listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Label=nodesLabel[[l]]))
+                        
+                        sumCommunities[[1]] <- data.frame(Layer = "Multi")
+                        sumCommunities[[2]] <- data.frame(Layer = "Aggr")
+
+                        #generate adequate input for multimap
+                        progress$set(message = 'Setting up the algorithm...', value = 0.2)                
+                        inputFile <- paste(input$txtProjectName,"_multimap.edges",sep="")
+                        if(file.exists(inputFile)) file.remove(inputFile)
+                        fileConn <- file(inputFile, open="at")
+                        
+                        if(input$radMultiplexModel=='MULTIPLEX_IS_EDGECOLORED'){
+                            writeLines(c("*Intra","#level node node weight"), fileConn)
+                            out.edgeslist <- data.frame()
+                            for(l in 1:LAYERS){
+                                tmp.edges <- get.edgelist(g[[l]])
+                                out.edgeslist <- rbind(out.edgeslist, data.frame(level=l, 
+                                                                                                           nodeA=tmp.edges[,1], 
+                                                                                                           nodeB=tmp.edges[,2], 
+                                                                                                           weight=E(g[[l]])$weight)
+                                                                )
+
+                                if(!DIRECTED){
+                                    #this is because multimap requires both directions specified, even for undirected networks
+                                    out.edgeslist <- rbind(out.edgeslist, data.frame(level=l, 
+                                                                                                               nodeA=tmp.edges[,2], 
+                                                                                                               nodeB=tmp.edges[,1], 
+                                                                                                               weight=E(g[[l]])$weight)
+                                                                )                                    
+                                }
+                            }
+                            write.table(out.edgeslist, file=fileConn, row.names=F, col.names=F, quote=F)
+                        }else{
+                            writeLines(c("*Intra","#level node node weight"), fileConn)
+                            out.edgeslist <- data.frame()
+                            
+                            submulti <- multilayerEdges[ multilayerEdges$V2==multilayerEdges$V4, ]
+                            out.edgeslist <- rbind(out.edgeslist, data.frame(level=submulti$V2, 
+                                                                                                      nodeA=submulti$V1, 
+                                                                                                      nodeB=submulti$V3, 
+                                                                                                      weight=submulti$V5)
+                                                            )
+                            if(!DIRECTED){
+                                #this is because multimap requires both directions specified, even for undirected networks
+                                out.edgeslist <- rbind(out.edgeslist, data.frame(level=submulti$V2, 
+                                                                                                          nodeA=submulti$V3, 
+                                                                                                          nodeB=submulti$V1, 
+                                                                                                          weight=submulti$V5)
+                                                                )    
+                            }
+                            write.table(out.edgeslist, file=fileConn, row.names=F, col.names=F, quote=F)
+
+                            writeLines(c("*Inter","#node level level weight"), fileConn)
+                            out.edgeslist <- data.frame()
+                            submulti <- multilayerEdges[ multilayerEdges$V1==multilayerEdges$V3, ]
+                            out.edgeslist <- rbind(out.edgeslist, data.frame(node=submulti$V1, 
+                                                                                                      levelA=submulti$V2, 
+                                                                                                      levelB=submulti$V4, 
+                                                                                                      weight=submulti$V5)
+                                                            )
+                            if(!DIRECTED){
+                                #this is because multimap requires both directions specified, even for undirected networks
+                                out.edgeslist <- rbind(out.edgeslist, data.frame(node=submulti$V1, 
+                                                                                                          levelA=submulti$V4, 
+                                                                                                          levelB=submulti$V2, 
+                                                                                                          weight=submulti$V5)
+                                                                )
+                            }
+                            write.table(out.edgeslist, file=fileConn, row.names=F, col.names=F, quote=F)
+                        }
+                        close(fileConn) 
+                        
+                        #setup the adequate flags
+                        exePath <- getExecutablePath("multiplex-infomap")
+                        exeFlags <- ""
+                        
+                        if(input$radMultiplexModel=='MULTIPLEX_IS_EDGECOLORED'){
+                            exeFlags <- paste("-s", floor(runif(1)*1e7), 
+                                                          "-N", as.numeric(input$txtMultimapTries),
+                                                          "-multiplex -physical -smartinit -proportionalswitch",
+                                                          "-switchrate", as.numeric(input$txtMultimapRelaxRate),
+                                                          inputFile)
+                        }else{
+                            exeFlags <- paste("-s", floor(runif(1)*1e7), 
+                                                          "-N", as.numeric(input$txtMultimapTries),
+                                                          "-multiplex -physical -smartinit",
+                                                          "-switchrate", as.numeric(input$txtMultimapRelaxRate),
+                                                          inputFile)
+                        }                        
+
+                        #make the external call
+                        progress$set(message = 'Finding communities...', value = 0.5)
+                        #print( paste(exePath,exeFlags) )
+                        system(paste(exePath,exeFlags),intern=T)
+
+                        #import the results (clu and modularity value)
+                        resultFile <- paste(input$txtProjectName,"_multimap_Multiplex_Physical.clu",sep="")
+                        wmemb_membership <- read.table(resultFile, header=F, sep=" ")
+                        if(file.exists(resultFile)) file.remove(resultFile)             
+                        resultFile <- paste(input$txtProjectName,"_multimap_Multiplex_Physical.tree",sep="")                        
+                        wtcod <- as.numeric(strsplit(readLines(resultFile, n=1), " ")[[1]][4])
+                        if(file.exists(resultFile)) file.remove(resultFile)
+
+                        print(paste("  Code length: ",wtcod))
+                        maxCom <- max(wmemb_membership$V3)
+                        numComms <- maxCom
+
+                        #calculate same things for the aggregate using R infomap
+                        infocom <- infomap.community(g[[LAYERS+1]],modularity=TRUE)                                
+                        wmemb_membership_aggregate <- as.numeric(membership(infocom))
+                        wtcod_aggregate <- code_len(infocom)
+                        
+                        print(paste("  Code length aggregate: ",wtcod_aggregate))
+                        maxComAggr <- max(wmemb_membership_aggregate)
+                        numCommsAggr <- maxComAggr
+
+                        #update the global variables
+                        #eventual community merging, if any, here.
+                        for(l in 1:LAYERS){                     
+                            final.memb <- rep(0, Nodes)
+                            tmp.memb <- wmemb_membership[ wmemb_membership$V1==l, ]
+                            final.memb[ tmp.memb$V2 ] <- tmp.memb$V3
+                                                                               
+                            listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Community=final.memb))
+                            listCommunitiesMerge <<- rbind(listCommunitiesMerge,listCommunities[[l]])
+                        }
+                        listCommunities[[LAYERS+1]] <<- cbind(listCommunities[[LAYERS+1]],data.frame(Community=wmemb_membership_aggregate))
+                        listCommunitiesMerge <<- rbind(listCommunitiesMerge,listCommunities[[LAYERS+1]])
+                        #print(listCommunities)
+    
+                        #Multiplex
+                        l <- 1
+                        sumCommunities[[l]] <- cbind(sumCommunities[[l]],data.frame(Communities = numComms))                        
+                        sumCommunities[[l]] <- cbind(sumCommunities[[l]],data.frame(CodeLength = round(wtcod,3)))
+                        sumCommunitiesMerge <<- rbind(sumCommunitiesMerge,sumCommunities[[l]])
+                        #Aggregate: change numcoms and CodeLength here
+                        l <- 2
+                        sumCommunities[[l]] <- cbind(sumCommunities[[l]],data.frame(Communities = numCommsAggr))                        
+                        sumCommunities[[l]] <- cbind(sumCommunities[[l]],data.frame(CodeLength = round(wtcod_aggregate,3)))
+                        sumCommunitiesMerge <<- rbind(sumCommunitiesMerge,sumCommunities[[l]])
                     }else{                    
                         #calculation per layer. No needs to specify the weight attribute because the g objects
                         #are built assuming weighted input (where weight is 1 for binary networks), and each measure
@@ -2231,25 +2473,55 @@ shinyServer(function(input, output, session) {
                     for(l in 1:(LAYERS)){
                         matComm[l,] <- listCommunities[[l]]$Community
                     }
-                    outfile <- buildPath("tmp","image_comms.png")
-                    png(outfile, width=600, height=400)
+
+
                     rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selCommunityColorPalette],input$selCommunityColorPalette))(max(matComm))
-                    heatmap.2(matComm,labRow=Layer,labCol=1:Nodes,cexRow=200/Nodes,cexCol=40/Nodes,col=rgb.palette,symm=F,dendrogram="none",trace="none",offsetCol=-0.4,offsetRow=-0.4)
-                    #myImagePlot(matComm,xLabels=Nodes,yLabels=Layer,title=c("Community Membership"),ColorRamp=rgb.palette)
-                #,zlim=c(-1,1)
-                    dev.off()
-    
-                   output$matCommunitySummaryImage <- renderImage({
-                        list(src = outfile,
-                            contentType = 'image/png',
-                            width = 600,
-                            height = 400,
-                            alt = "")
-                          }, 
-                          deleteFile = FALSE
-                        )
+                    #rgb.palette <- c("white", rgb.palette)
 
+#                    outfile <- buildTmpPath("image_comms.png")
+#                    png(outfile, width=600, height=400)
+#                    heatmap.2(matComm,labRow=Layer,labCol=1:Nodes,cexRow=200/Nodes,cexCol=40/Nodes,col=rgb.palette,symm=F,dendrogram="none",trace="none",offsetCol=-0.4,offsetRow=-0.4)
+#                    #myImagePlot(matComm,xLabels=Nodes,yLabels=Layer,title=c("Community Membership"),ColorRamp=rgb.palette)
+#                #,zlim=c(-1,1)
+#                    dev.off()
+#    
+#                   output$matCommunitySummaryImage <- renderImage({
+#                        list(src = outfile,
+#                            contentType = 'image/png',
+#                            width = 600,
+#                            height = 400,
+#                            alt = "")
+#                          }, 
+#                          deleteFile = FALSE
+#                        )
 
+                   
+                   #rownames(matComm) <- Layer
+                   #colnames(matComm) <- 1:Nodes
+                   matComm.df <- as.data.frame(t(matComm))
+                   colnames(matComm.df) <- Layer
+                   rownames(matComm.df) <- paste0("n",1:Nodes)
+                   #write.table(matComm,"~/Desktop/test.csv",sep=",")
+                   #print(matComm.df)
+                   #print(input$selCommunityColorPalette)
+
+                    output$communityHeatmapUI <- renderUI({
+                        d3heatmapOutput("communityHeatmap",
+                                                     width = "100%",
+                                                     height = paste0(Nodes*3,"px")
+                            )
+                        })
+                   
+                   output$communityHeatmap <- renderD3heatmap({
+                        if(input$btnCalculateCommunityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                            return(NULL)
+                            
+                        d3heatmap(
+                            matComm.df,
+                            color = input$selCommunityHeatmapColorPalette,
+                            dendrogram = if (input$chkCommunityHeatmapShowDendrogram){"both"}else{"none"}
+                            )
+                        })
 
                     #Fill the table summarizing the community
                     output$communityTable <- renderGvis({
@@ -2387,7 +2659,7 @@ shinyServer(function(input, output, session) {
                 if( input$chkANULAR_VIZ_CELL_BORDER==0 ) Border <- NA
                                 
                 progress$set(message = 'Creating figures...', value = 0.5)
-                outfileX <- buildPath("tmp","image_annular_multiplex.png")
+                outfileX <- buildTmpPath("image_annular_multiplex.png")
                 
                 png(outfileX, width=1200, height=1200)
     
@@ -2505,7 +2777,7 @@ shinyServer(function(input, output, session) {
                         
                         #build the plot                    
                         progress$set(message = 'Creating figures...', value = 0.9)
-                        outfileY <- buildPath("tmp",paste("image_annular_",attrib,".png",sep=""))
+                        outfileY <- buildTmpPath(paste("image_annular_",attrib,".png",sep=""))
                         
                         png(outfileY, width=1200, height=1200)
                         
@@ -2558,7 +2830,7 @@ shinyServer(function(input, output, session) {
                         local({
                             #print(i)
                             my_i <- i
-                            outfileY <- buildPath("tmp",paste("image_annular_",attrib,".png",sep=""))
+                            outfileY <- buildTmpPath(paste("image_annular_",attrib,".png",sep=""))
                             plotname <- paste("plot", my_i, sep="")
                             
                             output[[plotname]] <- renderImage({
@@ -2593,6 +2865,262 @@ shinyServer(function(input, output, session) {
                 progress$set(message = 'Annular Viz Completed!', value = 1)
                 Sys.sleep(2)
             })  
+        })
+
+      	################################################
+      	# Statistics plots
+      	################################################
+
+        observe({
+            if(input$btnImportNetworks == 0 ||  LAYERS==0)
+                return()
+            
+            if(btnMeanPathLengthStatisticsValue==input$btnMeanPathLengthStatistics) return()
+    
+            isolate({
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
+    
+                progress$set(message = 'Calculating...', value = 0.05)
+
+                Bins <- LAYERS
+
+                v.x <- c()
+                v.y <- c()
+                for(l in 1:LAYERS){
+                    v.y <- c(v.y, average.path.length(g[[l]], directed=DIRECTED, unconnected=T) )
+                    v.x <- c(v.x, layerLabel[[l]])
+                }
+
+                if(input$meanPathLengthStatisticsLogy){
+                    v.y <- log10(v.y)
+                    if(any(is.infinite(v.y))){
+                        v.y[is.infinite(v.y)] <- 0
+                    }
+                }
+                
+                X <- data.frame(Var1 = v.x, MeanPathLength = v.y)
+        
+                output$meanPathLengthStatisticsPlot <- renderChart2({
+                    rplot <- nPlot(MeanPathLength ~ Var1, 
+                                data = X, type = "multiBarChart")
+                 
+                    rplot$chart(reduceXTicks = FALSE)
+                    rplot$xAxis(staggerLabels = F, rotateLabels=-90)
+                    if(input$meanPathLengthStatisticsLogy){
+                        rplot$yAxis(axisLabel="log10 Mean Path Length")
+                    }else{
+                        rplot$yAxis(axisLabel="Mean Path Length")
+                    }
+
+                    return(rplot)
+                })                
+
+                progress$set(message = 'Completed!', value = 1)
+                Sys.sleep(2)
+            })
+        })
+        
+        observe({
+            if(input$btnImportNetworks == 0 ||  LAYERS==0)
+                return()
+            
+            if(btnDiameterStatisticsValue==input$btnDiameterStatistics) return()
+    
+            isolate({
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
+    
+                progress$set(message = 'Calculating...', value = 0.05)
+
+                Bins <- LAYERS
+
+                v.x <- c()
+                v.y <- c()
+                for(l in 1:LAYERS){
+                    v.y <- c(v.y, diameter(g[[l]], directed=DIRECTED, unconnected=T) )
+                    v.x <- c(v.x, layerLabel[[l]])
+                }
+
+                if(input$diameterStatisticsLogy){
+                    v.y <- log10(v.y)
+                    if(any(is.infinite(v.y))){
+                        v.y[is.infinite(v.y)] <- 0
+                    }
+                }
+                
+                X <- data.frame(Var1 = v.x, Diameter = v.y)
+        
+                output$diameterStatisticsPlot <- renderChart2({
+                    rplot <- nPlot(Diameter ~ Var1, 
+                                data = X, type = "multiBarChart")
+                 
+                    rplot$chart(reduceXTicks = FALSE)
+                    rplot$xAxis(staggerLabels = F, rotateLabels=-90)
+                    if(input$diameterStatisticsLogy){
+                        rplot$yAxis(axisLabel="log10 Diameter")
+                    }else{
+                        rplot$yAxis(axisLabel="Diameter")
+                    }
+
+                    return(rplot)
+                })                
+
+                progress$set(message = 'Completed!', value = 1)
+                Sys.sleep(2)
+            })
+        })
+
+        observe({
+            if(input$btnImportNetworks == 0 ||  LAYERS==0)
+                return()
+            
+            if(btnDensityStatisticsValue==input$btnDensityStatistics) return()
+    
+            isolate({
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
+    
+                progress$set(message = 'Calculating...', value = 0.05)
+
+                Bins <- LAYERS
+
+                v.x <- c()
+                v.y <- c()
+                for(l in 1:LAYERS){
+                    tmp.deg <- degree(g[[l]], mode="all")
+                    v.y <- c(v.y, length(E(g[[l]]))/sum(tmp.deg>0))
+                    v.x <- c(v.x, layerLabel[[l]])
+                }
+
+                if(input$densityStatisticsLogy){
+                    v.y <- log10(v.y)
+                    if(any(is.infinite(v.y))){
+                        v.y[is.infinite(v.y)] <- 0
+                    }
+                }
+                
+                X <- data.frame(Var1 = v.x, Density = v.y)
+        
+                output$densityStatisticsPlot <- renderChart2({
+                    rplot <- nPlot(Density ~ Var1, 
+                                data = X, type = "multiBarChart")
+                 
+                    rplot$chart(reduceXTicks = FALSE)
+                    rplot$xAxis(staggerLabels = F, rotateLabels=-90)
+                    if(input$densityStatisticsLogy){
+                        rplot$yAxis(axisLabel="log10 Density")
+                    }else{
+                        rplot$yAxis(axisLabel="Density")
+                    }
+
+                    return(rplot)
+                })                
+
+                progress$set(message = 'Completed!', value = 1)
+                Sys.sleep(2)
+            })
+        })
+
+        observe({
+            if(input$btnImportNetworks == 0 ||  LAYERS==0)
+                return()
+            
+            if(btnNodeStatisticsValue==input$btnNodeStatistics) return()
+    
+            isolate({
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
+    
+                progress$set(message = 'Calculating...', value = 0.05)
+
+                Bins <- LAYERS
+
+                v.x <- c()
+                v.y <- c()
+                for(l in 1:LAYERS){
+                    tmp.deg <- degree(g[[l]], mode="all")
+                    v.y <- c(v.y, sum(tmp.deg>0))
+                    v.x <- c(v.x, layerLabel[[l]])
+                }
+
+                if(input$nodeStatisticsLogy){
+                    v.y <- log10(v.y)
+                    if(any(is.infinite(v.y))){
+                        v.y[is.infinite(v.y)] <- 0
+                    }
+                }
+                
+                X <- data.frame(Var1 = v.x, Counts = v.y)
+        
+                output$nodeStatisticsPlot <- renderChart2({
+                    rplot <- nPlot(Counts ~ Var1, 
+                                data = X, type = "multiBarChart")
+                 
+                    rplot$chart(reduceXTicks = FALSE)
+                    rplot$xAxis(staggerLabels = F, rotateLabels=-90)
+                    if(input$nodeStatisticsLogy){
+                        rplot$yAxis(axisLabel="log10 Counts")
+                    }else{
+                        rplot$yAxis(axisLabel="Counts")
+                    }
+
+                    return(rplot)
+                })                
+
+                progress$set(message = 'Completed!', value = 1)
+                Sys.sleep(2)
+            })
+        })
+
+        observe({
+            if(input$btnImportNetworks == 0 ||  LAYERS==0)
+                return()
+            
+            if(btnEdgeStatisticsValue==input$btnEdgeStatistics) return()
+    
+            isolate({
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
+    
+                progress$set(message = 'Calculating...', value = 0.05)
+
+                Bins <- LAYERS
+
+                v.x <- c()
+                v.y <- c()
+                for(l in 1:LAYERS){
+                    v.y <- c(v.y, length(E(g[[l]])))
+                    v.x <- c(v.x, layerLabel[[l]])
+                }
+
+                if(input$edgeStatisticsLogy){
+                    v.y <- log10(v.y)
+                    if(any(is.infinite(v.y))){
+                        v.y[is.infinite(v.y)] <- 0
+                    }
+                }
+                
+                X <- data.frame(Var1 = v.x, Counts = v.y)
+        
+                output$edgeStatisticsPlot <- renderChart2({
+                    rplot <- nPlot(Counts ~ Var1, 
+                                data = X, type = "multiBarChart")
+                 
+                    rplot$chart(reduceXTicks = FALSE)
+                    rplot$xAxis(staggerLabels = F, rotateLabels=-90)
+                    if(input$edgeStatisticsLogy){
+                        rplot$yAxis(axisLabel="log10 Counts")
+                    }else{
+                        rplot$yAxis(axisLabel="Counts")
+                    }
+
+                    return(rplot)
+                })                
+
+                progress$set(message = 'Completed!', value = 1)
+                Sys.sleep(2)
+            })
         })
     
       	################################################
@@ -2819,6 +3347,8 @@ shinyServer(function(input, output, session) {
                         }else{
                             rplot$xAxis(axisLabel=this.descriptor)
                         }
+                        rplot$chart(reduceXTicks = FALSE)
+                        rplot$xAxis(staggerLabels = F, rotateLabels=-90)
 
                         return(rplot)
                     })
@@ -3000,7 +3530,7 @@ shinyServer(function(input, output, session) {
                 distanceMatrix <- matrix(scan(resultFile, n = LAYERS*LAYERS), ncol=LAYERS, nrow=LAYERS, byrow = TRUE, dimnames=list(NULL, Layer))
                 #if(file.exists(resultFile)) file.remove(resultFile)
     
-                outfile6 <- buildPath("tmp","image_jsd.png")
+                outfile6 <- buildTmpPath("image_jsd.png")
                 
                 png(outfile6, width=650, height=650)
                 rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selReducibilityColorPalette],input$selReducibilityColorPalette))(200)
@@ -3020,7 +3550,7 @@ shinyServer(function(input, output, session) {
                     )
                 #if(file.exists(outfile6)) file.remove(outfile6)
     
-                outfile7 <- buildPath("tmp","image_dendrogram.png")
+                outfile7 <- buildTmpPath("image_dendrogram.png")
                 png(outfile7, width=650, height=650)
                 plot(hclust(as.dist(distanceMatrix),method=input$selReducibilityClusterMethod),labels=Layer,cex=as.numeric(input$txtREDUCIBILITY_HEATMAP_FONT_SIZE),main="Reducibility Dendrogram",sub="", xlab="")
                 dev.off()
@@ -3130,7 +3660,7 @@ shinyServer(function(input, output, session) {
                             #Aggregate graph from aggregate adjacency matrix
                             progress$set(message = 'Calculating aggregated...', value = 0.1)
                             
-                            #todo: here the code for the three template methods
+                            #here the code for the three template methods
                             if(input$radLayoutTypeMultiplex=="LAYOUT_MULTIPLEX_AGGREGATE"){
                                 gAggr <- graph.adjacency(AdjMatrix[[LAYERS+1]], weighted=T)
                             }else if(input$radLayoutTypeMultiplex=="LAYOUT_MULTIPLEX_UNION"){
@@ -3686,15 +4216,16 @@ shinyServer(function(input, output, session) {
                     if(externalNodeSizeFlag){
                         #setting default size for all nodes
                         arrayDiagnostics <- rep(1,Nodes)
-
+                        
                         #set the size for nodes specified in the external table
                         size.set <- externalNodeColorTable[ externalNodeColorTable$layerID==l, ]
+
                         if(nrow(size.set)>0){
                             arrayDiagnostics[ size.set$nodeID ] <- size.set$size
                         }
                     }
                 }
-                #overwrite arrayDiagnostics if centrality have been calculated
+                #overwrite arrayDiagnostics if centrality have been calculated and attrib is not Uniform or External
                 if(diagnosticsOK){
                     if(input$btnCalculateCentralityDiagnostics>0){
                         #the GUI is visualizing the list of possibilities
@@ -3720,11 +4251,7 @@ shinyServer(function(input, output, session) {
                                 arrayDiagnostics <- as.numeric(listDiagnosticsSingleLayer[[l]][ attrib ][,1])
                             }
                         }
-                    }else{
-                        arrayDiagnostics <- rep(1,Nodes)
                     }
-                }else{
-                    arrayDiagnostics <- rep(1,Nodes)
                 }
                 
                 if(input$radNodeSizeType2=="NODE_SIZE_PROPORTIONAL_TYPE_NORMAL"){
@@ -3761,20 +4288,18 @@ shinyServer(function(input, output, session) {
 
                         #set the color for nodes specified in the external table
                         color.set <- externalNodeColorTable[ externalNodeColorTable$layerID==l, ]
-                        
+                        print(color.set)
+                        print(color.set$nodeID)
                         if(nrow(color.set)>0){
-                            V(g[[l]])$color[ color.set$nodeID ] <- color.set$color                        
-#                        }else{
-#                            progress2 <- shiny::Progress$new(session)
-#                            on.exit(progress2$close())
-#                            progress2$set(message = paste('Warning! No color specified for nodes in layer',l), value = 0.5)
-#                            Sys.sleep(3)
+                            V(g[[l]])$color[ as.numeric(color.set$nodeID) ] <- color.set$color                        
+                            print(V(g[[l]])$color[ as.numeric(color.set$nodeID) ])
+                            #pippo
                         }
                     }
                 }else if(input$radNodeColor=="NODE_COLOR_COMMUNITY"){
                     if(communityOK){
                         if(input$btnCalculateCommunityDiagnostics>0){
-                            if(input$radCommunityAlgorithm!="COMMUNITY_MULTIPLEX"){
+                            if(input$radCommunityAlgorithm!="COMMUNITY_MULTIPLEX_MODMAX" && input$radCommunityAlgorithm!="COMMUNITY_MULTIPLEX_INFOMAP"){
                                 #color-code by community
                                 tmpColor <- rainbow( max(listCommunities[[l]]$Community) + 2, alpha=as.numeric(input$txtNODE_TRANSP), start=runif(1))[ listCommunities[[l]]$Community ]
                                 #setting a random start should avoid coloring nodes in the same way on different layers
@@ -4090,7 +4615,7 @@ shinyServer(function(input, output, session) {
             }
             
             hash <- digest( c(thisLATMIN,thisLATMAX,thisLONGMIN,thisLONGMAX,input$selOSMType) , algo="md5" )
-            fileNamePNG <- buildPath("tmp",paste(hash,".png",sep=""))
+            fileNamePNG <- buildTmpPath(paste(hash,".png",sep=""))
             #print(paste("COORDS:",LATMIN,LATMAX,LONGMIN,LONGMAX,XMIN,XMAX,YMIN,YMAX))
             if(!file.exists(fileNamePNG)){
                 if(GEOGRAPHIC_LAYOUT && (input$chkGEOGRAPHIC_BOUNDARIES_SHOW || input$chkGEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW)){
@@ -5634,6 +6159,19 @@ shinyServer(function(input, output, session) {
                 height=150
             )
         })
+
+        googleVisNodeOverlapMatrixSummaryTableOptions <- reactive({
+            #other options here:
+            #http://www.inside-r.org/packages/cran/googleVis/docs/gvisTable
+            if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0 || !input$chkMULTIPLEX_OVERLAPPING)
+                return()
+                
+            list(
+                page='disable',
+                width=550,
+                height=150
+            )
+        })
         
         #this is to setup the pageable table output
         googleVisInterPearsonSummaryTableOptions <- reactive({
@@ -5847,6 +6385,18 @@ shinyServer(function(input, output, session) {
             }
         )
 
+        output$downOverlappingNodeSummaryTable <- downloadHandler(    
+            filename = function() { paste0(input$txtProjectName, "_node-overlap_table.csv") },
+            content = function(file) { 
+
+                if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0){
+                    return(NULL)
+                }else{
+                    write.table(listNodeOverlap, file, sep = ";", row.names = FALSE) 
+                }
+            }
+        )
+        
         output$downInterPearsonSummaryTable <- downloadHandler(    
             filename = function() { paste0(input$txtProjectName, "_interpearson_table.csv") },
             content = function(file) { 
@@ -5906,6 +6456,8 @@ shinyServer(function(input, output, session) {
                         return(NULL)                                                
                     }
                     
+                    externalNodeColorTable$layerID <<- as.numeric(externalNodeColorTable$layerID)
+                    
                     if("color" %in% colnames(externalNodeColorTable)){
                         externalNodeColorFlag <<- TRUE
                     }else{
@@ -5916,12 +6468,16 @@ shinyServer(function(input, output, session) {
                     }else{
                         externalNodeSizeFlag <<- FALSE
                     }
+                    
+                    externalNodeColorTable$size <<- as.numeric(externalNodeColorTable$size)
+                    externalNodeColorTable$color <<- as.character(externalNodeColorTable$color)
                                         
                     if(input$chkEdgeListLabel){
                         externalNodeColorTable$nodeLabel <<- externalNodeColorTable$nodeID
                         externalNodeColorTable$nodeID <<- nodeLabelSeqIdConvTable[ externalNodeColorTable$nodeLabel ]
                     }
 
+                    externalNodeColorTable$nodeID <<- as.numeric(externalNodeColorTable$nodeID)
                     print(externalNodeColorTable)
                     
                     #progress$set(detail = 'Setting the colors...', value = 0.6)

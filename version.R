@@ -1,3 +1,3 @@
-muxVizVersion <- "1.0.5"
-muxVizUpdate <- "8 Nov 2015"
+muxVizVersion <- "1.0.6"
+muxVizUpdate <- "19 Nov 2015"
 muxVizVersionName <- "Daredevil"

@@ -2,7 +2,7 @@
 % MuxNetLib: Octave library for Multiplex Network Analysis in muxViz
 %
 % Version: 0.1
-% Last update: May 2014
+% Last update: Nov 2015
 % Authors: Manlio De Domenico
 %
 % History:

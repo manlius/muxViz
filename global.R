@@ -3,6 +3,11 @@
 ##################################################
 
 #This is to avoid pushing a button and starting all the other ones..
+btnDiameterStatisticsValue <- 0
+btnMeanPathLengthStatisticsValue <- 0
+btnDensityStatisticsValue <- 0
+btnNodeStatisticsValue <- 0
+btnEdgeStatisticsValue <- 0
 btnCalculateMotifsValue <- 0
 btnCalculateCorrelationDiagnosticsValue <- 0
 btnCalculateCentralityDiagnosticsValue <- 0
@@ -31,6 +36,7 @@ btnImportNodeColorValue <- 0
 fileInput <- NULL
 LAYERS <- 0
 multilayerEdges <- NULL
+isolatedNodes <- vector("list", LAYERS)
 layerEdges <- vector("list",LAYERS+1)
 fileName <- vector("list",LAYERS)
 layerLabel <- vector("list",LAYERS+1)
@@ -58,6 +64,7 @@ listCommunitiesMerge <- data.frame()
 listInterPearson <- data.frame()
 listInterSpearman <- data.frame()
 listOverlap <- data.frame()
+listNodeOverlap <- data.frame()
 listMotifs <- data.frame()
 
 #the timeline for visualization of dynamical processes
@@ -141,6 +148,10 @@ buildPath <- function(folder,objname){
     }else{
         return( paste(getwd(),folder,objname,sep="/") )        
     }
+}
+
+buildTmpPath <- function(objname){
+    return(  buildPath("tmp",objname) )
 }
 
 concatenatePath <- function(folder,objname){

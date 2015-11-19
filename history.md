@@ -1,3 +1,19 @@
+### 19 November 2015
+
+Manlio De Domenico:
+
+- Added support for community detection with Multiplex Infomap
+- Added new correlation analysis: node overlapping (complementary to existing edge overlapping)
+- Added new Statistics panel in Diagnostics, for basic statistics about nodes and edges:
+        - Nodes per layer
+        - Edges per layer
+        - Link density per layer
+        - Diameter per layer
+        - Mean path length per layer
+- In community detection, community "0" is assigned to isolated nodes
+- Added a new interactive heatmap for exploring communities
+- Solved a bug in external node coloring/sizing (thanks Licheng!)
+
 ### 8 November 2015
 
 Manlio De Domenico:
