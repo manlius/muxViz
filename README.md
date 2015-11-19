@@ -312,3 +312,5 @@ This work has been partially supported by European Commission FET-Proactive proj
 I am in debt with Alex Arenas for proposing this project, with Mason A. Porter and the members of the Alephsys Lab for invaluable suggestions and feedbacks. 
 
 I would like to thank Inderjit S. Jutla, Lucas G. S. Jeub, and Peter J. Mucha for making their code about multislice community detection available. 
+
+I would like to thank Martin Rosvall for allowing to distribute his C++ code for Multiplex Infomap under the AGPLv3 license.

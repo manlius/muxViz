@@ -14,6 +14,7 @@ Manlio De Domenico:
 - Added a new interactive heatmap for exploring communities
 - Solved a bug in external node coloring/sizing (thanks Licheng!)
 
+
 ### 8 November 2015
 
 Manlio De Domenico:
