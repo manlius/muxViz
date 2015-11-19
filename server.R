@@ -4288,12 +4288,8 @@ shinyServer(function(input, output, session) {
 
                         #set the color for nodes specified in the external table
                         color.set <- externalNodeColorTable[ externalNodeColorTable$layerID==l, ]
-                        print(color.set)
-                        print(color.set$nodeID)
                         if(nrow(color.set)>0){
                             V(g[[l]])$color[ as.numeric(color.set$nodeID) ] <- color.set$color                        
-                            print(V(g[[l]])$color[ as.numeric(color.set$nodeID) ])
-                            #pippo
                         }
                     }
                 }else if(input$radNodeColor=="NODE_COLOR_COMMUNITY"){

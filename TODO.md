@@ -45,6 +45,8 @@ The following list reflects the possible improvements of muxViz.
 
 #### High priority
 
+- Query the multilayer network: a dedicated panel with a table that should display the neighborhood of a node wrt all layers or to a single layer, incoming/outcoming edges. Export should be allowed and also the possibility to color nodes resulting from a query...
+
 - Add support to calculation of [shortest paths](http://dl.acm.org/citation.cfm?id=2615687) and their visualization, giving possibility to specify origin/destination, width and color of the path
 
 - In correlations, the matrix of shortest path could be calculated for each layer separately and then a similarity can be calculated

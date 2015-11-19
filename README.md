@@ -287,13 +287,13 @@ The muxViz package now includes a script for the visualization of standard netwo
 Copyright
 =========
 
-##### (C) Copyright 2013-2015, Manlio De Domenico.
+##### (C) Copyright 2013-20156, Manlio De Domenico.
 
 This code has no warranty whatsoever and any kind of support is provided.
 You are free to do what you like with this code as long as you leave this copyright in place.
 Please, explicitly cite muxViz if you find it useful for your visualizations.
 
-(C) Copyright 2013-2015, Manlio De Domenico (manlio.dedomenico at urv.cat) 
+(C) Copyright 2013-2016, Manlio De Domenico (manlio.dedomenico at urv.cat) 
 
 Each file in this folder is part of the muxViz package. 
 
