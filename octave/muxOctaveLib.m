@@ -347,7 +347,7 @@ function [RenyiEntropy] = GetRenyiEntropyFromAdjacencyMatrix(AdjacencyMatrix, q)
     %Calculate the quantum Renyi entropy of a network
     %   References: 
     %   M. De Domenico et al, Phys. Rev. X 3, 041022 (2013)
-    %   M. De Domenico, V. Nicosia, A. Arenas, V. Latora, arXiv:1405.0425 (2014)
+    %   M. De Domenico, V. Nicosia, A. Arenas, V. Latora, Nature Communications 6, 6864 (2015)
 
     Eigenvalues = GetEigenvaluesOfDensityMatrixFromAdjacencyMatrix(AdjacencyMatrix);
 
@@ -366,7 +366,7 @@ endfunction
 function [JSD] = GetJensenShannonDivergence(AdjacencyMatrix1,AdjacencyMatrix2,VNEntropy1,VNEntropy2)
     %Calculate the Jensen-Shannon Divergence of two networks
     %   References: 
-    %   M. De Domenico, V. Nicosia, A. Arenas, V. Latora, arXiv:1405.0425 (2014)
+    %   M. De Domenico, V. Nicosia, A. Arenas, V. Latora, Nature Communications 6, 6864 (2015)
 
 
     %M = 0.5 * (RHO + SIGMA)
@@ -397,7 +397,7 @@ endfunction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [AvGlobOverl] = GetAverageGlobalOverlapping(SupraAdjacencyMatrix,Layers,Nodes)
     %   References: 
-    %   M. De Domenico, V. Nicosia, A. Arenas, V. Latora, arXiv:1405.0425 (2014)
+    %   M. De Domenico, V. Nicosia, A. Arenas, V. Latora, Nature Communications 6, 6864 (2015)
 
     if Layers==1
         fprintf(2,"GetAverageGlobalOverlapping:ERROR! At least two layers required. Aborting process.\n");
@@ -420,9 +420,47 @@ endfunction
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [AvGlobOverlMatrix] = GetAverageGlobalNodeOverlappingMatrix(SupraAdjacencyMatrix,Layers,Nodes)
+    %   References: 
+    %   M. De Domenico, V. Nicosia, A. Arenas, V. Latora, Nature Communications 6, 6864 (2015)
+
+    if Layers==1
+        fprintf(2,"GetAverageGlobalNodeOverlappingMatrix:ERROR! At least two layers required. Aborting process.\n");
+        exit;
+    endif
+
+    NodesTensor = SupraAdjacencyToNodesTensor(SupraAdjacencyMatrix,Layers,Nodes);
+
+    existingNodes = {};
+    
+    for l = 1:Layers
+        #find rows where sum by column is > zero to identify existing nodes. Apply modulus Nodes
+        col = mod(find(sum(NodesTensor{l},2)!=0 ),Nodes);
+        #Impose that where modulus give 0, there should be the largest ID (= Nodes)
+        col(col==0) = Nodes;
+        #same with cols
+        row = mod(find(sum(NodesTensor{l},1)!=0 ),Nodes)';
+        row(row==0) = Nodes;
+        
+        #merge the two (this approach is necessary to deal also with directed networks)
+        existingNodes{l} = union(col, row);
+    end
+
+    
+    for l1 = 1:Layers
+        AvGlobOverlMatrix(l1,l1) = 1;
+        for l2 = (l1+1):Layers
+            AvGlobOverlMatrix(l1,l2) = length(intersect( existingNodes{l1}, existingNodes{l2} ))/Nodes;
+            AvGlobOverlMatrix(l2,l1) = AvGlobOverlMatrix(l1,l2);
+        end
+    end
+endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [AvGlobOverlMatrix] = GetAverageGlobalOverlappingMatrix(SupraAdjacencyMatrix,Layers,Nodes)
     %   References: 
-    %   M. De Domenico, V. Nicosia, A. Arenas, V. Latora, arXiv:1405.0425 (2014)
+    %   M. De Domenico, V. Nicosia, A. Arenas, V. Latora, Nature Communications 6, 6864 (2015)
 
     if Layers==1
         fprintf(2,"GetAverageGlobalOverlappingMatrix:ERROR! At least two layers required. Aborting process.\n");
@@ -793,7 +831,7 @@ endfunction
 function CentralityVector = GetOverallKatzCentrality(SupraAdjacencyMatrix,Layers,Nodes)
     %we pass the transpose of the transition matrix to get the left eigenvectors
     %   References: 
-    %   M. De Domenico, A. Sole-Ribalta, E. Omodei, S. Gomez, A. Arenas, arXiv:1311.2906 (2013)
+    %   M. De Domenico, A. Sole-Ribalta, E. Omodei, S. Gomez, A. Arenas, Nature Communications 6, 6868  (2015)
     
     [QMatrix,LMatrix] = GetLargestEigenv(SupraAdjacencyMatrix');
     LeadingEigenvalue = LMatrix;
@@ -817,7 +855,7 @@ endfunction
 function CentralityVector = GetOverallEigenvectorCentrality(SupraAdjacencyMatrix,Layers,Nodes)
     %   References: 
     %   M. De Domenico et al, Phys. Rev. X 3, 041022 (2013)
-    %   M. De Domenico, A. Sole-Ribalta, E. Omodei, S. Gomez, A. Arenas, arXiv:1311.2906 (2013)
+    %   M. De Domenico, A. Sole-Ribalta, E. Omodei, S. Gomez, A. Arenas, Nature Communications 6, 6868  (2015)
     
     %we pass the transpose of the transition matrix to get the left eigenvectors
     [LeadingEigenvector,LeadingEigenvalue] = GetLargestEigenv(SupraAdjacencyMatrix');
@@ -834,7 +872,7 @@ endfunction
 function CentralityVector = GetOverallHubCentrality(SupraAdjacencyMatrix,Layers,Nodes)
     %see review http://arxiv.org/pdf/0805.3322v2.pdf
     %   References: 
-    %   M. De Domenico, A. Sole-Ribalta, E. Omodei, S. Gomez, A. Arenas, arXiv:1311.2906 (2013)
+    %   M. De Domenico, A. Sole-Ribalta, E. Omodei, S. Gomez, A. Arenas, Nature Communications 6, 6868  (2015)
     
     %build the A A'
     SupraMatrix = SupraAdjacencyMatrix*(SupraAdjacencyMatrix');
@@ -856,7 +894,7 @@ endfunction
 function CentralityVector = GetOverallAuthCentrality(SupraAdjacencyMatrix,Layers,Nodes)
     %see review http://arxiv.org/pdf/0805.3322v2.pdf
     %   References: 
-    %   M. De Domenico, A. Sole-Ribalta, E. Omodei, S. Gomez, A. Arenas, arXiv:1311.2906 (2013)
+    %   M. De Domenico, A. Sole-Ribalta, E. Omodei, S. Gomez, A. Arenas, Nature Communications 6, 6868  (2015)
 
 
     %build the A' A
@@ -961,7 +999,7 @@ endfunction
 function SupraTransitionMatrix = BuildSupraTransitionMatrixFromSupraAdjacencyMatrix(SupraAdjacencyMatrix,Layers,Nodes)
     %   References: 
     %   M. De Domenico et al, Phys. Rev. X 3, 041022 (2013)
-    %   M. De Domenico, A. Sole-Ribalta, S. Gomez, A. Arenas, arXiv:1306.0519 (2013)
+    %   M. De Domenico, A. Sole-Ribalta, S. Gomez, A. Arenas, PNAS 11, 8351 (2014) 
 
     
     Order = Layers*Nodes;
@@ -999,7 +1037,7 @@ endfunction
 
 function CentralityVector = GetOverallPageRankCentrality(SupraTransitionMatrix,Layers,Nodes)
     %   References: 
-    %   M. De Domenico, A. Sole-Ribalta, E. Omodei, S. Gomez, A. Arenas, arXiv:1311.2906 (2013)
+    %   M. De Domenico, A. Sole-Ribalta, E. Omodei, S. Gomez, A. Arenas, Nature Communications 6, 6868  (2015)
     
     %we pass the transpose of the transition matrix to get the left eigenvectors
     [LeadingEigenvector,LeadingEigenvalue] = GetLargestEigenv(SupraTransitionMatrix');
@@ -1378,4 +1416,156 @@ function S = tidyconfig(S)
         end
     end
     S = T;
+endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Connected Components in Multilayer Networks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+function [Components,ComponentsSize] = GetConnectedComponentsExtended(SupraAdjacencyMatrix,Layers,Nodes)
+%
+%   Returns the components of an undirected graph specified by the binary and 
+%   undirected adjacency matrix adj. Components and their constitutent nodes are 
+%   assigned the same index and stored in the vector, comps. The vector, comp_sizes,
+%   contains the number of nodes beloning to each component.
+%
+%   Note: disconnected nodes will appear as components with a component
+%   size of 1
+%
+%   J Goni, University of Navarra and Indiana University, 2009/2011
+%
+%   This extended version treats each node in each layer as a independent entity
+%   Manlio De Domenico, Universitat Rovira i Virgili, 2014
+
+
+#if ~any(SupraAdjacencyMatrix-triu(SupraAdjacencyMatrix))
+    SupraAdjacencyMatrix = SupraAdjacencyMatrix | SupraAdjacencyMatrix';
+#end
+
+%if main diagonal of adj do not contain all ones, i.e. autoloops
+if sum(diag(SupraAdjacencyMatrix))~=size(SupraAdjacencyMatrix,1)
+    %the main diagonal is set to ones
+    SupraAdjacencyMatrix = SupraAdjacencyMatrix | speye(size(SupraAdjacencyMatrix));
+end
+
+%Dulmage-Mendelsohn decomposition
+[useless1,p,useless2,r] = dmperm(SupraAdjacencyMatrix);
+
+%p indicates a permutation (along rows and columns)
+%r is a vector indicating the component boundaries
+
+% List including the number of nodes of each component. ith entry is r(i+1)-r(i)
+ComponentsSize = diff(r);
+
+% Number of components found.
+num_comps = numel(ComponentsSize);
+
+% initialization
+Components = sparse(1,Nodes*Layers); 
+
+% first position of each component is set to one
+Components(r(1:num_comps)) = ones(1,num_comps); 
+
+% cumulative sum produces a label for each component (in a consecutive way)
+Components = cumsum(Components); 
+
+%re-order component labels according to adj.
+Components(p) = Components; 
+
+if sum(ComponentsSize) != Nodes*Layers
+    printf("ERROR! The sum of components size is not equal to the number of nodes x layers. Aborting process.\n")
+    exit
+end
+
+endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function [Components,ComponentsSize] = GetConnectedComponentsSimple(SupraAdjacencyMatrix,Layers,Nodes)
+
+%as the extended, but each node and its replicas are treated as a unique entity
+
+[Components,ComponentsSize] = GetConnectedComponentsExtended(SupraAdjacencyMatrix,Layers,Nodes);
+
+%first we have to check if the same entity is assigned to the same component
+%eg, if node A in layer 1 is assigned to component 1 and node A in layer 2 is assigned to component 2
+%then it makes no sense to collapse the information: if they are a unique entity, the nodes
+%should be assigned to the same component, and this happens if they are interconnected or
+%if some of the replicas are isolated components while the others are interconnected
+
+if Layers > 1
+    newComponents = sparse(1,Nodes);
+    for n = 1:Nodes
+        c = Components(n);  %the component assigned to n in layer 1
+        newComponents(n) = c;
+        
+        for l = 2:Layers
+            ctmp = Components( (l-1)*Nodes + n );
+            if ctmp != c
+                %check if it is isolated
+                if ComponentsSize(ctmp)!=1 && ComponentsSize(c)!=1 
+                    printf("Impossible to find meaningful connected components\n")
+                    printf("Node %d in layer 1 is in component %d (size %d) while\n",n,c,ComponentsSize(c))
+                    printf("Node %d (abs id: %d) in layer %d is in component %d (size %d)\n",n,(l-1)*Nodes + n,l,ctmp,ComponentsSize(ctmp))
+                    printf("Aborting process.\n")
+                    exit
+                endif
+            endif
+        end
+    end
+end
+
+Components = sparse(1,Nodes);
+comps = unique(newComponents);
+
+%readjust the components label
+for i = 1:length(comps)
+    c = comps(i);
+    find(newComponents==c);
+    Components( find(newComponents==c) ) = i;
+end
+
+%readjust the components size
+ComponentsSize = sparse(1,full(max(Components)));
+for c = 1:max(Components)
+    ComponentsSize(c) = sum( Components==c );
+end
+
+if sum(ComponentsSize) != Nodes
+    printf("ERROR! The sum of components size is not equal to the number of nodes. Aborting process.\n")
+    exit
+end
+
+endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function [GCC,GCCSize] = GetGiantConnectedComponentExtended(SupraAdjacencyMatrix,Layers,Nodes)
+    %compute the giant connected component, each node in each layer is a independent entity
+
+    [Components,ComponentsSize] = GetConnectedComponentsExtended(SupraAdjacencyMatrix,Layers,Nodes);
+
+    %if there are multiple components with the same size, we choose the first one
+    [value,cID] = max(ComponentsSize);
+    GCC = find(Components==cID);
+    GCCSize = value;
+endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function [GCC,GCCSize] = GetGiantConnectedComponentSimple(SupraAdjacencyMatrix,Layers,Nodes)
+    %as the extended, but each node and its replicas are treated as a unique entity
+    
+    [Components,ComponentsSize] = GetConnectedComponentsSimple(SupraAdjacencyMatrix,Layers,Nodes);
+    
+    %if there are multiple components with the same size, we choose the first one
+    [value,cID] = max(ComponentsSize);
+    GCC = find(Components==cID);
+    GCCSize = value;
 endfunction

@@ -22,7 +22,7 @@ endif
 
 if Layers > 1    
     OverlappingMatrix = GetAverageGlobalOverlappingMatrix(SupraAdjacencyMatrix,Layers,Nodes);
-    outputFile = strcat(AnalysisName,"_overlapping_matrix.txt");
+    outputFile = strcat(AnalysisName,"_node-overlapping_matrix.txt");
     dlmwrite (outputFile, OverlappingMatrix,'delimiter',' ')
     printf("Multislice overlapping output to: %s\n",outputFile);
 end    

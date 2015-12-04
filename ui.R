@@ -287,6 +287,30 @@ shinyUI(bootstrapPage(
                         value=1     
                     )
                 )
+            ),
+        tabPanel("Console",
+            sidebarLayout(position="right",
+                sidebarPanel(
+                    HTML("<h3>Quick help</h3>"),
+                    htmlWidgetOutput(
+                        outputId = 'projectConsole',
+                        HTML(paste(
+                        '<h5>Console</h5>',
+                        'The console should be used from advanced users for debugging purposes.<br>',
+                        'The expected language is R, although a dedicated language will be developed in the next future.<br>',
+                        'The output of the console is shown in the terminal where muxViz is running.<br>',
+                        '<br>',
+                        'Note that the console will work only after importing data correctly.'
+                            ))
+                        )
+                ),
+                mainPanel(
+                    tags$textarea(id="Console", rows=20, cols=100, ""),
+                    HTML("<center>"),
+                    actionButton("btnRunConsole" ,"Run"),
+                    HTML("</center>")
+                    )
+                )
             )
 #        tabPanel("Open",
 #            sidebarLayout(position="right",
@@ -324,6 +348,51 @@ shinyUI(bootstrapPage(
 #                    )
 #                )
 #            )
+        ),
+        tabPanel("Query",
+            sidebarLayout(position="right",
+                sidebarPanel(
+                    HTML("<h3>Quick help</h3>"),
+                    htmlWidgetOutput(
+                        outputId = 'projectQuery',
+                        HTML(paste(
+                        'This module allows to query the multilayer network to obtain information about nodes or edges.',
+                        '<h5>Nodes</h5>',
+                        'You can select one or more nodes and specify which layers you are interested into. The query will return a table with the neighbors of the queried nodes, i.e. their ego-networks in each layer.',
+                        '<br>',
+                        'Note that you can use the output of this query to color nodes accordingly in the visualization process.',
+                        '<h5>Edges</h5>',
+                        'You can select one or more origin nodes and one or more destination nodes, specifying which layers you are interested into. The query will return a table with all the edges among origin and destination nodes, in each layer separately.'
+                            ))
+                        )
+                    ),
+                mainPanel(
+                    conditionalPanel(condition="input.btnImportNetworks>0",
+                        fluidRow(
+                            column(5,
+                                myBox("Query set up", "basic",
+                                    selectInput("selQueryType", HTML("Type of query:"), choices = c("Nodes", "Edges")),
+                                    conditionalPanel(condition="input.selQueryType=='Nodes'",
+                                        uiOutput("selQueryNodesOutputID"),
+                                        uiOutput("selQueryNodesLayersOutputID")
+                                    ),
+                                    conditionalPanel(condition="input.selQueryType=='Edges'",
+                                        uiOutput("selQueryEdgesNodesFromOutputID"),
+                                        uiOutput("selQueryEdgesNodesToOutputID"),
+                                        uiOutput("selQueryEdgesLayersOutputID")
+                                    ),
+                                    checkboxInput("chkQueryShowLabels", "Show labels", F),
+                                    HTML("<center>"),
+                                    actionButton("btnQuery", "Query"),
+                                    HTML("<center>")
+                                    )
+                                )
+                            ),
+                        htmlOutput("queryNodesTable"),
+                        downloadButton('downQueryNodesTable', 'Export') 
+                    )
+                )
+            )
         ),
         tabPanel("Diagnostics",
             sidebarLayout(position="right",
@@ -390,21 +459,43 @@ shinyUI(bootstrapPage(
                         htmlWidgetOutput(
                             outputId = 'projectGlobalDiagnosticsCorrelation',
                             HTML(paste(
-                            '<h5>Mean global overlapping</h5>',
+                            '<h5>Mean global node overlapping</h5>',
+                            'Measure the fraction of node which are common (i.e., non-isolated) to all layers. Valid also in the case of weighted networks. This is a measure of similarity between layers.',
+                            '<h5>Mean global edge overlapping</h5>',
                             'Measure the fraction of edges which are common to all layers. Valid also in the case of weighted networks. This is a measure of similarity between layers.',
                             '<h5>Inter-layer assortativity (Pearson)</h5>',
                             'Calculate the <a href="http://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient" target="_blank">Pearson correlation</a> between the degree (strength) of nodes and their counterparts in other layers, for all pairs of layers. This is another measure of similarity between layers.',
                             '<h5>Inter-layer assortativity (Spearman)</h5>',
                             'Calculate the <a href="http://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient" target="_blank">Spearman correlation</a> between the degree (strength) of nodes and their counterparts in other layers, for all pairs of layers. This measure is recommended when the assumptions underlying a Pearson test are not satisfied. This is another measure of similarity between layers.',
+                            '<h5>Inter-layer similarity (by shortest-path distance between nodes)</h5>',
+                            'Calculate the <a href="https://en.wikipedia.org/wiki/Shortest_path_problem" target="_blank">shortest path</a> between the all pairs of nodes in each layer separately. The resulting distance matrices, encoding the shortest path distance between nodes, are then compared each other by means of Frobenius distance, to uncover layer similarity with respect to paths. This is another measure of similarity between layers.',
                             '<hr>',
                             '<strong>References</strong>:',
                             '<ul>',
                             '<li> M. De Domenico et al, <i>Ranking in interconnected multilayer networks reveals versatile nodes</i>, Nature Communications 6, 6868 (2015) [<a href="http://www.nature.com/ncomms/2015/150423/ncomms7868/full/ncomms7868.html" target="_blank">View</a>]',
+                            '<li>M. De Domenico, M. Porter and A. Arenas, <i>MuxViz: a tool for multilayer analysis and visualization of networks</i>, Journal of Complex Networks 3, 159 (2015) [<a href="http://comnet.oxfordjournals.org/content/3/2/159" target="_blank">Open</a>]',
                             '</ul>',
                             '<br>'
                                 ))
                             )    
                         ),
+                    conditionalPanel(condition="input.tabsetDiagnostics=='Conn. Components'",
+                        HTML("<h3>Quick help</h3>"),
+                            htmlWidgetOutput(
+                                outputId = 'projectComponents',
+                                HTML(paste(
+                                '<h5>Multilayer</h5>',
+                                'The best way to understand how connected components are calculated is as follows. Imagine to project all layers, by summing up the corresponding adjacency matrices, to a single weighted network. Then find connected components in this network. This is not the only possible definition, but it is the one implemented in this module. All networks are treated as undirected networks, therefore there is no difference between weak and strong connectivity, for the moment.',
+                                '<h5>Single layer</h5>',
+                                'Connected components are calculated as usual, for each layer separately. All layers are treated as undirected networks, therefore there is no difference between weak and strong connectivity, for the moment.',
+                                '<hr>',
+                                '<strong>References</strong>:',
+                                '<ul>',
+                                '<li> M. De Domenico, A. Sole-Ribalta, S. Gomez and A. Arenas, <i>Navigability of interconnected networks under random failures</i>, PNAS 111, 8351 (2013) [<a href="http://www.pnas.org/content/111/23/8351.abstract" target="_blank">Open</a>]',
+                                '</ul>'
+                                ))
+                            )
+                        ),    
                     conditionalPanel(condition="input.tabsetDiagnostics=='Community'",
                         HTML("<h3>Quick help</h3>"),
                             htmlWidgetOutput(
@@ -517,6 +608,22 @@ shinyUI(bootstrapPage(
                                             )
                                         )
                                     ),
+                                tabPanel("Components",
+                                    fluidRow(
+                                        column(width = 4,
+                                            myBox("Components", "basic",
+                                                helpText("Components per layer"),
+                                                checkboxInput(inputId = "componentsStatisticsLogy", label = "Log y", F),
+                                                HTML("<center>"),
+                                                actionButton("btnComponentsStatistics", "Plot"),
+                                                HTML("</center>")
+                                                )
+                                            ),
+                                        column(width=6,
+                                            showOutput("componentsStatisticsPlot","nvd3")                                        
+                                            )
+                                        )
+                                    ),
                                 tabPanel("Diameter",
                                     fluidRow(
                                         column(width = 4,
@@ -564,6 +671,7 @@ shinyUI(bootstrapPage(
                                             checkboxInput('chkMULTIPLEX_OVERLAPPING', 'Mean global edge overlapping', TRUE),
                                             checkboxInput('chkMULTIPLEX_INTERASSORTATIVITY_PEARSON', 'Inter-layer assortativity (Pearson correlation)', TRUE),
                                             checkboxInput('chkMULTIPLEX_INTERASSORTATIVITY_SPEARMAN', 'Inter-layer assortativity (Spearman correlation)', TRUE),
+                                            checkboxInput('chkMULTIPLEX_SHORTESTPATH', 'Inter-layer similarity (by shortest-path distance between nodes)', TRUE),                                            
                                             selectInput("selAssortativityType", HTML("Assortativity type (T=Total, I=In-going, O=Out-going):"), 
                                                 choices = c("TT", "II", "OO", "IO", "OI"))
                                             )
@@ -581,39 +689,67 @@ shinyUI(bootstrapPage(
                                     ),
                                 tags$hr(),
                                 HTML('<h4>Global diagnostics</h4>'),
-                                conditionalPanel(condition="input.btnCalculateCorrelationDiagnostics>0 && input.chkMULTIPLEX_NODEOVERLAPPING",
-                                        HTML('<h5>Node Overlapping</h5>'),
-                                        imageOutput("overlappingNodeSummaryImage"),
-                                        htmlOutput("overlappingNodeSummaryTable"),    
-                                        downloadButton('downOverlappingNodeSummaryTable', 'Export'),
-                                        tags$hr()
+                                tabsetPanel(
+                                    tabPanel("Node Overlapping",
+                                        conditionalPanel(condition="input.btnCalculateCorrelationDiagnostics>0 && input.chkMULTIPLEX_NODEOVERLAPPING",                                    
+                                            HTML('<h5>Node Overlapping</h5>'),
+                                            checkboxInput("chkOverlappingNodeHeatmapShowDendrogram", "Apply clustering", F),
+                                            uiOutput("overlappingNodeHeatmapUI"),
+                                            tags$br(),
+                                            htmlOutput("overlappingNodeSummaryTable"),    
+                                            downloadButton('downOverlappingNodeSummaryTable', 'Export'),
+                                            tags$hr()
+                                        )
                                     ),                                
-                                conditionalPanel(condition="input.btnCalculateCorrelationDiagnostics>0 && input.chkMULTIPLEX_OVERLAPPING",
-                                    htmlWidgetOutput(
-                                                outputId = 'globalDiagnosticsOverlapping',
-                                                HTML(paste(
-                                                '<h5>Edge Overlapping</h5>',
-                                                'Mean Global Overlapping: <span id="sumAvgGlobalOverlapping"></span><br>',
-                                                '<br>'
-                                                ))
-                                        ),
-                                        imageOutput("overlappingSummaryImage"),
-                                        htmlOutput("overlappingSummaryTable"),    
-                                        downloadButton('downOverlappingSummaryTable', 'Export'),
-                                        tags$hr()
+                                    tabPanel("Edge Overlapping",                                
+                                        conditionalPanel(condition="input.btnCalculateCorrelationDiagnostics>0 && input.chkMULTIPLEX_OVERLAPPING",
+                                            htmlWidgetOutput(
+                                                    outputId = 'globalDiagnosticsOverlapping',
+                                                    HTML(paste(
+                                                    '<h5>Edge Overlapping</h5>',
+                                                    'Mean Global Overlapping: <span id="sumAvgGlobalOverlapping"></span><br>',
+                                                    '<br>'
+                                                    ))
+                                            ),
+                                            checkboxInput("chkOverlappingEdgeHeatmapShowDendrogram", "Apply clustering", F),
+                                            uiOutput("overlappingEdgeHeatmapUI"),
+                                            tags$br(),
+                                            htmlOutput("overlappingSummaryTable"),    
+                                            downloadButton('downOverlappingSummaryTable', 'Export'),
+                                            tags$hr()
+                                        )
                                     ),                                
-                                conditionalPanel(condition="input.btnCalculateCorrelationDiagnostics>0 && input.chkMULTIPLEX_INTERASSORTATIVITY_PEARSON",
-                                    helpText(HTML("<h5>Inter-layer Assortativity: Pearson</h5>")),
-                                    imageOutput("interPearsonSummaryImage"),
-                                    htmlOutput("interPearsonSummaryTable"),
-                                    downloadButton('downInterPearsonSummaryTable', 'Export'),
-                                    tags$hr()
+                                    tabPanel("Deg. Pearson",    
+                                        conditionalPanel(condition="input.btnCalculateCorrelationDiagnostics>0 && input.chkMULTIPLEX_INTERASSORTATIVITY_PEARSON",                            
+                                            helpText(HTML("<h5>Inter-layer Assortativity: Pearson</h5>")),
+                                            checkboxInput("chkInterPearsonHeatmapShowDendrogram", "Apply clustering", F),
+                                            uiOutput("interPearsonHeatmapUI"),
+                                            tags$br(),
+                                            htmlOutput("interPearsonSummaryTable"),
+                                            downloadButton('downInterPearsonSummaryTable', 'Export'),
+                                            tags$hr()
+                                        )
                                     ),                                
-                                conditionalPanel(condition="input.btnCalculateCorrelationDiagnostics>0 && input.chkMULTIPLEX_INTERASSORTATIVITY_SPEARMAN",
-                                    helpText(HTML("<h5>Inter-layer Assortativity: Spearman</h5>")),
-                                    imageOutput("interSpearmanSummaryImage"),
-                                    htmlOutput("interSpearmanSummaryTable"),
-                                    downloadButton('downInterSpearmanSummaryTable', 'Export')
+                                    tabPanel("Deg. Spearman",                                
+                                        conditionalPanel(condition="input.btnCalculateCorrelationDiagnostics>0 && input.chkMULTIPLEX_INTERASSORTATIVITY_SPEARMAN",
+                                            helpText(HTML("<h5>Inter-layer Assortativity: Spearman</h5>")),
+                                            checkboxInput("chkInterSpearmanHeatmapShowDendrogram", "Apply clustering", F),
+                                            uiOutput("interSpearmanHeatmapUI"),
+                                            tags$br(),
+                                            htmlOutput("interSpearmanSummaryTable"),
+                                            downloadButton('downInterSpearmanSummaryTable', 'Export')
+                                        )
+                                    ),
+                                    tabPanel("SP Distance",                                
+                                        conditionalPanel(condition="input.btnCalculateCorrelationDiagnostics>0 && input.chkMULTIPLEX_SHORTESTPATH",
+                                            helpText(HTML("<h5>Shortest path distance similarity</h5>")),
+                                            checkboxInput("chkDistanceSimilarityHeatmapShowDendrogram", "Apply clustering", F),
+                                            uiOutput("distanceSimilarityHeatmapUI"),
+                                            tags$br(),
+                                            htmlOutput("distanceSimilaritySummaryTable"),
+                                            downloadButton('downDistanceSimilaritySummaryTable', 'Export')
+                                           )
+                                        )
                                     )
                                 )
                             ),
@@ -706,6 +842,71 @@ shinyUI(bootstrapPage(
                                 tags$hr()
                                 )
                             ),
+                        tabPanel("Conn. Components",
+                            fluidRow(
+                                column(width = 5,
+                                    myBox("Connected Components", "basic",
+                                        helpText("Note that directed networks will be transformed to undirected before calculation."),
+                                        radioButtons('radConnectedComponentsAlgorithm', '',
+                                            c(Multilayer='CONNECTED_COMPONENTS_MULTILAYER',
+                                                Single_Layer='CONNECTED_COMPONENTS_SINGLELAYER'),
+                                                selected='CONNECTED_COMPONENTS_MULTILAYER'
+                                            ),
+conditionalPanel(condition="input.radConnectedComponentsAlgorithm=='CONNECTED_COMPONENTS_MULTILAYER'",
+                                        #selectInput("selConnectedComponentsMuxType", "Method:", 
+                                           # choices = c("Simple", "Extended")),
+                                            conditionalPanel(condition="input.radMultiplexModel=='MULTIPLEX_IS_EDGECOLORED'",
+                                                helpText("Hint: for Multilayer, the inter-layer strength must be set > 0 from the 'Mux Set Up' tab")
+                                                )
+                                            )
+#conditionalPanel(condition="input.radConnectedComponentsAlgorithm==''CONNECTED_COMPONENTS_SINGLELAYER",
+#                                            selectInput("selConnectedComponentsSingleLayerType", HTML("Components type:"), 
+#                                                choices = c("Weak", "Strong"))
+#                                        ),
+
+                                        ),
+                                    HTML("<center>"),
+                                    actionButton("btnCalculateComponentsDiagnostics", "Calculate Connected Components"),
+                                    HTML("</center>")
+                                    )
+                                ),
+                            tags$hr(),
+                            HTML('<h4>Connected Components</h4>'),
+                            conditionalPanel(condition="input.btnCalculateComponentsDiagnostics>0",
+                                selectInput("selComponentsHeatmapColorPalette", HTML("Color palette for coloring components (see Graphics > Colors):"), choices = paletteChoiceArray),
+                                checkboxInput("chkComponentsHeatmapShowDendrogram", "Apply clustering"),
+                                checkboxInput(inputId = "componentsTablePageable", label = "Pageable", TRUE),
+                                conditionalPanel("input.componentsTablePageable==true",
+                                    uiOutput("numOutputComponentsTableNodesPerPage")
+                                    ),  
+                                tabsetPanel(
+                                    tabPanel("Multilayer",
+                                        uiOutput("componentsHeatmapUI"),
+                                        tags$br(),
+                                        HTML('<h5>Nodes per multilayer component in each layer</h5>'),
+                                        showOutput("componentsDistributionPlot","nvd3"),
+                                        HTML('<h5>Tables</h5>'),                                
+                                        htmlOutput("componentsSummaryTable"),
+                                        downloadButton('downComponentsSummaryTable', 'Export'),
+                                        tags$hr(),
+                                        htmlOutput("componentsTable"),
+                                        downloadButton('downComponentsTable', 'Export')
+                                        ),
+                                    tabPanel("Single layer",
+                                        uiOutput("componentsHeatmapSingleLayerUI"),
+                                        tags$br(),
+                                        HTML('<h5>Nodes per component in each layer</h5>'),
+                                        showOutput("componentsDistributionPlotSingleLayer","nvd3"),
+                                        HTML('<h5>Tables</h5>'),                                
+                                        htmlOutput("componentsSummaryTableSingleLayer"),
+                                        downloadButton('downComponentsSummaryTableSingleLayer', 'Export'),
+                                        tags$hr(),
+                                        htmlOutput("componentsTableSingleLayer"),
+                                        downloadButton('downComponentsTableSingleLayer', 'Export')
+                                        )   
+                                    )
+                                )
+                            ),
                         tabPanel("Community",
                             fluidRow(
                                 column(width = 5,
@@ -723,17 +924,36 @@ shinyUI(bootstrapPage(
                             conditionalPanel(condition="input.btnCalculateCommunityDiagnostics>0",
                                 selectInput("selCommunityHeatmapColorPalette", HTML("Color palette for coloring communities (see Graphics > Colors):"), choices = paletteChoiceArray),
                                 checkboxInput("chkCommunityHeatmapShowDendrogram", "Apply clustering"),
-                                uiOutput("communityHeatmapUI"),
-                                tags$br(),
-                                htmlOutput("communitySummaryTable"),
-                                downloadButton('downCommunitySummaryTable', 'Export'),
-                                tags$hr(),
                                 checkboxInput(inputId = "communityTablePageable", label = "Pageable", TRUE),
                                 conditionalPanel("input.communityTablePageable==true",
                                     uiOutput("numOutputCommunityTableNodesPerPage")
                                     ),  
-                                htmlOutput("communityTable"),
-                                downloadButton('downCommunityTable', 'Export')
+                                tabsetPanel(
+                                    tabPanel("Multilayer",
+                                        uiOutput("communityHeatmapUI"),
+                                        tags$br(),
+                                        HTML('<h5>Nodes per multilayer community in each layer</h5>'),
+                                        showOutput("communityDistributionPlot","nvd3"),
+                                        HTML('<h5>Tables</h5>'),
+                                        htmlOutput("communitySummaryTable"),
+                                        downloadButton('downCommunitySummaryTable', 'Export'),
+                                        tags$hr(),
+                                        htmlOutput("communityTable"),
+                                        downloadButton('downCommunityTable', 'Export')
+                                        ),
+                                    tabPanel("Single layer",
+                                        uiOutput("communityHeatmapSingleLayerUI"),
+                                        tags$br(),
+                                        HTML('<h5>Nodes per community in each layer</h5>'),
+                                        showOutput("communityDistributionPlotSingleLayer","nvd3"),
+                                        HTML('<h5>Tables</h5>'),
+                                        htmlOutput("communitySummaryTableSingleLayer"),
+                                        downloadButton('downCommunitySummaryTableSingleLayer', 'Export'),
+                                        tags$hr(),
+                                        htmlOutput("communityTableSingleLayer"),
+                                        downloadButton('downCommunityTableSingleLayer', 'Export')
+                                        )
+                                    )
                                 )  
                             ),
                         tabPanel("Network of layers",
@@ -747,21 +967,6 @@ shinyUI(bootstrapPage(
                                 HTML("</center>")
                                 )
                             ),
-                        #tabPanel("Components",
-                        #    checkboxInput('chkPERFORM_COMPONENT_DETECTION', 'Find connected components', TRUE)
-                        #    ),
-                            #tags$hr(),
-                            #HTML('<h4>Components</h4>'),
-                            #conditionalPanel(condition="input.btnCalculateXXXDiagnostics>0",
-                            #    htmlOutput("componentsSummaryTable"),
-                            #checkboxInput(inputId = "componentsTablePageable", label = "Pageable", TRUE),
-                            #conditionalPanel("input.componentsTablePageable==true",
-                            #        numericInput(inputId = "componentsTablePageSize",label = "Nodes per page",20)
-                            #        ),  
-                            #htmlOutput("componentsTable")
-                            #),
-                          #  tags$hr()
-                         #   ),
                         tabPanel("Annular Viz",
                             conditionalPanel(condition="input.radMultiplexModel=='MULTIPLEX_IS_INTERDEPENDENT'",
                                 helpText("No options to set up for interdependent network models.")
@@ -1106,10 +1311,11 @@ shinyUI(bootstrapPage(
                                         radioButtons('radNodeColor', 'Node color:',
                                             c(Random='NODE_COLOR_RANDOM',
                                                 Community='NODE_COLOR_COMMUNITY',
-                                                #Component='NODE_COLOR_COMPONENT',
+                                                Component='NODE_COLOR_COMPONENT',
                                                 Centrality='NODE_COLOR_CENTRALITY',
                                                 TopRank='NODE_COLOR_TOPRANK',
                                                 Uniform='NODE_COLOR_UNIFORM',
+                                                Query='NODE_COLOR_QUERY',
                                                 External='NODE_COLOR_EXTERNAL'),
                                                 selected='NODE_COLOR_UNIFORM'
                                             ),
@@ -1151,12 +1357,32 @@ shinyUI(bootstrapPage(
                                             helpText("You need to calculate diagnostics before using this option.")
                                             ),                                            
                                         conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_COMMUNITY' && input.btnCalculateCommunityDiagnostics>0",    
-                                            textInput("txtCOMMUNITY_MIN_SIZE",label="Color-code with the same RGB all nodes in communities smaller than (useful for evidencing larger communities, not valid for the multiplex):","1"),
+                                            #textInput("txtCOMMUNITY_MIN_SIZE",label="Color-code with the same RGB all nodes in communities smaller than (useful for evidencing larger communities, not valid for the multiplex):","1"),
+                                            uiOutput("selVizNodeColorCommunityTypeOutputID"),
                                             selectInput("selCommunityColorPalette", HTML("Color palette for coloring communities (see Graphics > Colors):"), 
                                                 choices = append(as.vector(paletteChoiceArray),"random"))
                                             ),
+                                        conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_QUERY' && input.btnQuery>0",
+                                            colourInput('colQUERY_NODES_NODE_COLOR', 'Color of nodes (any valid R type):', "#FF6246"),
+                                            colourInput('colQUERY_NODES_NODE_NEIGH_COLOR', 'Color of neighborhood (any valid R type):', "#669DC1"),
+                                            colourInput('colQUERY_NODES_NODE_OTHER_COLOR', 'Color of other nodes (any valid R type):', "#959595"),
+                                            checkboxInput("chkNODE_LABELS_SHOW_ONLY_QUERY","Show nodes labels only for queried nodes:",TRUE),                   
+                                            colourInput('colNODE_COLOR_QUERY_LABELS_FONT_COLOR', 'Color of nodes labels (any valid R type):', "#000000")
+
+                                            ),
                                         conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_COMMUNITY' && input.btnCalculateCommunityDiagnostics==0",
                                             helpText("You need to calculate diagnostics before using this option.")
+                                            ),
+                                        conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_COMPONENT' && input.btnCalculateComponentsDiagnostics>0",    
+                                            uiOutput("selVizNodeColorComponentTypeOutputID"),
+                                            selectInput("selComponentColorPalette", HTML("Color palette for coloring components (see Graphics > Colors):"), 
+                                                choices = append(as.vector(paletteChoiceArray),"random"))
+                                            ),
+                                        conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_COMPONENT' && input.btnCalculateComponentsDiagnostics==0",
+                                            helpText("You need to calculate diagnostics before using this option.")
+                                            ),
+                                        conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_QUERY' && input.btnQuery==0",
+                                            helpText("You need to run a query before using this option.")
                                             ) 
                                         )
                                     )
@@ -1348,7 +1574,8 @@ shinyUI(bootstrapPage(
                             
                             HTML('<h4>Structural reducibility</h4>'),
                             conditionalPanel(condition="input.btnCalculateReducibility>0",
-                                imageOutput("jsdMatrixSummaryImage",width = "100%", height = "700px"),
+                                uiOutput("reducibilityHeatmapUI"),
+                                #imageOutput("jsdMatrixSummaryImage",width = "100%", height = "700px"),
                                 imageOutput("reducibilityDendrogramSummaryImage",width = "100%", height = "700px"),
                                 HTML('<center><h5>Quality function</h5></center>'),
                                 showOutput("reducibilityQualityFunction","nvd3"),

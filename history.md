@@ -1,3 +1,26 @@
+### 4 December 2015
+
+Manlio De Domenico:
+
+- The output of reducibility analysis is now an interactive heatmap, instead of static image
+- The output of ALL correlation analyses is now an interactive heatmap, instead of static image
+- Added basic analysis of single-layer components per layer in Diagnostics / Statistics
+- Added multilayer connected components diagnostics with interactive map for deeper inspection
+- Added interactive bar chart for distribution of nodes per multilayer community in each layer
+- Added possibility to analyze multilayer and single-layer communities within the same session (as for versatility analysis)
+- Added interactive bar chart for distribution of nodes per multilayer component in each layer
+- Added possibility to analyze multilayer and single-layer components within the same session (as for versatility analysis)
+- Added possibility to color nodes by component calculated in single-layer or multilayer analysis
+- Added possibility to color nodes by community calculated in single-layer or multilayer analysis
+- Added possibility to query the multilayer network at node level (returns ego-networks per layer) and edge level
+- Added possibility to color nodes according to query results
+- Added a correlation analysis based on the Frobenius distance between layers. The matrices used for the calculation encode the shortest-path distance between all pairs of nodes (calculated in each layer separately).
+- [Apparently] solved file recognition issue for Windows platforms
+- Added a Console for advanced debugging. It can be found from menu File > Console
+In the next future a dedicated language will be developed to allow interaction with muxViz without requiring 
+any knowledge about its source code
+
+
 ### 19 November 2015
 
 Manlio De Domenico:

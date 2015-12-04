@@ -21,16 +21,16 @@ The following list reflects the possible improvements of muxViz.
 
 #### Medium priority
 
-- Community-piechart in muxviz to show overlapping modules? (see [this paper](http://arxiv.org/abs/1408.2925) and also [multi-layer pie charts](http://www.r-bloggers.com/how-to-draw-venn-pie-agram-multi-layer-pie-chart-in-r/) for additional ideas)
-
 - Layered visualization of adjacency matrices in a 3D environment
+
+- Community-piechart in muxviz to show overlapping modules? (see [this paper](http://arxiv.org/abs/1408.2925) and also [multi-layer pie charts](http://www.r-bloggers.com/how-to-draw-venn-pie-agram-multi-layer-pie-chart-in-r/) for additional ideas)
 
 
 #### Low priority
 
 - Reducibility: the dendrogram could have colored branches like [this](http://stackoverflow.com/questions/18036094/how-to-create-a-dendrogram-with-colored-branches), possibly according to a threshold
 
-- Reducibility: possibility to generate a circular dendrogram and to apply cuts
+- Reducibility: possibility to generate a circular dendrogram and to apply cuts (requires a new package to be installed)
 
 - Reducibility: it could be useful to allow modifying font size and offset of label in reducibility dendrogram
 
@@ -45,23 +45,13 @@ The following list reflects the possible improvements of muxViz.
 
 #### High priority
 
-- Query the multilayer network: a dedicated panel with a table that should display the neighborhood of a node wrt all layers or to a single layer, incoming/outcoming edges. Export should be allowed and also the possibility to color nodes resulting from a query...
-
 - Add support to calculation of [shortest paths](http://dl.acm.org/citation.cfm?id=2615687) and their visualization, giving possibility to specify origin/destination, width and color of the path
-
-- In correlations, the matrix of shortest path could be calculated for each layer separately and then a similarity can be calculated
-
-- Connected components calculation (according to existing literature) and coloring. Code should be already done in muxNet for some cases. Plots of size distribution
 
 - Additional centrality descriptors: clustering/transitivity (see [paper1](http://arxiv.org/abs/1405.0425) [paper2](http://arxiv.org/abs/1308.3182) [paper3](http://arxiv.org/abs/1403.1546) [paper4](http://arxiv.org/abs/1307.6780))
 
 - Additional centrality descriptors (betweenness, closeness, random walk betweenness, random walk closeness) should be included as soon as possible (see [this paper](http://dl.acm.org/citation.cfm?id=2615687) for some references). 
 
 #### Medium priority
-
-- The calculation of some centrality measures can be avoided when the multiplex is undirected (e.g., if the eigenvector centrality is calculated, HITS centrality would give the same result for undirected networks and we can exploit this to avoid re-calculation). This is already done for strength, for instance.
-
-- Similarly to centrality analysis, it could be useful an interactive histogram for the size of communities in the multiplex, the aggregate and per layer
 
 - It could be interesting to allow scatter plots of descriptors calculated in the multiplex against those ones calculated in the aggregate or in each layer
 
@@ -71,7 +61,6 @@ The following list reflects the possible improvements of muxViz.
   3. with given inter-layer assortativity ([paper](http://arxiv.org/abs/1311.2906))
   4. with given inter-layer edge intersection ([paper](http://arxiv.org/abs/1405.0425))
 
-- Button in Export to export in one folder some files with all information (centrality, correlation, community). [web1](http://shiny.rstudio.com/articles/download.html) [web2](https://gist.github.com/SachaEpskamp/5796467)
 
 
 #### Low priority
@@ -83,6 +72,8 @@ The following list reflects the possible improvements of muxViz.
 ## TODO Technical
 
 #### High priority
+
+- Improvement of the "console"
 
 - Save the orientation of the rgl plot to allow future import to do exactly the same plot. [See here](http://stackoverflow.com/questions/16362381/save-the-orientation-of-a-rgl-plot3d-plot)
  

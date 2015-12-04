@@ -3,6 +3,10 @@
 ##################################################
 
 #This is to avoid pushing a button and starting all the other ones..
+btnQueryValue <- 0
+btnRunConsoleValue <- 0
+btnCalculateComponentsDiagnosticsValue <- 0
+btnComponentsStatisticsValue <- 0
 btnDiameterStatisticsValue <- 0
 btnMeanPathLengthStatisticsValue <- 0
 btnDensityStatisticsValue <- 0
@@ -45,6 +49,7 @@ layerColorAlpha <- vector("list",LAYERS)
 layerLayoutFile <- vector("list",LAYERS)
 layerLayout <- vector("list",LAYERS+1)
 nodesLabel <- vector("list",LAYERS+1)
+nodesLabel2 <- vector("list",LAYERS+1)
 layout.non <- NULL
 layerTable <- NULL
 g <- vector("list",LAYERS+1)
@@ -54,18 +59,33 @@ AdjMatrix.multi <- NULL
 layouts <- vector("list",LAYERS+1)
 AdjMatrix <- vector("list",LAYERS+1)
 
-listDiagnosticsSingleLayer <- data.frame()
 listDiagnostics <- data.frame()
-listCommunities <- data.frame()
+listDiagnosticsSingleLayer <- data.frame()
 listDiagnosticsMerge <- data.frame()
 listDiagnosticsMergeSingleLayer <- data.frame()
-sumCommunitiesMerge <- data.frame()
+
+listCommunities <- data.frame()
+listCommunitiesSingleLayer <- data.frame()
 listCommunitiesMerge <- data.frame()
+listCommunitiesMergeSingleLayer <- data.frame()
+sumCommunitiesMerge <- data.frame()
+sumCommunitiesMergeSingleLayer <- data.frame()
+
+listComponents <- data.frame()
+listComponentsSingleLayer <- data.frame()
+listComponentsMerge <- data.frame()
+listComponentsMergeSingleLayer <- data.frame()
+sumComponentsMerge <- data.frame()
+sumComponentsMergeSingleLayer <- data.frame()
+
+listDistanceSimilarity <- data.frame()
 listInterPearson <- data.frame()
 listInterSpearman <- data.frame()
 listOverlap <- data.frame()
 listNodeOverlap <- data.frame()
 listMotifs <- data.frame()
+
+listQueryResult <- data.frame()
 
 #the timeline for visualization of dynamical processes
 dfTimeline <- data.frame()
@@ -115,7 +135,11 @@ diagnosticsMultiplexOK <- F
 diagnosticsSingleLayerOK <- F
 diagnosticsOK <- F
 communityOK <- F
-
+componentsOK <- F
+communityMultiplexOK <- F
+communitySingleLayerOK <- F
+componentsMultiplexOK <- F
+componentsSingleLayerOK <- F
 
 welcomeFunction <- function(){
 
@@ -141,6 +165,15 @@ welcomeFunction <- function(){
     cat(paste("::",version["version.string"][[1]],"\n"))
     cat("\n")
 }
+
+octave.call <- function(arg){
+    if( Sys.info()["sysname"]=="Windows" ){
+        system(paste("octave-cli -qf", arg), intern=T)
+    }else{
+        system(paste("octave -qf", arg), intern=T)
+    }
+}
+
 
 buildPath <- function(folder,objname){
     if( Sys.info()["sysname"]=="Windows" ){
@@ -173,6 +206,10 @@ getExecutablePath <- function(exec_name){
     }
     
     return(path)
+}
+
+mdebug <- function(message){
+    cat(paste("DEBUG:",message,"\n"))    
 }
 
 text3dwrap <- function( coordsMatrix3D, labels, wraplength, wrapoffset, layerscale, adj, color, family, cex){

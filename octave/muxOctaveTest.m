@@ -1,0 +1,1 @@
+printf("Test passed\n","%s")
