@@ -314,3 +314,7 @@ I am in debt with Alex Arenas for proposing this project, with Mason A. Porter a
 I would like to thank Inderjit S. Jutla, Lucas G. S. Jeub, and Peter J. Mucha for making their code about multislice community detection available. 
 
 I would like to thank Martin Rosvall for allowing to distribute his C++ code for Multiplex Infomap under the AGPLv3 license.
+
+The development of muxViz has been funded, or is currently funded, by the following entities and institutions:
+
+![muxViz funding](www/img/funding.png "muxViz funding")
