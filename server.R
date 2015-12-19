@@ -4472,7 +4472,7 @@ shinyServer(function(input, output, session) {
                         progress$set(message = 'Applying layout...', value = 0.2)
                         #Choose a layout and apply it to the aggregate network
                         if(input$radLayoutAlgorithm=="LAYOUT_FRUCHTERMAN_REINGOLD"){
-                            lAggr <- layout.fruchterman.reingold.grid(gAggr,weights=E(gAggr)$weight,niter=as.numeric(input$txtLAYOUT_MAXITER),area=vcount(gAggr)^1.,repulserad=vcount(gAggr)^1.3,dim=LAYOUT_DIMENSION)
+                            lAggr <- layout.fruchterman.reingold(gAggr,weights=E(gAggr)$weight,niter=as.numeric(input$txtLAYOUT_MAXITER),dim=LAYOUT_DIMENSION)
                         }
                         if(input$radLayoutAlgorithm=="LAYOUT_LGL"){
                             lAggr <- layout.lgl(gAggr,maxiter=as.numeric(input$txtLAYOUT_MAXITER))
@@ -4515,7 +4515,7 @@ shinyServer(function(input, output, session) {
                             print(paste("  Layout for layer",l,"..."))
                             #Each layout is calculated separately    
                             if(input$radLayoutAlgorithm=="LAYOUT_FRUCHTERMAN_REINGOLD"){
-                                layouts[[l]] <<- layout.fruchterman.reingold.grid(g[[l]],weights=E(g[[l]])$weight,niter=as.numeric(input$txtLAYOUT_MAXITER),area=vcount(g[[l]])^1.,repulserad=vcount(gAggr)^1.3,dim=LAYOUT_DIMENSION)
+                                layouts[[l]] <<- layout.fruchterman.reingold(g[[l]],weights=E(g[[l]])$weight,niter=as.numeric(input$txtLAYOUT_MAXITER),dim=LAYOUT_DIMENSION)
                             }
                             if(input$radLayoutAlgorithm=="LAYOUT_LGL"){
                                 layouts[[l]] <<- layout.lgl(g[[l]],maxiter=as.numeric(input$txtLAYOUT_MAXITER))
@@ -4690,14 +4690,8 @@ shinyServer(function(input, output, session) {
         
                         if(LAYERS>1){
                             if(input$chkPLOT_AS_EDGE_COLORED){
-                                if(input$chkAGGREGATE_SHOW){
-                                    layouts[[l]][,1] <<- ((layouts[[LAYERS+1]][,1]- XMIN)/(XMAX-XMIN))*runif(1,1.005,1.01)
-                                    layouts[[l]][,2] <<- ((layouts[[LAYERS+1]][,2] - YMIN)/(YMAX-YMIN))*runif(1,1.005,1.01)
-                                }else{
-                                    layouts[[l]][,1] <<- ((layouts[[LAYERS+1]][,1]- XMIN)/(XMAX-XMIN))*runif(1,1.005,1.01)
-                                    layouts[[l]][,2] <<- ((layouts[[LAYERS+1]][,2] - YMIN)/(YMAX-YMIN))*runif(1,1.005,1.01)
-                                    #todo tofix this part to allow 2D plots showing the aggregate
-                                }                        
+                                layouts[[l]][,1] <<- ((layouts[[LAYERS+1]][,1]- XMIN)/(XMAX-XMIN))*runif(1,1.005,1.01)
+                                layouts[[l]][,2] <<- ((layouts[[LAYERS+1]][,2] - YMIN)/(YMAX-YMIN))*runif(1,1.005,1.01)
         
                                 if(LAYOUT_DIMENSION==3){
                                     layouts[[l]][,3] <<- ((layouts[[LAYERS+1]][,3] - ZMIN)/(ZMAX-ZMIN))*runif(1,1.005,1.01)
@@ -4715,7 +4709,9 @@ shinyServer(function(input, output, session) {
                         }else{
                             #We allow this only if the layer is one
                             if(LAYOUT_DIMENSION==3 && !GEOGRAPHIC_LAYOUT){
-                                layouts[[l]][,3] <<- as.numeric(input$txtLAYER_SCALE)*as.numeric(input$txtLAYER_SPACE)*(layouts[[l]][,3] - ZMIN)/(ZMAX-ZMIN) - 1 
+                                layouts[[l]][,1] <<- (layouts[[l]][,1]- XMIN)/(XMAX-XMIN)
+                                layouts[[l]][,2] <<- (layouts[[l]][,2] -YMIN)/(YMAX-YMIN)
+                                layouts[[l]][,3] <<- (layouts[[l]][,3] - ZMIN)/(ZMAX-ZMIN) - 1 
                             }else{
                                 layouts[[l]][,3] <<- 1
                             }

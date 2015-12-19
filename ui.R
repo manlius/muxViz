@@ -1112,7 +1112,7 @@ conditionalPanel(condition="input.radConnectedComponentsAlgorithm=='CONNECTED_CO
                                                     Three_Dimensional='LAYOUT_DIMENSION_3D'),
                                                     selected='LAYOUT_DIMENSION_2D', inline=TRUE
                                                 ),
-                                                checkboxInput("chkPLOT_AS_EDGE_COLORED",HTML("Visualize as edge-colored multigraph (<font color='red'>Very experimental! Works only with centrality/community in the multiplex.</font>)"),FALSE),
+                                                checkboxInput("chkPLOT_AS_EDGE_COLORED",HTML("Visualize as edge-colored multigraph"),FALSE),
                                                 checkboxInput("chkPLOT_WITH_RGL",HTML("Use openGL (<font color='red'>Very experimental! If unchecked, standard device will be used</font>)"),TRUE)
                                             )
                                         )
