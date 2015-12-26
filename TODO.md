@@ -45,6 +45,8 @@ The following list reflects the possible improvements of muxViz.
 
 #### High priority
 
+- New versions of Octave (> 4.0.0) deprecated the cor function and use corr instead. Compatibility should be solved somehow.
+
 - Add support to calculation of [shortest paths](http://dl.acm.org/citation.cfm?id=2615687) and their visualization, giving possibility to specify origin/destination, width and color of the path
 
 - Additional centrality descriptors: clustering/transitivity (see [paper1](http://arxiv.org/abs/1405.0425) [paper2](http://arxiv.org/abs/1308.3182) [paper3](http://arxiv.org/abs/1403.1546) [paper4](http://arxiv.org/abs/1307.6780))
@@ -67,6 +69,7 @@ The following list reflects the possible improvements of muxViz.
 
 - When a richer layout file is provided (ie, with more columns/attributes of nodes), it could be useful to allow selection of sub-sets of the data, according to specific cuts. A dedicated panel for this task would be desirable
 
+- It would interesting to have the scatterplots allowing to select subset of nodes according to attributes
 
 
 ## TODO Technical
