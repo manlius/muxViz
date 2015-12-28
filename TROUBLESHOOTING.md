@@ -1,5 +1,5 @@
-muxViz v0.2
-=========
+muxViz v1.x
+===========
 
 ### Very quick installation on Linux
 
@@ -65,3 +65,35 @@ After:
 
 Thank you Lucio!
 
+
+### Possible errors when using Motifs
+
+The issue is that there is a conflict between the current version of igraph and shinyjs. More details can be found here: <https://github.com/igraph/igraph/issues/846>
+
+While waiting for a new release of igraph, solving the issue, we can install the dev version:
+
+	devtools::install_github("igraph/rigraph")
+	
+On Mac OS X this could be a bit tricky, because R might use clan instead of gcc/g++ to compile. A solution is to create the file
+
+	~/.R/Makevars
+	
+if it does not exist, and set the following parameters:
+
+	CFLAGS +=             -O3 -Wall -pipe -pedantic -std=gnu99
+	CXXFLAGS +=           -O3 -Wall -pipe -Wno-unused -pedantic
+
+	VER=-4.2
+	CC=gcc$(VER)
+	CXX=g++$(VER)
+	SHLIB_CXXLD=g++$(VER)
+	FC=gfortran
+	F77=gfortran
+	MAKE=make -j8
+
+Restart R and try again to install the dev version of igraph.
+
+### Possible errors when using Correlation 
+
+It seems that the new versions of Octave (above 4.0) deprecated the function "cor", using "corr" instead.
+Users that install new versions of Octave, can manually change the occurrences of "cor(" with "corr(" in the file muxOctaveLib.m to solve the issue.

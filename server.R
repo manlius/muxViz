@@ -8,6 +8,7 @@ library(maps)
 library(OpenStreetMap)
 library(shiny)
 library(shinyjs)
+library(graphics)
 library(ShinyDash)
 #library(shinydashboard)
 #library(shinyIncubator)
@@ -1608,7 +1609,7 @@ shinyServer(function(input, output, session) {
         
                             #plot the graph with openGL    
                             #print(layouts[[l]])
-                            plot(g[[l]], layout=layouts[[l]],
+                            plot.igraph(g[[l]], layout=layouts[[l]],
                                             vertex.size=V(g[[l]])$size, 
                                             vertex.shape=V(g[[l]])$shape,
                                             vertex.color=V(g[[l]])$color,
@@ -1669,7 +1670,7 @@ shinyServer(function(input, output, session) {
                                 #edge/node transparancy not yet supported by rglplot
                                 #alpha=as.numeric(input$txtINTERLINK_TRANSP))
                             }else{
-                                plot(g.multi, layout=layout.multi,
+                                plot.igraph(g.multi, layout=layout.multi,
                                             vertex.size=0, 
                                             vertex.shape="none",
                                             vertex.label="",
@@ -1728,7 +1729,7 @@ shinyServer(function(input, output, session) {
                 
                 #to output full numbers
                 options(scipen=999)
-                
+                                
                 progress$set(message = 'Setting up the algorithms...', value = 0.2)                
                 inputFile <- paste0(input$txtProjectName,"_fanmod.edges")
                 
@@ -1741,7 +1742,7 @@ shinyServer(function(input, output, session) {
                 }
                 write.table(file=inputFile, mergedEdgelist, row.names=F, col.names=F, quote=F)     
                 resultFile <- paste0(input$txtProjectName,"_fanmod.csv")
-                
+
                 progress$set(message = 'Calculating motifs...', value = 0.5)
 
                 nullModelID <- 2
@@ -1786,6 +1787,7 @@ shinyServer(function(input, output, session) {
                 progress$set(message = 'Rendering the results...', value = 0.8)
                 
                 #sorting
+                print("Sorting results from motifs analysis...")
                 if(input$selMotifResultsSortBy=="Frequency"){
                     motifsTable <- motifsTable[order(-motifsTable[,3]),]
                 }else if(input$selMotifResultsSortBy=="Z-score"){
@@ -1795,6 +1797,7 @@ shinyServer(function(input, output, session) {
                 }
                 
                 #cutting
+                print("Applying cuts to motifs table...")
                 if(input$chkMotifAbsZscore){
                     motifsTable <- motifsTable[ abs(motifsTable[,6])> as.numeric(input$txtMotifAbsZscore), ]
                 }
@@ -1811,42 +1814,45 @@ shinyServer(function(input, output, session) {
                 #creating figures
                 rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selMotifColorPalette],input$selMotifColorPalette))(LAYERS)
                 
+                unloadNamespace("shinyjs")  #todo: this must be removed when new igraph will solve issue with shinyjs
+                
                 motifsTable$Motif <- rep("",nrow(motifsTable))
                 for(r in 1:nrow(motifsTable)){
                     motif_name <- motifsTable[r,]$Adj.Matrix
                     outpng <- concatenatePath(concatenatePath(buildPath("www","img"),"motifs"), paste0(motif_name,".png"))
-                    
-                    png(outpng,width=128,height=128)
+
                     #print(motif_name)
                     #print(t(matrix(as.numeric(strsplit(motif_name,"")[[1]]),ncol=as.numeric(input$selMotifSize))))
                     g.motif <- graph.adjacency( t(matrix(as.numeric(strsplit(motif_name,"")[[1]]),ncol=as.numeric(input$selMotifSize))) )
                     E(g.motif)$color <- 1
                     g.motif <- simplify(g.motif,edge.attr.comb=list(color="sum"))
+                    g.layout <- layout.circle(g.motif)
+                    g.layout[,1] <- 0.95*(g.layout[,1] - min(g.layout[,1]))/(max(g.layout[,1])-min(g.layout[,1])) - 0.95/2
+                    g.layout[,2] <- 0.95*(g.layout[,2] - min(g.layout[,2]))/(max(g.layout[,2])-min(g.layout[,2])) - 0.95/2
+                        
+                    png(outpng,width=128,height=128)
                     par(mar=c(0, 0, 0, 0), xaxs='i', yaxs='i') 
                     par(oma=c(0, 0, 0, 0))
                     plot(x=NULL, y=NULL, type="n",
                         xlim=c(-1,1), ylim=c(-1,1)
                         )
-
-                    g.layout <- layout.circle(g.motif)
-                    g.layout[,1] <- 0.95*(g.layout[,1] - min(g.layout[,1]))/(max(g.layout[,1])-min(g.layout[,1])) - 0.95/2
-                    g.layout[,2] <- 0.95*(g.layout[,2] - min(g.layout[,2]))/(max(g.layout[,2])-min(g.layout[,2])) - 0.95/2
                     
-                    plot(g.motif, layout=g.layout,
+                    plot.igraph(g.motif, layout=g.layout,
                         vertex.label="",
                         vertex.color="#A0A0A0",
-                        vertex.frame.color="#A0A0A0",
+                        vertex.frame.color=NA,
                         edge.color=rgb.palette[E(g.motif)$color], 
                         edge.arrow.size=1, 
                         edge.arrow.width=1.5,
                         edge.width=3,
-                        rescale=F, xlim=c(-1,1), ylim=c(-1,1)
+                        rescale=F
                         )
                     dev.off()
 
-                    motifsTable[r,]$Motif <- paste0("<img src='img/motifs/",motif_name,".png' width='128' height='128'>")
+                    motifsTable[r,]$Motif <- paste0("<img src=\"img/motifs/",motif_name,".png\" width='128' height='128'>")
                 }
 
+                loadNamespace("shinyjs")  #todo: this must be removed when new igraph will solve issue with shinyjs
                 listMotifs <<- motifsTable
                 listMotifs$Motif <<- NULL
 
@@ -1880,7 +1886,11 @@ shinyServer(function(input, output, session) {
                 options(scipen=0)
                 progress$set(message = 'Calculation Completed!', value = 1)
                 Sys.sleep(2)
-                
+
+                if(file.exists(paste0(input$txtProjectName,"_fanmod.edges"))) file.remove(paste0(input$txtProjectName,"_fanmod.edges"))
+                if(file.exists(paste0(input$txtProjectName,"_fanmod.csv"))) file.remove(paste0(input$txtProjectName,"_fanmod.csv"))
+                if(file.exists(paste0(input$txtProjectName,"_fanmod.csv.log"))) file.remove(paste0(input$txtProjectName,"_fanmod.csv.log"))
+
                 btnCalculateMotifsValue <<- input$btnCalculateMotifs
             })
         })
@@ -2505,7 +2515,7 @@ shinyServer(function(input, output, session) {
                         inputFile <- paste0(input$txtProjectName,"_multimap.edges")
                         if(file.exists(inputFile)) file.remove(inputFile)
                         fileConn <- file(inputFile, open="at")
-                        
+                
                         if(input$radMultiplexModel=='MULTIPLEX_IS_EDGECOLORED'){
                             writeLines(c("*Intra","#level node node weight"), fileConn)
                             out.edgeslist <- data.frame()
@@ -4378,13 +4388,13 @@ shinyServer(function(input, output, session) {
                 #    gvisTable(interSpearman,options=googleVisInterSpearmanSummaryTableOptions())
                 #})   
                 
-                #Sys.sleep(2)
+                Sys.sleep(2)
                 if(file.exists("hclust_method.tmp")) file.remove("hclust_method.tmp")
                 if(file.exists("hclust_merge.txt")) file.remove("hclust_merge.txt")
                 if(file.exists("jsd_distance_matrix.txt")) file.remove("jsd_distance_matrix.txt")
                 if(file.exists(resultFile)) file.remove(resultFile)
                 resultFile <- paste0(input$txtProjectName,"_reducibility_quality.txt")
-                #if(file.exists(resultFile)) file.remove(resultFile)
+                if(file.exists(resultFile)) file.remove(resultFile)
                 
                 btnCalculateReducibilityValue <<- input$btnCalculateReducibility
     
@@ -5354,7 +5364,7 @@ shinyServer(function(input, output, session) {
 
                     #plot the graph with openGL    
                     #print(layouts[[l]])
-                    plot(g[[l]], layout=layouts[[l]],
+                    plot.igraph(g[[l]], layout=layouts[[l]],
                                     vertex.size=V(g[[l]])$size, 
                                     vertex.shape=V(g[[l]])$shape,
                                     vertex.color=V(g[[l]])$color,
@@ -5412,7 +5422,7 @@ shinyServer(function(input, output, session) {
                                             edge.lty = input$selINTERLINK_TYPE,
                                             rescale=F)
                     }else{
-                        plot(g.multi, layout=layout.multi,
+                        plot.igraph(g.multi, layout=layout.multi,
                                     vertex.size=0, 
                                     vertex.shape="none",
                                     vertex.label="",
