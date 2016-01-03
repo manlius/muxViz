@@ -234,7 +234,10 @@ shinyUI(bootstrapPage(
                                         checkboxInput('chkEdgeListFileHeader', 'Header', FALSE),
                                         textInput("txtEdgeListFileSep", label=HTML("Separator (default is one space; the same separator is expected for layout file):"), " "),
                                         helpText(HTML("<font color='red'>If nodes in edges lists are identified by their label instead of a sequential integer ID, check the box below</font> (note that you must specify sequential integer IDs in the nodeID column of the layout file)")),
-                                        checkboxInput("chkEdgeListLabel", "Edges list of labeled nodes (instead of sequential integer)", FALSE)
+                                        checkboxInput("chkEdgeListLabel", "Edges list of labeled nodes (instead of sequential integer)", FALSE),
+                                        conditionalPanel("input.chkEdgeListLabel",
+                                            checkboxInput("chkEdgeListLabel2", "Edges list of labeled layers (instead of sequential integer)", FALSE)
+                                            )
                                         )
                                     ),
                                     column(width = 5,

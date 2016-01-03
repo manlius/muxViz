@@ -409,7 +409,7 @@ shinyServer(function(input, output, session) {
                             return(NULL)
                         }                    
 
-                        print(paste("file",fileName[[l]][1]))
+                        print(paste("File",fileName[[l]][1]))
                         
                         if(input$chkEdgeListLabel){
                             #edges list are with labeled nodes instead of sequential integer IDs, we transform it
@@ -431,11 +431,16 @@ shinyServer(function(input, output, session) {
                                             #print(multilayerEdges)                        
                                             layer.info$layerID <- 1:nrow(layer.info)
                                             convLayerTable = setNames(layer.info$layerID, as.character(layer.info$layerLabel))
-                                            multilayerEdges[,1] <<- as.numeric(convTable[ as.character(unlist(multilayerEdges[,1])) ])
-                                            multilayerEdges[,3] <<- as.numeric(convTable[ as.character(unlist(multilayerEdges[,3])) ])
-                                            multilayerEdges[,2] <<- as.numeric(convLayerTable[ as.character(unlist(multilayerEdges[,2])) ])
-                                            multilayerEdges[,4] <<- as.numeric(convLayerTable[ as.character(unlist(multilayerEdges[,4])) ])
-                                                                                        
+                                            multilayerEdges[,1] <<- as.numeric(convTable[ as.character(multilayerEdges[,1]) ])
+                                            multilayerEdges[,3] <<- as.numeric(convTable[ as.character(multilayerEdges[,3]) ])
+
+                                            if(input$chkEdgeListLabel2){
+                                                multilayerEdges[,2] <<- as.numeric(convLayerTable[ as.character(multilayerEdges[,2]) ])
+                                                multilayerEdges[,4] <<- as.numeric(convLayerTable[ as.character(multilayerEdges[,4]) ])
+                                            }else{
+                                                multilayerEdges[,2] <<- as.numeric(multilayerEdges[,2])
+                                                multilayerEdges[,4] <<- as.numeric(multilayerEdges[,4])
+                                            }                                                                                        
                                             write.table(multilayerEdges, paste0(fileName[[l]][1],".rel"), quote=F, row.names=F, col.names=F)
                                             #print(multilayerEdges)
                                         }                                        
