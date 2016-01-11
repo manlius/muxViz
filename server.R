@@ -2596,7 +2596,6 @@ shinyServer(function(input, output, session) {
                             exeFlags <- paste("-s", floor(runif(1)*1e7), 
                                                           "-N", as.numeric(input$txtMultimapTries),
                                                           "-multiplex -physical -smartinit",
-                                                          "-switchrate", as.numeric(input$txtMultimapRelaxRate),
                                                           inputFile)
                         }                        
 
