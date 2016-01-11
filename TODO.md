@@ -7,6 +7,8 @@ The following list reflects the possible improvements of muxViz.
 
 #### High priority
 
+None, for the moment!
+
 ###### Notes
 
     There are open issues with the native RGL device. This is far beyond the scope of muxViz for the moment, but maybe someone could find a way to solve them
@@ -45,7 +47,7 @@ The following list reflects the possible improvements of muxViz.
 
 #### High priority
 
-- New versions of Octave (> 4.0.0) deprecated the cor function and use corr instead. Compatibility should be solved somehow.
+- New versions of Octave (> 4.0.0) deprecated the cor function and use corr instead. Compatibility should be solved somehow (for the moment look at TROUBLESHOOTING).
 
 - Add support to calculation of [shortest paths](http://dl.acm.org/citation.cfm?id=2615687) and their visualization, giving possibility to specify origin/destination, width and color of the path
 
@@ -77,6 +79,9 @@ The following list reflects the possible improvements of muxViz.
 #### High priority
 
 - Improvement of the "console"
+
+- Support for multiple languages
+
 
 - Save the orientation of the rgl plot to allow future import to do exactly the same plot. [See here](http://stackoverflow.com/questions/16362381/save-the-orientation-of-a-rgl-plot3d-plot)
  
