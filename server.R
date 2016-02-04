@@ -1397,26 +1397,34 @@ shinyServer(function(input, output, session) {
                             
                             arrayStrength <- graph.strength(g.multi,mode="total")
                             idxtohide <- which(arrayStrength==0.)
-                            inlayers <- floor((idxtohide-1)/Nodes) + 1
-                            innodes <- (idxtohide-1) %% Nodes + 1
                             
-                            for(l in 1:LAYERS){
-                                idxs <- which(inlayers==l)
-                                nodes2hide <- which(V(g[[l]]) %in% innodes[idxs])
-                                V(g[[l]])[nodes2hide]$size <- 0
-                                V(g[[l]])[nodes2hide]$label <- ""
+                            if(length(idxtohide)>0){
+                                inlayers <- floor((idxtohide-1)/Nodes) + 1
+                                innodes <- (idxtohide-1) %% Nodes + 1
+                                
+                                for(l in 1:LAYERS){
+                                    idxs <- which(inlayers==l)
+                                    nodes2hide <- which(V(g[[l]]) %in% innodes[idxs])
+                                    V(g[[l]])[nodes2hide]$size <- 0
+                                    V(g[[l]])[nodes2hide]$label <- ""
+                                }
                             }
-                            
+                                                        
                             #aggregate must be done separately
                             arrayStrength <- graph.strength(g[[LAYERS+1]],mode="total")
-                            V(g[[LAYERS+1]])[arrayStrength==0.]$size <- 0
-                            V(g[[LAYERS+1]])[arrayStrength==0.]$label <- ""
+                            
+                            if(any(arrayStrength==0.)){
+                                V(g[[LAYERS+1]])[arrayStrength==0.]$size <- 0
+                                V(g[[LAYERS+1]])[arrayStrength==0.]$label <- ""
+                            }
                         }else{
                             #do not account for interlinks, just intralinks
                             for(l in 1:(LAYERS+1)){
-                                arrayStrength <- graph.strength(g[[l]],mode="total")
-                                V(g[[l]])[arrayStrength==0.]$size <- 0
-                                V(g[[l]])[arrayStrength==0.]$label <- ""
+                                if(any(arrayStrength==0.)){
+                                    arrayStrength <- graph.strength(g[[l]],mode="total")
+                                    V(g[[l]])[arrayStrength==0.]$size <- 0
+                                    V(g[[l]])[arrayStrength==0.]$label <- ""
+                                }
                             }
                         }
                     }
@@ -1611,7 +1619,7 @@ shinyServer(function(input, output, session) {
                                                 rescale=F)
                         }else{
                             print("  Standard device output...")
-        
+                            
                             #plot the graph with openGL    
                             #print(layouts[[l]])
                             plot.igraph(g[[l]], layout=layouts[[l]],
@@ -1674,7 +1682,7 @@ shinyServer(function(input, output, session) {
                                                     rescale=F)
                                 #edge/node transparancy not yet supported by rglplot
                                 #alpha=as.numeric(input$txtINTERLINK_TRANSP))
-                            }else{
+                            }else{                                
                                 plot.igraph(g.multi, layout=layout.multi,
                                             vertex.size=0, 
                                             vertex.shape="none",
@@ -5298,26 +5306,35 @@ shinyServer(function(input, output, session) {
                     
                     if(input$radMultiplexModel == "MULTIPLEX_IS_EDGECOLORED"){
                         arrayStrength <- graph.strength(g[[l]],mode="total")
-                        V(g[[l]])[arrayStrength==0.]$size <- 0
-                        V(g[[l]])[arrayStrength==0.]$label <- ""
+                        
+                        if(any(arrayStrength==0.)){
+                            V(g[[l]])[arrayStrength==0.]$size <- 0
+                            V(g[[l]])[arrayStrength==0.]$label <- ""
+                        }
                     }else{
                         if(input$chkNODE_ISOLATED_HIDE_INTERLINKS){
                             #account for degree in the multiplex
                             
                             arrayStrength <- graph.strength(g.multi,mode="total")
                             idxtohide <- which(arrayStrength==0.)
-                            inlayers <- floor((idxtohide-1)/Nodes) + 1
-                            innodes <- (idxtohide-1) %% Nodes + 1
-
-                            idxs <- which(inlayers==l)
-                            nodes2hide <- which(V(g[[l]]) %in% innodes[idxs])
-                            V(g[[l]])[nodes2hide]$size <- 0
-                            V(g[[l]])[nodes2hide]$label <- ""
+                            
+                            if(length(idxtohide)>0){
+                                inlayers <- floor((idxtohide-1)/Nodes) + 1
+                                innodes <- (idxtohide-1) %% Nodes + 1
+    
+                                idxs <- which(inlayers==l)
+                                nodes2hide <- which(V(g[[l]]) %in% innodes[idxs])
+                                V(g[[l]])[nodes2hide]$size <- 0
+                                V(g[[l]])[nodes2hide]$label <- ""
+                            }
                         }else{
                             #do not account for interlinks, just intralinks
                             arrayStrength <- graph.strength(g[[l]],mode="total")
-                            V(g[[l]])[arrayStrength==0.]$size <- 0
-                            V(g[[l]])[arrayStrength==0.]$label <- ""
+                            
+                            if(any(arrayStrength==0.)){
+                                V(g[[l]])[arrayStrength==0.]$size <- 0
+                                V(g[[l]])[arrayStrength==0.]$label <- ""
+                            }
                         }
                     }
                 }
@@ -5365,7 +5382,7 @@ shinyServer(function(input, output, session) {
                                         rescale=F)
                 }else{
                     print("  Standard device output...")
-
+                    
                     #plot the graph with openGL    
                     #print(layouts[[l]])
                     plot.igraph(g[[l]], layout=layouts[[l]],
@@ -5461,7 +5478,7 @@ shinyServer(function(input, output, session) {
             
             isolate({    
                 makeRendering()
-            
+                
                 btnRenderNetworksValue <<- input$btnRenderNetworks
             })
         })

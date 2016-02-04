@@ -30,6 +30,9 @@ Visit the dedicated [Google Group](https://groups.google.com/forum/#!forum/muxvi
 
 Instead, if you create amazing visualizations using muxViz and you want to tweet them, remember to include the "#muxviz" hashtag: we will be happy to retweet.
 
+You might be interested in taking a look at the [official blog about muxViz](https://muxviz.wordpress.com), with posts about applications (analysis, visualization or both) to cool datasets.
+
+
 #### Citation
 
 If you use muxViz (or any part of muxViz, or images available in the gallery) for your multilayer analysis and visualization, you should cite the paper
@@ -46,6 +49,8 @@ Please, note that muxViz is based on some algorithms developed in other studies.
 
 Note that linked data is in a different format and can not be used "as they are" by muxViz. A tool for easily convert from that format to muxViz is under development. 
 
+A 10-minutes tutorial showing how easy is to work with muxViz is also available:
+[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/gcpYSdi_-xI/0.jpg)](http://www.youtube.com/watch?v=gcpYSdi_-xI)
 
 ##### Requirements and Installation
 
