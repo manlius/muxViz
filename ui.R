@@ -1887,7 +1887,7 @@ conditionalPanel(condition="input.radConnectedComponentsAlgorithm=='CONNECTED_CO
                             "<li> <strong>entity</strong>: [mandatory] string specifying if the object to modify is 'node' or 'edge'",
                             "<li> <strong>layerID</strong>: [mandatory] numerical integer id to identify each layer",
                             "<li> <strong>nodeID</strong>: [mandatory] numerical integer id if entity is 'node' and string (e.g., '3-7', corresponding to the link from node 3 to node 7) if entity is 'edge'.",
-                            "<li> <strong>color</strong>: [mandatory] string specifying the color to be assigned",
+                            "<li> <strong>color</strong>: [mandatory] Hex color string (e.g. 11DADA) specifying the color to be assigned",
                             "<li> <strong>sizeFactor</strong>: [mandatory] float value specifying the relative size of the entity, scaling with respect to the default size",
                             "</ul>",
                             "The order of the columns is not relevant. If the network has L layers and you want to include the aggregate network in the visualization, then use L+1 in the layerID field for it.<br><br>",

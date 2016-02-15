@@ -253,7 +253,7 @@ The first line of the file must specify the name of the correponding timeline at
 - entity: [mandatory] string specifying if the object to modify is 'node' or 'edge'
 - layerID: [mandatory] numerical integer id to identify each layer
 - nodeID: [mandatory] numerical integer id if entity is 'node' and string (e.g., '3-7', corresponding to the link from node 3 to node 7) if entity is 'edge'.
-- color: [mandatory] string specifying the color to be assigned
+- color: [mandatory] Hex color string (e.g. 11DADA) specifying the color to be assigned
 - sizeFactor: [mandatory] float value specifying the relative size of the entity, scaling with respect to the default size
 
 The order of the columns is not relevant. If the network has L layers and you want to include the aggregate network in the visualization, then use L+1 in the layerID field for it.
