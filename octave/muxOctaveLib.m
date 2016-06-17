@@ -506,7 +506,7 @@ function [InterPearson,InterSpearman] = GetInterAssortativityTensor(SupraAdjacen
 
         for l1 = 1:Layers
             for l2 = 1:Layers
-                InterPearson(l1,l2) = cor(InDegree{l1},OutDegree{l2});
+                InterPearson(l1,l2) = corr(InDegree{l1},OutDegree{l2});
                 InterSpearman(l1,l2) = spearman(InDegree{l1},OutDegree{l2});
             end
         end
@@ -541,7 +541,7 @@ function [InterPearson,InterSpearman] = GetInterAssortativityTensor(SupraAdjacen
             InterPearson(l1,l1) = 1;
             InterSpearman(l1,l1) = 1;
             for l2 = (l1+1):Layers
-                InterPearson(l1,l2) = cor(Degree{l1},Degree{l2});
+                InterPearson(l1,l2) = corr(Degree{l1},Degree{l2});
                 InterSpearman(l1,l2) = spearman(Degree{l1},Degree{l2});
                 
                 InterPearson(l2,l1) = InterPearson(l1,l2);

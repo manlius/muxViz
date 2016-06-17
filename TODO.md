@@ -23,6 +23,8 @@ None, for the moment!
 
 #### Medium priority
 
+- Give the possibility to show nodes' label instead of their IDs in annular viz
+
 - Layered visualization of adjacency matrices in a 3D environment
 
 - Community-piechart in muxviz to show overlapping modules? (see [this paper](http://arxiv.org/abs/1408.2925) and also [multi-layer pie charts](http://www.r-bloggers.com/how-to-draw-venn-pie-agram-multi-layer-pie-chart-in-r/) for additional ideas)
@@ -77,6 +79,8 @@ None, for the moment!
 ## TODO Technical
 
 #### High priority
+
+- Add support for "tab" character in import
 
 - Improvement of the "console"
 

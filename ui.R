@@ -1416,6 +1416,7 @@ conditionalPanel(condition="input.radConnectedComponentsAlgorithm=='CONNECTED_CO
                                     conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_EXTERNAL' || input.selVizNodeSizeID=='External' || input.radNodeSizeType=='NODE_SIZE_PROPORTIONAL_TO_EXTERNAL'",
                                         myBox("External color/size", "basic",    
                                             helpText("Use an external file. Expected format (including mandatory header) is: nodeID layerID color size"),
+                                            helpText("Colors should be quoted: e.g. \"#FF0000\" or \"red\""),
                                             #checkboxInput('chkNodeColorFileHeader', 'Header', TRUE),
                                             textInput("txtNodeColorFileSep", label=HTML("Separator (default: blank space):"), " "),
                                             fileInput('nodecolor_file', HTML('<strong>* Open the file:</strong>'),
