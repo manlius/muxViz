@@ -96,6 +96,20 @@ Download and install a copy of Octave (3.4.0 or above):
 
 Octave should be accessible through command line from any folder (i.e., it is mandatory to add it in your PATH environment variable). If you are not familiar with this simple task, you should visit <http://www.java.com/en/download/help/path.xml>
 
+In Linux and Mac OS you can do the following.
+
+From the terminal (using vi or nano) open the file ~/.bash_profile and paste the following:
+
+
+	if [ -f ~/.bashrc ]; then
+   		. ~/.bashrc
+	fi
+
+
+Then create the file ~/.bashrc where you can edit the PATH variable by adding this line:
+
+	export PATH=$PATH:/PATH/TO/OCTAVE/BIN/FOLDER
+
 ##### Should I care about missing FANMOD and/or Multimap?
 
 It depends. If Multimap is missing, you will not be able to perform multilayer community detection based on the generalization of the Infomap algorithm for this type of networks. If FANMOD is missing, you will not be able to perform multiplex motif analysis of your network.
