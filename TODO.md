@@ -23,6 +23,8 @@ None, for the moment!
 
 #### Medium priority
 
+- Include the colourPicker package (see why on the Google Group)
+
 - Give the possibility to show nodes' label instead of their IDs in annular viz
 
 - Layered visualization of adjacency matrices in a 3D environment
@@ -32,6 +34,8 @@ None, for the moment!
 
 #### Low priority
 
+- Alluvial plot for communities
+ 
 - Reducibility: the dendrogram could have colored branches like [this](http://stackoverflow.com/questions/18036094/how-to-create-a-dendrogram-with-colored-branches), possibly according to a threshold
 
 - Reducibility: possibility to generate a circular dendrogram and to apply cuts (requires a new package to be installed)

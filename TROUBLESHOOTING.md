@@ -159,6 +159,32 @@ Restart R and try again to install the dev version of igraph.
 It seems that the new versions of Octave (above 4.0) deprecated the function "cor", using "corr" instead.
 Users that install new versions of Octave, can manually change the occurrences of "cor(" with "corr(" in the file muxOctaveLib.m to solve the issue.
 
+### Possible errors when using other measures
+
+It seems that some old version of Octave handle some syntax in a different way.
+Users with Mac OS X 10.6.8 (Snow Leopard) and Octave 3.2.3 reported possible errors from function loadNetworkFromFile in muxOctaveLib.m
+Here there is the patch. Substitute
+
+
+	A = spconvert(A);
+	A(size(A,1) + 1:N, size(A,2) + 1:N) = 0;
+
+with
+
+	A = spconvert(A);
+	startRow = size(A,1) + 1
+	startCol = size(A,2) + 1
+	if (startRow > N)
+    	startRow = N
+	endif
+	if (startCol > N)
+   		startCol = N
+	endif
+	A(startRow:N,startCol:N) = 0;
+
+
+Thanks Giuseppe Mangioni!
+
 ### Install muxViz with R 3.3 or higher
 
 muxViz depends on several R packages that, when updated by their developers, might cause issues on muxViz. In general, it might happen that you use a very new version of R (muxViz was developed for R 3.2): you should still be able to use muxViz by simply patching the initial sanity check it does to ensure full compativility.
