@@ -23,9 +23,14 @@ library(ggplot2)
 library(d3Network)
 library(session)
 library(d3heatmap)
+library(networkD3)
+library(dplyr)
+
+
 source("version.R")
 source("global.R")
-
+source("language.R")
+source("muxLib.R")
 
 #to open/save a session.. still experimental
 #https://github.com/jcheng5/shiny-resume
@@ -35,6 +40,14 @@ source("global.R")
 #to make a CRAN package in the next future
 #http://hilaryparker.com/2014/04/29/writing-an-r-package-from-scratch/
 
+textInputRow <- function (inputId, label, value = "", width=NULL) {
+    div(style="display:inline-block",
+        tags$label(label, `for` = inputId), 
+        tags$input(id = inputId, type = "text", value = value,class="input-small", width=width))
+}
+
+
+
 shinyServer(function(input, output, session) {
     welcomeFunction()
     
@@ -42,13 +55,370 @@ shinyServer(function(input, output, session) {
     #commonRunif <- 0.0148374617565423
     #print(paste("SEED:",commonRunif))
 
+
+    values <- reactiveValues(communityMultiplexOK = F,
+                                            communitySingleLayerOK = F,
+                                            communityMultiplexBatchOK = F,
+                                            componentsMultiplexOK = F,
+                                            componentsSingleLayerOK = F,
+                                            triadsMultiplexOK = F,
+                                            triadsSingleLayerOK = F
+                                            )
+
     result <- tryCatch({
+
+
+        output$btnGenerateReport <- downloadHandler(
+        # For PDF output, change this to "report.pdf"
+            filename = "report.html",
+            content = function(file) {
+                # Copy the report file to a temporary directory before processing it, in
+                # case we don't have write permissions to the current working dir (which
+                # can happen when deployed).
+                tempReport <- file.path(tempdir(), "report.Rmd")
+                file.copy("report.Rmd", tempReport, overwrite = TRUE)
+                
+                # Set up parameters to pass to Rmd document
+                params <- list(x = output$matrixExplorerMultilayerHeatmap)
+                
+                # Knit the document, passing in the `params` list, and eval it in a
+                # child of the global environment (this isolates the code in the document
+                # from the code in this app).
+                rmarkdown::render(tempReport, output_file = file,
+                                                params = params,
+                                                envir = new.env(parent = globalenv())
+                )
+            }
+        )        
+
+        #https://github.com/rstudio/shiny/wiki/Bookmarkable-state
+        onBookmark(function(state) {
+            # Save content to a file
+            messageFile <- file.path(state$dir, "message.txt")
+            cat(as.character(Sys.time()), file = messageFile)
+            
+            state$values$listDiagnostics <- listDiagnostics
+            state$values$listDiagnosticsSingleLayer <- listDiagnosticsSingleLayer
+            state$values$listDiagnosticsMergeSingleLayer <- listDiagnosticsMergeSingleLayer
+            state$values$listDiagnosticsMerge <- listDiagnosticsMerge
+            
+            state$values$listTriads <- listTriads
+            state$values$listTriadsSingleLayer <- listTriadsSingleLayer
+            state$values$listTriadsMerge <- listTriadsMerge
+            state$values$listTriadsMergeSingleLayer <- listTriadsMergeSingleLayer
+            state$values$sumTriadsMerge <- sumTriadsMerge
+            state$values$sumTriadsMergeSingleLayer <- sumTriadsMergeSingleLayer
+            
+            state$values$listCommunities <- listCommunities
+            state$values$listCommunitiesSingleLayer <- listCommunitiesSingleLayer
+            state$values$listCommunitiesMerge <- listCommunitiesMerge
+            state$values$listCommunitiesMergeSingleLayer <- listCommunitiesMergeSingleLayer
+            state$values$sumCommunitiesMerge <- sumCommunitiesMerge
+            state$values$sumCommunitiesMergeSingleLayer <- sumCommunitiesMergeSingleLayer
+            
+            state$values$listComponents <- listComponents
+            state$values$listComponentsSingleLayer <- listComponentsSingleLayer
+            state$values$listComponentsMerge <- listComponentsMerge
+            state$values$listComponentsMergeSingleLayer <- listComponentsMergeSingleLayer
+            state$values$sumComponentsMerge <- sumComponentsMerge
+            state$values$sumComponentsMergeSingleLayer <- sumComponentsMergeSingleLayer
+            
+            state$values$listDistanceSimilarity <- listDistanceSimilarity
+            state$values$listInterPearson <- listInterPearson
+            state$values$listInterSpearman <- listInterSpearman
+            state$values$listOverlap <- listOverlap
+            state$values$listNodeOverlap <- listNodeOverlap
+            state$values$listMotifs <- listMotifs
+            
+            state$values$listQueryResult <- listQueryResult
+            
+            state$values$listReducibility <- listReducibility
+            
+            state$values$dfTimeline <- dfTimeline
+            
+            state$values$defaultVsize <- defaultVsize
+            state$values$defaultEsize <- defaultEsize
+            state$values$defaultVcolor <- defaultVcolor
+            state$values$defaultEcolor <- defaultEcolor
+            
+            state$values$inputOK <- inputOK
+            state$values$diagnosticsMultiplexOK <- diagnosticsMultiplexOK
+            state$values$diagnosticsSingleLayerOK <- diagnosticsSingleLayerOK
+            state$values$diagnosticsOK <- diagnosticsOK
+            state$values$communityOK <- communityOK
+            state$values$componentsOK <- componentsOK
+            state$values$triadsOK <- triadsOK
+            state$values$communityMultiplexOK <- communityMultiplexOK
+            state$values$communitySingleLayerOK <- communitySingleLayerOK
+            state$values$communityMultiplexBatchOK <- communityMultiplexBatchOK
+            state$values$componentsMultiplexOK <- componentsMultiplexOK
+            state$values$componentsSingleLayerOK <- componentsSingleLayerOK
+            state$values$triadsMultiplexOK <- triadsMultiplexOK
+            state$values$triadsSingleLayerOK <- triadsSingleLayerOK
+            
+            state$values$avgGlobalOverlapping <- avgGlobalOverlapping
+            state$values$avgGlobalOverlappingMatrix.df <- avgGlobalOverlappingMatrix.df
+            state$values$avgGlobalNodeOverlappingMatrix.df <- avgGlobalNodeOverlappingMatrix.df
+            state$values$interPearson.df <- interPearson.df
+            state$values$interSpearman.df <- interSpearman.df
+            state$values$frobeniusNorm.df <- frobeniusNorm.df
+
+            state$values$communityBatchMembership <- communityBatchMembership
+            state$values$communityBatchData <- communityBatchData
+
+            state$values$orientationRGL <- orientationRGL
+
+            state$values$externalEdgeSizeFlag <- externalEdgeSizeFlag
+            state$values$externalEdgeColorFlag <- externalEdgeColorFlag
+            state$values$externalEdgeColorTable <- externalEdgeColorTable
+            state$values$externalNodeSizeFlag <- externalNodeSizeFlag
+            state$values$externalNodeColorFlag <- externalNodeColorFlag
+            state$values$externalNodeColorTable <- externalNodeColorTable
+            state$values$nodeLabelSeqIdConvTable <- nodeLabelSeqIdConvTable
+            
+            #needed for renderUI stuff
+            reactive.values <<- lapply(reactiveValuesToList(input), unclass)
+            
+            updateSavedSessionsList()
+            
+            showModal(modalDialog(title = "Save session", "Done!", easyClose = TRUE))
+        })
+    
+        #this must be -ed and not -e to allow some renderUI things to work
+        onRestored(function(state) {
+            # Read the file
+            messageFile <- file.path(state$dir, "message.txt")
+            timeText <- readChar(messageFile, 1000)
+    
+            # updateTextInput must be called in onRestored, as opposed to onRestore,
+            # because onRestored happens after the client browser is ready.
+#            output$txtLastSavedSession <- reactive({
+#                return(list(lastSavedSession = paste0("Last saved session @ ", as.character(Sys.time())) ))
+#            })
+        
+            listDiagnostics <<- state$values$listDiagnostics
+            listDiagnosticsSingleLayer <<- state$values$listDiagnosticsSingleLayer
+            listDiagnosticsMergeSingleLayer <<- state$values$listDiagnosticsMergeSingleLayer
+            listDiagnosticsMerge <<- state$values$listDiagnosticsMerge
+            
+            listTriads <<- state$values$listTriads
+            listTriadsSingleLayer <<- state$values$listTriadsSingleLayer
+            listTriadsMerge <<- state$values$listTriadsMerge
+            listTriadsMergeSingleLayer <<- state$values$listTriadsMergeSingleLayer
+            sumTriadsMerge <<- state$values$sumTriadsMerge
+            sumTriadsMergeSingleLayer <<- state$values$sumTriadsMergeSingleLayer
+            
+            listCommunities <<- state$values$listCommunities
+            listCommunitiesSingleLayer <<- state$values$listCommunitiesSingleLayer
+            listCommunitiesMerge <<- state$values$listCommunitiesMerge
+            listCommunitiesMergeSingleLayer <<- state$values$listCommunitiesMergeSingleLayer
+            sumCommunitiesMerge <<- state$values$sumCommunitiesMerge
+            sumCommunitiesMergeSingleLayer <<- state$values$sumCommunitiesMergeSingleLayer
+            
+            listComponents <<- state$values$listComponents
+            listComponentsSingleLayer <<- state$values$listComponentsSingleLayer
+            listComponentsMerge <<- state$values$listComponentsMerge
+            listComponentsMergeSingleLayer <<- state$values$listComponentsMergeSingleLayer
+            sumComponentsMerge <<- state$values$sumComponentsMerge
+            sumComponentsMergeSingleLayer <<- state$values$sumComponentsMergeSingleLayer
+            
+            listDistanceSimilarity <<- state$values$listDistanceSimilarity
+            listInterPearson <<- state$values$listInterPearson
+            listInterSpearman <<- state$values$listInterSpearman
+            listOverlap <<- state$values$listOverlap
+            listNodeOverlap <<- state$values$listNodeOverlap
+            listMotifs <<- state$values$listMotifs
+            
+            listQueryResult <<- state$values$listQueryResult
+            
+            listReducibility <<- state$values$listReducibility
+            
+            dfTimeline <<- state$values$dfTimeline
+            
+            defaultVsize <<- state$values$defaultVsize
+            defaultEsize <<- state$values$defaultEsize
+            defaultVcolor <<- state$values$defaultVcolor
+            defaultEcolor <<- state$values$defaultEcolor
+            
+            inputOK <<- state$values$inputOK
+            diagnosticsMultiplexOK <<- state$values$diagnosticsMultiplexOK
+            diagnosticsSingleLayerOK <<- state$values$diagnosticsSingleLayerOK
+            diagnosticsOK <<- state$values$diagnosticsOK
+            communityOK <<- state$values$communityOK
+            componentsOK <<- state$values$componentsOK
+            triadsOK <<- state$values$triadsOK
+            communityMultiplexBatchOK <<- state$values$communityMultiplexBatchOK
+            communityMultiplexOK <<- state$values$communityMultiplexOK
+            communitySingleLayerOK <<- state$values$communitySingleLayerOK
+            componentsMultiplexOK <<- state$values$componentsMultiplexOK
+            componentsSingleLayerOK <<- state$values$componentsSingleLayerOK
+            triadsMultiplexOK <<- state$values$triadsMultiplexOK
+            triadsSingleLayerOK <<- state$values$triadsSingleLayerOK
+
+            avgGlobalOverlapping <<- state$values$avgGlobalOverlapping
+            avgGlobalOverlappingMatrix.df <<- state$values$avgGlobalOverlappingMatrix.df
+            avgGlobalNodeOverlappingMatrix.df <<- state$values$avgGlobalNodeOverlappingMatrix.df
+            interPearson.df <<- state$values$interPearson.df
+            interSpearman.df <<- state$values$interSpearman.df
+            frobeniusNorm.df <<- state$values$frobeniusNorm.df
+
+            communityBatchMembership <<- state$values$communityBatchMembership
+            communityBatchData <<- state$values$communityBatchData
+
+            orientationRGL <<- state$values$orientationRGL
+
+            externalEdgeSizeFlag <<- state$values$externalEdgeSizeFlag
+            externalEdgeColorFlag <<- state$values$externalEdgeColorFlag
+            externalEdgeColorTable <<- state$values$externalEdgeColorTable
+            externalNodeSizeFlag <<- state$values$externalNodeSizeFlag
+            externalNodeColorFlag <<- state$values$externalNodeColorFlag
+            externalNodeColorTable <<- state$values$externalNodeColorTable
+            nodeLabelSeqIdConvTable <<- state$values$nodeLabelSeqIdConvTable
+            
+            #print(reactive.values)
+            
+            #for renderUI stuff
+            if (exists("reactive.values")) {
+                cat("Restoring reactive values...\n")
+                lapply(names(values),
+                    function(x) session$sendInputMessage(x, list(value = values[[x]]))
+                )
+            }
+        })
+
+
+        #HELP
+        observeEvent(input$btnSessionManagerHelp, {
+              showModal(modalDialog(title = "Help", HTML(getText("SessionManagerHelp")), easyClose = TRUE))
+        })
+
+        observeEvent(input$btnCentralityHelp, {
+              showModal(modalDialog(title = "Help", HTML(getText("GlobalDiagnosticsCentralityHelp")), easyClose = TRUE))
+        })
+
+        observeEvent(input$btnImportHelp, {
+              showModal(modalDialog(title = "Help", HTML(getText("ImportHelp")), easyClose = TRUE))
+        })
+
+        observeEvent(input$btnConsoleHelp, {
+              showModal(modalDialog(title = "Help", HTML(getText("ConsoleHelp")), easyClose = TRUE))
+        })
+
+        observeEvent(input$btnQueryHelp, {
+              showModal(modalDialog(title = "Help", HTML(getText("QueryHelp")), easyClose = TRUE))
+        })
+
+        observeEvent(input$btnGlobalDiagnosticsCorrelationHelp, {
+              showModal(modalDialog(title = "Help", HTML(getText("GlobalDiagnosticsCorrelationHelp")), easyClose = TRUE))
+        })        
+
+        observeEvent(input$btnTriadsHelp, {
+              showModal(modalDialog(title = "Help", HTML(getText("TriadsHelp")), easyClose = TRUE))
+        })
+
+        observeEvent(input$btnMotifsHelp, {
+              showModal(modalDialog(title = "Help", HTML(getText("MotifsHelp")), easyClose = TRUE))
+        })
+
+        observeEvent(input$btnComponentsHelp, {
+              showModal(modalDialog(title = "Help", HTML(getText("ComponentsHelp")), easyClose = TRUE))
+        })        
+
+        observeEvent(input$btnCommunityHelp, {
+              showModal(modalDialog(title = "Help", HTML(getText("CommunityHelp")), easyClose = TRUE))
+        })        
+
+        observeEvent(input$btnGlobalDiagnosticsAnnularVizHelp, {
+              showModal(modalDialog(title = "Help", HTML(getText("GlobalDiagnosticsAnnularVizHelp")), easyClose = TRUE))
+        })        
+
+        observeEvent(input$btnGlobalDiagnosticsNetworkLayersHelp, {
+              showModal(modalDialog(title = "Help", HTML(getText("GlobalDiagnosticsNetworkLayersHelp")), easyClose = TRUE))
+        })        
+
+        observeEvent(input$btnVisualizationHelp, {
+              showModal(modalDialog(title = "Help", HTML(getText("VisualizationHelp")), easyClose = TRUE))
+        })        
+
+        observeEvent(input$btnReducibilityHelp, {
+              showModal(modalDialog(title = "Help", HTML(getText("ReducibilityHelp")), easyClose = TRUE))
+        })        
+
+        observeEvent(input$btnDynamicsHelp, {
+              showModal(modalDialog(title = "Help", HTML(getText("DynamicsHelp")), easyClose = TRUE))
+        })        
+
+
+        observeEvent(input$btnMultiplexTypeInfo, {
+              showModal(modalDialog(title = "Info", HTML(getText("txtMultiplexType")), easyClose = TRUE))
+        })
+
+        observeEvent(input$btnEdgeListFileSepInfo, {
+              showModal(modalDialog(title = "Info", HTML(getText("txtEdgeListFileSepHelp")), easyClose = TRUE))
+        })        
+
+        observeEvent(input$btnReducibilityPaletteInfo, {
+              showModal(modalDialog(title = "Info", HTML("<img width='500' src='img/colorpalettes.png' alt=''/>"), easyClose = TRUE))
+        })        
+
+        observeEvent(input$btnCommunityColorPaletteInfo, {
+              showModal(modalDialog(title = "Info", HTML("<img width='500' src='img/colorpalettes.png' alt=''/>"), easyClose = TRUE))
+        })        
+
+        observeEvent(input$btnMultiplexColorPaletteInfo, {
+              showModal(modalDialog(title = "Info", HTML("<img width='500' src='img/colorpalettes.png' alt=''/>"), easyClose = TRUE))
+        })        
+
+        observeEvent(input$btnMultiplexEdgeColorPaletteInfo, {
+              showModal(modalDialog(title = "Info", HTML("<img width='500' src='img/colorpalettes.png' alt=''/>"), easyClose = TRUE))
+        })        
+
+        observeEvent(input$btnCentralityColorPaletteInfo, {
+              showModal(modalDialog(title = "Info", HTML("<img width='500' src='img/colorpalettes.png' alt=''/>"), easyClose = TRUE))
+        })        
+
+        observeEvent(input$btnComponentColorPaletteInfo, {
+              showModal(modalDialog(title = "Info", HTML("<img width='500' src='img/colorpalettes.png' alt=''/>"), easyClose = TRUE))
+        })        
+
+        observeEvent(input$btnAssortativityPaletteInfo, {
+              showModal(modalDialog(title = "Info", HTML("<img width='500' src='img/colorpalettes.png' alt=''/>"), easyClose = TRUE))
+        })        
+
+        observeEvent(input$btnMotifsPaletteInfo, {
+              showModal(modalDialog(title = "Info", HTML("<img width='500' src='img/colorpalettes.png' alt=''/>"), easyClose = TRUE))
+        })        
+
+        observeEvent(input$btnMatrixExplorerPaletteInfo, {
+              showModal(modalDialog(title = "Info", HTML("<img width='500' src='img/colorpalettes.png' alt=''/>"), easyClose = TRUE))
+        })                
+
+        observeEvent(input$btnTriadsPaletteInfo, {
+              showModal(modalDialog(title = "Info", HTML("<img width='500' src='img/colorpalettes.png' alt=''/>"), easyClose = TRUE))
+        })                        
+
+        observeEvent(input$btnComponentsPaletteInfo, {
+              showModal(modalDialog(title = "Info", HTML("<img width='500' src='img/colorpalettes.png' alt=''/>"), easyClose = TRUE))
+        })                               
+
+        observeEvent(input$btnCommunityPaletteInfo, {
+              showModal(modalDialog(title = "Info", HTML("<img width='500' src='img/colorpalettes.png' alt=''/>"), easyClose = TRUE))
+        })                                       
+        
+        observeEvent(input$btnAnnularPaletteInfo, {
+              showModal(modalDialog(title = "Info", HTML("<img width='500' src='img/colorpalettes.png' alt=''/>"), easyClose = TRUE))
+        })                                       
+
+        observeEvent(input$btnGeographicMap, {
+              showModal(modalDialog(title = "Info", HTML("<img width='500' src='img/backmaps.png' alt=''/>"), easyClose = TRUE))
+        })        
+
 
         output$communityChoices <- renderUI({
             if(input$radMultiplexModel=='MULTIPLEX_IS_EDGECOLORED'){
                 radioButtons('radCommunityAlgorithm', '',
-                    c(Multislice_ModMax='COMMUNITY_MULTIPLEX_MODMAX',
-                        Multiplex_Infomap='COMMUNITY_MULTIPLEX_INFOMAP',
+                   # c(Multislice_ModMax='COMMUNITY_MULTIPLEX_MODMAX',
+                     c(Multiplex_Infomap='COMMUNITY_MULTIPLEX_INFOMAP',
                         Infomap='COMMUNITY_INFOMAP',
                         Louvain='COMMUNITY_LOUVAIN',
                         Random_Walk_Trap='COMMUNITY_RANDOM_WALK_TRAP',
@@ -76,15 +446,22 @@ shinyServer(function(input, output, session) {
                          helpText("Hint: the inter-layer strength must be set from the 'Mux Set Up' tab")
                         )
                 }else if(input$radCommunityAlgorithm == "COMMUNITY_MULTIPLEX_INFOMAP"  && input$radMultiplexModel=='MULTIPLEX_IS_EDGECOLORED'){
-                    list(textInput("txtMultimapTries", label=HTML("Number of independent runs:"), "10"),
-                        textInput("txtMultimapRelaxRate", label=HTML("Relax rate:"), "0.75")
+                    list(textInputRow("txtMultimapTries", label=HTML("Runs:"), "10"),
+                        textInputRow("txtMultimapRelaxRate", label=HTML("Relax rate:"), "0.75"),
+                        checkboxInput("chkMultimapBatchExploration", "Multiscale analysis", value = FALSE),
+                        conditionalPanel("input.chkMultimapBatchExploration",
+                            textInputRow("txtMultimapMinRelaxRate", label=HTML("Min rate:"), "0.01"),
+                            textInputRow("txtMultimapMaxRelaxRate", label=HTML("Max rate:"), "1"),
+                            textInputRow("txtMultimapStepsRelaxRate", label=HTML("Steps:"), "5")
+                        )
                     )
                 }else if(input$radCommunityAlgorithm == "COMMUNITY_MULTIPLEX_INFOMAP"  && input$radMultiplexModel!='MULTIPLEX_IS_EDGECOLORED'){
                     textInput("txtMultimapTries", label=HTML("Number of independent runs:"), "10")
                 }
             }
         })
-        
+
+
         #Fill the table summarizing the config file
         output$dataTable <- renderDataTable({
             inFile <- "mux_dataset.csv"
@@ -170,8 +547,6 @@ shinyServer(function(input, output, session) {
             #print(multilayerEdges)
             if(is.null(multilayerEdges)) return(NULL)
             if(nrow(multilayerEdges)==0 || LAYERS<=0) return(NULL)
-                
-            #if(btnRenderNetworkOfLayersValue==input$btnRenderNetworkOfLayers) return()
 
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -217,8 +592,6 @@ shinyServer(function(input, output, session) {
                     progress$set(message = 'No network of layers from the data...', value = 0.5)
                     Sys.sleep(1)
                 }
-    
-                btnRenderNetworkOfLayersValue <<- input$btnRenderNetworkOfLayers
     
                 progress$set(detail = 'Done!', value = 1)
                 Sys.sleep(2)
@@ -315,7 +688,15 @@ shinyServer(function(input, output, session) {
                         print(paste("file",fileName[[l]][1]))
                         layerEdges[[l]] <<-  read.table(fileName[[l]][1], header=input$chkEdgeListFileHeader, sep=as.character(input$txtEdgeListFileSep))
                         print("  Edges list imported...")
-                        #print(layerEdges[[l]][1:3,])
+
+                        if(ncol(layerEdges[[l]])==2){ 
+                            layerEdges[[l]]$V3 <<- rep(1, nrow(layerEdges[[l]])) 
+                        }else{                    
+                            if(!WEIGHTED){
+                                layerEdges[[l]]$V3 <<- rep(1, nrow(layerEdges[[l]]))
+                            }
+                        }
+
                         
                         if(input$chkEdgeListLabel){
                             #edges list are with labeled nodes instead of sequential integer IDs, we transform it
@@ -535,22 +916,34 @@ shinyServer(function(input, output, session) {
                 minNodeID <<- idmin
                 maxNodeID <<- idmax
                 
-                #reset flags and tables                
+                #reset flags and tables        
+                SupraAdjacencyMatrix <<- NULL        
                 diagnosticsMultiplexOK <<- F
                 diagnosticsSingleLayerOK <<- F
                 diagnosticsOK <<- F
                 communityOK <<- F
                 componentsOK <<- F
+                triadsOK <<- F
+                communityMultiplexBatchOK <<- F
                 communityMultiplexOK <<- F
                 communitySingleLayerOK <<- F
                 componentsMultiplexOK <<- F
                 componentsSingleLayerOK <<- F
-                
+                triadsMultiplexOK <<- F
+                triadsSingleLayerOK <<- F
+
                 listDiagnostics <<- data.frame()
                 listDiagnosticsSingleLayer <<- data.frame()
                 listDiagnosticsMerge <<- data.frame()
                 listDiagnosticsMergeSingleLayer <<- data.frame()
-                
+
+                listTriads <<- data.frame()
+                listTriadsSingleLayer <<- data.frame()
+                listTriadsMerge <<- data.frame()
+                listTriadsMergeSingleLayer <<- data.frame()
+                sumTriadsMerge <<- data.frame()
+                sumTriadsMergeSingleLayer <<- data.frame()
+
                 listCommunities <<- data.frame()
                 listCommunitiesSingleLayer <<- data.frame()
                 listCommunitiesMerge <<- data.frame()
@@ -734,7 +1127,7 @@ shinyServer(function(input, output, session) {
                 #So far, I accept this possibility just for sake of completeness, but a correct use of muxViz should avoid
                 #situations like this..
                 layerLayout[[LAYERS+1]] <<- layerLayout[[1]]
-                nodesLabel[[LAYERS+1]] <<- nodesLabel[[1]]
+                nodesLabel[[LAYERS+1]] <<- nodesLabel[[1]]                
             }
         }
 
@@ -1110,7 +1503,6 @@ shinyServer(function(input, output, session) {
             for(l in 1:LAYERS){    
                 #account for the possibility of having layers with no intra-links
                 if(nrow(layerEdges[[l]])==0){
-                    if(ncol(layerEdges[[l]])==2){ colnames(layerEdges[[l]]) <<- c("from","to") }                
                     if(ncol(layerEdges[[l]])==3){ colnames(layerEdges[[l]]) <<- c("from","to","weight") }
                     if(ncol(layerEdges[[l]])>3){
                         print("ERROR! More than 3 columns whereas equal or smaller than 3 expected.")
@@ -1120,13 +1512,7 @@ shinyServer(function(input, output, session) {
                     g[[l]] <<- graph.empty(directed=DIRECTED, n=Nodes)
                     AdjMatrix[[l]] <<- get.adjacency(g[[l]]) #I use this to avoid class incompatibility 
                 }else{
-                    if(ncol(layerEdges[[l]])==2){
-                        layerEdges[[l]] <<- cbind(layerEdges[[l]], rep(1, nrow(layerEdges[[l]])))
-                        colnames(layerEdges[[l]]) <<- c("from","to")
-                    }                
-                    if(ncol(layerEdges[[l]])==3){
-                        colnames(layerEdges[[l]]) <<- c("from","to","weight")
-                    }
+                    if(ncol(layerEdges[[l]])==3){ colnames(layerEdges[[l]]) <<- c("from","to","weight") }
                     if(ncol(layerEdges[[l]])>3){
                         print("ERROR! More than 3 columns whereas equal or smaller than 3 expected.")
                         return(NULL)
@@ -1139,17 +1525,25 @@ shinyServer(function(input, output, session) {
                 
                     if(WEIGHTED){
                         if(input$chkRESCALE_WEIGHT){
-                            if(ncol(layerEdges[[l]])==3){
-                                print("Rescaling weights...")
-                                layerEdges[[l]][,3] <<- layerEdges[[l]][,3]/min(layerEdges[[l]][,3],na.rm=T)
-                            }
+                            print("Rescaling weights...")
+                            layerEdges[[l]][,3] <<- layerEdges[[l]][,3]/min(layerEdges[[l]][,3],na.rm=T)
                         }
                     }
                 
                     #generate the network object
                     g[[l]] <<- graph.data.frame(layerEdges[[l]], directed=DIRECTED, vertices=1:Nodes)
+                    
+                    #remove multiple edges if analysis must be unweighted
+                    if(!WEIGHTED){
+                        g[[l]] <<- simplify(g[[l]], remove.multiple=T, remove.loops=F)
+                    }
+                    
                     AdjMatrix[[l]] <<- get.adjacency(g[[l]], attr="weight")
     
+                    if(!WEIGHTED){                    
+                        AdjMatrix[[l]] <<- binarizeMatrix(AdjMatrix[[l]])
+                    }
+                    
                     #update the aggregate
                     AdjMatrix[[LAYERS+1]] <<- AdjMatrix[[LAYERS+1]] + AdjMatrix[[l]]
                 }
@@ -1159,13 +1553,41 @@ shinyServer(function(input, output, session) {
                 print(paste("Layer ",l," Weighted: ",WEIGHTED))
                 print(paste(nrow(layerEdges[[l]]),"Edges in layer (excluding inter-links): ",l))
             }
-            
+
+            #Build the supra adjacency
+            if(input$radMultiplexModel!="MULTIPLEX_IS_EDGECOLORED"){
+                SupraAdjacencyMatrix <<- BuildSupraAdjacencyMatrixFromExtendedEdgelist(multilayerEdges, LAYERS, Nodes, DIRECTED)
+            }else{
+                MultisliceType <- ""
+                if(input$radMultiplexType=="MULTIPLEX_IS_ORDERED"){
+                    MultisliceType <- "ordered"
+                }else if(input$radMultiplexType=="MULTIPLEX_IS_CATEGORICAL"){
+                    MultisliceType <- "categorical"
+                }    
+                
+                LayerTensor <- BuildLayersTensor(LAYERS, as.numeric(input$txtOmega), MultisliceType)
+                SupraAdjacencyMatrix <<- BuildSupraAdjacencyMatrixFromEdgeColoredMatrices(AdjMatrix[1:LAYERS], LayerTensor, LAYERS, Nodes)
+            }
+
+            if(!WEIGHTED){
+                SupraAdjacencyMatrix <<- binarizeMatrix(SupraAdjacencyMatrix)
+            }
+
             #the aggregate
             
             #only if the network is interdependent
             if(input$radMultiplexModel=="MULTIPLEX_IS_INTERDEPENDENT"){
                 #in this case the aggregate is just the input network itself
                 g[[LAYERS+1]] <<- graph.data.frame( data.frame(from=multilayerEdges[,1], to=multilayerEdges[,3], weight=multilayerEdges[,5]) , directed=DIRECTED, vertices=1:Nodes)
+                
+                #sum parallel edges and remove 
+                g[[LAYERS+1]] <<- simplify(g[[LAYERS+1]], edge.attr.comb=list(weight="sum"), remove.loops=F)
+                
+                if(!WEIGHTED){
+                    #the interdependent network coincides with the aggregate, so it can't be weighted by the
+                    #sum of overlapping links (like in the case below). We need to set the weight attribute to 1
+                    E(g[[LAYERS+1]])$weight <<- 1
+                }
             }else{
                 g[[LAYERS+1]] <<- graph.adjacency(AdjMatrix[[LAYERS+1]],weighted=T)
             }
@@ -1184,8 +1606,8 @@ shinyServer(function(input, output, session) {
                 #the idea is to relabel nodes from 1 to NL
                 multilayerEdges.tmp[,1] <- multilayerEdges.tmp[,1] + Nodes*(multilayerEdges.tmp[,2]-1)
                 multilayerEdges.tmp[,3] <- multilayerEdges.tmp[,3] + Nodes*(multilayerEdges.tmp[,4]-1)
-                multilayerEdges.tmp[,2] <- NULL
                 multilayerEdges.tmp[,4] <- NULL
+                multilayerEdges.tmp[,2] <- NULL
                 colnames(multilayerEdges.tmp) <- c("from", "to", "weight")
                 
                 g.multi <<- graph.data.frame(multilayerEdges.tmp, directed=DIRECTED, vertices=1:(Nodes*LAYERS))
@@ -1195,7 +1617,47 @@ shinyServer(function(input, output, session) {
                 
                 multilayerEdges.tmp <- NULL
             }
-    
+
+            #build heatmaps for matrix explorer
+            
+            #multilayer
+            mux.df <- as.data.frame(t(as.matrix(SupraAdjacencyMatrix)))
+            colnames(mux.df) <- paste0(sort(rep(1:LAYERS, Nodes)), "-", rep(nodesLabel[[1]], LAYERS))
+            rownames(mux.df) <- paste0(sort(rep(1:LAYERS, Nodes)), "-", rep(nodesLabel[[1]], LAYERS))
+
+            output$matrixExplorerHeatmapMultilayerUI <- renderUI({
+                d3heatmapOutput("matrixExplorerMultilayerHeatmap", width = "700", height="700")
+            })
+            
+            output$matrixExplorerMultilayerHeatmap <- renderD3heatmap({                    
+                if(input$chkShowMatrixExplorer){
+                    d3heatmap(
+                        mux.df,
+                        color = input$selMatrixEplorerHeatmapColorPalette,
+                        dendrogram = if (input$chkMatrixEplorerHeatmapShowDendrogram){"both"}else{"none"}
+                        )
+                }
+            })
+
+            #aggregate
+            agg.df <- as.data.frame(t(as.matrix(AdjMatrix[[LAYERS+1]])))
+            colnames(agg.df) <- nodesLabel[[1]]
+            rownames(agg.df) <- nodesLabel[[1]]
+
+            output$matrixExplorerHeatmapAggregateUI <- renderUI({
+                d3heatmapOutput("matrixExplorerAggregateHeatmap", width = "700", height="700")
+            })
+
+            output$matrixExplorerAggregateHeatmap <- renderD3heatmap({                    
+                if(input$chkShowMatrixExplorer){
+                    d3heatmap(
+                        agg.df,
+                        color = input$selMatrixEplorerHeatmapColorPalette,
+                        dendrogram = if (input$chkMatrixEplorerHeatmapShowDendrogram){"both"}else{"none"}
+                        )
+                }
+            })
+
             btnImportNetworksValue <<- input$btnImportNetworks
         }
     
@@ -1251,10 +1713,8 @@ shinyServer(function(input, output, session) {
             })
         })
 
-        observe({
+        observeEvent(input$btnResetLights, {
             if(input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
-                
-            if(btnResetLightsValue==input$btnResetLights) return()
 
             progress <- shiny::Progress$new(session)
             on.exit(progress$close())
@@ -1274,19 +1734,13 @@ shinyServer(function(input, output, session) {
             }
             #rgl.light(theta = 0, phi = 0, viewpoint.rel = TRUE, ambient = "#FFFFFF", 
             #            diffuse = "#FFFFFF", specular = "#FFFFFF")
-                        
-            btnResetLightsValue <<- input$btnResetLights
 
             progress$set(detail = 'Done!', value = 1)
             Sys.sleep(2)
         })
         
-        observe({
+        observeEvent(input$btnImportTimeline, {
             if(input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
-                
-            if(btnImportTimelineValue==input$btnImportTimeline) return()
-
-            if(input$btnImportTimeline==0) return()
             
             if(is.null(input$timeline_file$datapath)) return()
     
@@ -1301,8 +1755,6 @@ shinyServer(function(input, output, session) {
                     Sys.sleep(5)
                     return()
                 }
-                                        
-                btnImportTimelineValue <<- input$btnImportTimeline
                 
                 progress$set(detail = 'Import Completed!', value = 1)
                 Sys.sleep(2)
@@ -1343,10 +1795,7 @@ shinyServer(function(input, output, session) {
         }
         
         #Export the visualization for each snapshot of the timeline
-        observe({
-            #print(paste(input$btnImportTimeline,input$btnRenderNetworks,input$btnApplyLayout,input$btnImportNetworks,LAYERS,length(dfTimeline),btnRenderDynamicsSnapshotsValue,input$btnRenderDynamicsSnapshots))
-            if(btnRenderDynamicsSnapshotsValue==input$btnRenderDynamicsSnapshots) return()
-            
+        observeEvent(input$btnRenderDynamicsSnapshots, {            
             if(input$btnImportTimeline==0 || input$btnRenderNetworks==0 || length(dfTimeline)==0) return()
 
             isolate({
@@ -1397,34 +1846,26 @@ shinyServer(function(input, output, session) {
                             
                             arrayStrength <- graph.strength(g.multi,mode="total")
                             idxtohide <- which(arrayStrength==0.)
+                            inlayers <- floor((idxtohide-1)/Nodes) + 1
+                            innodes <- (idxtohide-1) %% Nodes + 1
                             
-                            if(length(idxtohide)>0){
-                                inlayers <- floor((idxtohide-1)/Nodes) + 1
-                                innodes <- (idxtohide-1) %% Nodes + 1
-                                
-                                for(l in 1:LAYERS){
-                                    idxs <- which(inlayers==l)
-                                    nodes2hide <- which(V(g[[l]]) %in% innodes[idxs])
-                                    V(g[[l]])[nodes2hide]$size <- 0
-                                    V(g[[l]])[nodes2hide]$label <- ""
-                                }
+                            for(l in 1:LAYERS){
+                                idxs <- which(inlayers==l)
+                                nodes2hide <- which(V(g[[l]]) %in% innodes[idxs])
+                                V(g[[l]])[nodes2hide]$size <- 0
+                                V(g[[l]])[nodes2hide]$label <- ""
                             }
-                                                        
+                            
                             #aggregate must be done separately
                             arrayStrength <- graph.strength(g[[LAYERS+1]],mode="total")
-                            
-                            if(any(arrayStrength==0.)){
-                                V(g[[LAYERS+1]])[arrayStrength==0.]$size <- 0
-                                V(g[[LAYERS+1]])[arrayStrength==0.]$label <- ""
-                            }
+                            V(g[[LAYERS+1]])[arrayStrength==0.]$size <- 0
+                            V(g[[LAYERS+1]])[arrayStrength==0.]$label <- ""
                         }else{
                             #do not account for interlinks, just intralinks
                             for(l in 1:(LAYERS+1)){
-                                if(any(arrayStrength==0.)){
-                                    arrayStrength <- graph.strength(g[[l]],mode="total")
-                                    V(g[[l]])[arrayStrength==0.]$size <- 0
-                                    V(g[[l]])[arrayStrength==0.]$label <- ""
-                                }
+                                arrayStrength <- graph.strength(g[[l]],mode="total")
+                                V(g[[l]])[arrayStrength==0.]$size <- 0
+                                V(g[[l]])[arrayStrength==0.]$label <- ""
                             }
                         }
                     }
@@ -1619,7 +2060,7 @@ shinyServer(function(input, output, session) {
                                                 rescale=F)
                         }else{
                             print("  Standard device output...")
-                            
+        
                             #plot the graph with openGL    
                             #print(layouts[[l]])
                             plot.igraph(g[[l]], layout=layouts[[l]],
@@ -1682,7 +2123,7 @@ shinyServer(function(input, output, session) {
                                                     rescale=F)
                                 #edge/node transparancy not yet supported by rglplot
                                 #alpha=as.numeric(input$txtINTERLINK_TRANSP))
-                            }else{                                
+                            }else{
                                 plot.igraph(g.multi, layout=layout.multi,
                                             vertex.size=0, 
                                             vertex.shape="none",
@@ -1721,8 +2162,6 @@ shinyServer(function(input, output, session) {
                 
                 progress$set(message = 'Rendering Completed!', value = 1)
                 Sys.sleep(2)
-            
-                btnRenderDynamicsSnapshotsValue <<- input$btnRenderDynamicsSnapshots
             })
         })
 
@@ -1730,11 +2169,9 @@ shinyServer(function(input, output, session) {
       	################################################
       	# Motifs
       	################################################
-        observe({
-            if(input$btnCalculateMotifs==0 || input$btnImportNetworks == 0 ||  LAYERS<=1)
+        observeEvent(input$btnCalculateMotifs, {
+            if(input$btnImportNetworks == 0 ||  LAYERS<=1)
                 return()
-            
-            if(btnCalculateMotifsValue==input$btnCalculateMotifs) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -1832,7 +2269,7 @@ shinyServer(function(input, output, session) {
                 motifsTable$Motif <- rep("",nrow(motifsTable))
                 for(r in 1:nrow(motifsTable)){
                     motif_name <- motifsTable[r,]$Adj.Matrix
-                    outpng <- concatenatePath(concatenatePath(buildPath("www","img"),"motifs"), paste0(motif_name,".png"))
+                    outpng <- gsub("\"", "", concatenatePath(concatenatePath(buildPath("www","img"),"motifs"), paste0(motif_name,".png")))
 
                     #print(motif_name)
                     #print(t(matrix(as.numeric(strsplit(motif_name,"")[[1]]),ncol=as.numeric(input$selMotifSize))))
@@ -1867,33 +2304,6 @@ shinyServer(function(input, output, session) {
 
                 loadNamespace("shinyjs")  #todo: this must be removed when new igraph will solve issue with shinyjs
                 listMotifs <<- motifsTable
-                listMotifs$Motif <<- NULL
-
-                output$motifsColorLegend <- renderPlot({
-                    mydf <- data.frame(layer=1:LAYERS, fake=1, color=rgb.palette)
-                    p <- ggplot(mydf, aes(x=layer, y=fake, fill=layer)) + geom_tile() + 
-                            scale_fill_gradientn(colours = rgb.palette) +  
-                            ylab("") + 
-                            xlab("") + 
-                            scale_x_discrete(breaks=c(1:LAYERS), limits=c(1:LAYERS), labels=layerLabels) + 
-                            scale_y_discrete(breaks=NULL, limits=c(0,1)) + 
-                            guides(fill=FALSE) + 
-                            theme_bw() + 
-                            theme( plot.background = element_blank(),
-                                panel.grid.major = element_blank() ,
-                                panel.grid.minor = element_blank() ,
-                                panel.border = element_blank() ,
-                                panel.background = element_blank(),
-                                axis.line = element_blank(),
-                                text = element_text(size=25),
-                                axis.text.x = element_text(angle=90, vjust=1)
-                              )
-                    print(p)
-                }, height = 250)
-                
-                output$motifsGvisTable <- renderGvis({
-                    gvisTable(motifsTable,options=googleVisMotifsSummaryTableOptions())
-                })   
                 
                 #to reset output options
                 options(scipen=0)
@@ -1903,21 +2313,55 @@ shinyServer(function(input, output, session) {
                 if(file.exists(paste0(input$txtProjectName,"_fanmod.edges"))) file.remove(paste0(input$txtProjectName,"_fanmod.edges"))
                 if(file.exists(paste0(input$txtProjectName,"_fanmod.csv"))) file.remove(paste0(input$txtProjectName,"_fanmod.csv"))
                 if(file.exists(paste0(input$txtProjectName,"_fanmod.csv.log"))) file.remove(paste0(input$txtProjectName,"_fanmod.csv.log"))
-
-                btnCalculateMotifsValue <<- input$btnCalculateMotifs
             })
-        })
+        }, ignoreInit = TRUE)
+
+                
+        output$motifsColorLegend <- renderPlot({
+            if(input$btnCalculateMotifs==0 || input$btnImportNetworks == 0 ||  LAYERS<=1)
+                return()
+            
+            rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selMotifColorPalette],input$selMotifColorPalette))(LAYERS)
+
+            layerLabels <- c()
+            for(l in 1:LAYERS){ layerLabels <- c(layerLabels, layerLabel[[l]]) }
+
+            mydf <- data.frame(layer=1:LAYERS, fake=1, color=rgb.palette)
+            p <- ggplot(mydf, aes(x=layer, y=fake, fill=layer)) + geom_tile() + 
+                    scale_fill_gradientn(colours = rgb.palette) +  
+                    ylab("") + 
+                    xlab("") + 
+                    scale_x_discrete(breaks=c(1:LAYERS), limits=c(1:LAYERS), labels=layerLabels) + 
+                    scale_y_discrete(breaks=NULL, limits=c(0,1)) + 
+                    guides(fill=FALSE) + 
+                    theme_bw() + 
+                    theme( plot.background = element_blank(),
+                        panel.grid.major = element_blank() ,
+                        panel.grid.minor = element_blank() ,
+                        panel.border = element_blank() ,
+                        panel.background = element_blank(),
+                        axis.line = element_blank(),
+                        text = element_text(size=25),
+                        axis.text.x = element_text(angle=90, vjust=1)
+                        )
+            print(p)
+        }, height = 250)
         
+        output$motifsGvisTable <- renderGvis({
+            if(input$btnCalculateMotifs==0 || input$btnImportNetworks == 0 ||  LAYERS<=1)
+                return()
+            
+            gvisTable(listMotifs,options=googleVisMotifsSummaryTableOptions())
+        })   
+
 
       	################################################
       	# Query
       	################################################
 
-        observe({
+        observeEvent(input$btnQuery, {
             if(input$btnImportNetworks == 0 ||  LAYERS==0)
                 return()
-            
-            if(btnQueryValue==input$btnQuery) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -1986,19 +2430,16 @@ shinyServer(function(input, output, session) {
                 Sys.sleep(1)
                 
                 listQueryResult <<- query.tab
-                btnQueryValue <<- input$btnQuery
             })
-        })
+        }, ignoreInit = TRUE)
 
       	################################################
       	# Calculate diagnostics
       	################################################
 
-        observe({
-            if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 ||  LAYERS==0)
+        observeEvent(input$btnCalculateCorrelationDiagnostics, {
+            if(input$btnImportNetworks == 0 ||  LAYERS==0)
                 return()
-            
-            if(btnCalculateCorrelationDiagnosticsValue==input$btnCalculateCorrelationDiagnostics) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -2024,7 +2465,7 @@ shinyServer(function(input, output, session) {
                         rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selAssortativityTypeColorPalette],input$selAssortativityTypeColorPalette))
                         
                         png(outfilem, width=550, height=400)
-                        myImagePlot(AdjMatrix[[l]], xLabels=rep("",Nodes), yLabels=rep("",Nodes), ColorRamp=rgb.palette(120)) #,title=c("")
+                        myImagePlot(as.matrix(AdjMatrix[[l]]), xLabels=rep("",Nodes), yLabels=rep("",Nodes), ColorRamp=rgb.palette(120)) #,title=c("")
                         #levelplot(AdjMatrix[[l]], main="", xlab="", ylab="", col.regions=rgb.palette(120), cuts=100, at=seq(0,1,0.01))
                         dev.off()
                     }
@@ -2038,229 +2479,82 @@ shinyServer(function(input, output, session) {
                 ###############            
                 
                 if(input$chkMULTIPLEX_OVERLAPPING && LAYERS>1){
-                    #create the config file for calling Octave's computation
-                    createOctaveConfigFile()
                     progress$set(message = 'Calculating edge overlapping...', value = 0.05)
-                    
-                    #call octave
-                    #system("octave -qf octave/muxMultisliceOverlapping.m",intern=T)
-                    octave.call("octave/muxMultisliceOverlapping.m")
-                    Sys.sleep(3)
-                    
-                    #read output. Here I could redirect the output inside the R environment.. but
-                    #for compatibility with the rest of the code I prefer to read a file
-                    resultFile <- paste0(input$txtProjectName,"_overlapping.txt")
-                    avgGlobalOverlapping <- paste(round(as.numeric(read.table(resultFile)[1,1])*100,3)," %")
-                    if(file.exists(resultFile)) file.remove(resultFile)
-                        
-                    output$globalDiagnosticsOverlapping <- reactive({
-                        if (input$btnCalculateCorrelationDiagnostics == 0 || input$btnImportNetworks == 0 || length(input$project_file)==0)
-                            return(list())
-    
-                        #be careful: "=" is required instead of "<-"
-                        return(list(
-                            sumAvgGlobalOverlapping = as.character(avgGlobalOverlapping)
-                        ))
-                    })
-                    
-                    #call octave again
-                    #system("octave -qf octave/muxMultisliceOverlappingMatrix.m",intern=T)
-                    octave.call("octave/muxMultisliceOverlappingMatrix.m")
-                    Sys.sleep(3)
-                    
-                    #read output.
-                    resultFile <- paste0(input$txtProjectName,"_overlapping_matrix.txt")
-                    
+                                        
+                    avgGlobalOverlapping <<- GetAverageGlobalOverlapping(SupraAdjacencyMatrix, LAYERS, Nodes)
+                    avgGlobalOverlapping <<- paste(round(as.numeric(avgGlobalOverlapping)*100,3)," %")
+                                                            
                     Layer <- NULL
                     for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
-    
-                    overlapMatrix <- matrix(scan(resultFile, n = LAYERS*LAYERS), ncol=LAYERS, nrow=LAYERS, byrow = TRUE, dimnames=list(NULL, Layer))
-                    if(file.exists(resultFile)) file.remove(resultFile)
-    
-                    output$overlappingEdgeHeatmapUI <- renderUI({
-                        d3heatmapOutput("overlappingEdgeHeatmap", width = "100%")
-                    })
+        
+                    avgGlobalOverlappingMatrix <<- GetAverageGlobalOverlappingMatrix(SupraAdjacencyMatrix,LAYERS,Nodes)
 
-                    overlapMatrix.df <- as.data.frame(t(overlapMatrix))
-                    colnames(overlapMatrix.df) <- Layer
-                    rownames(overlapMatrix.df) <- Layer
+                    avgGlobalOverlappingMatrix.df <<- as.data.frame(t(as.matrix(avgGlobalOverlappingMatrix)))
+                    colnames(avgGlobalOverlappingMatrix.df) <<- Layer
+                    rownames(avgGlobalOverlappingMatrix.df) <<- Layer
 
-                   output$overlappingEdgeHeatmap <- renderD3heatmap({
-                        if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                            
-                        d3heatmap(
-                            overlapMatrix.df,
-                            color = input$selAssortativityTypeColorPalette,
-                            dendrogram = if (input$chkOverlappingEdgeHeatmapShowDendrogram){"both"}else{"none"}
-                            )
-                    })
-
-    
-                    overlapMatrix <- data.frame(overlapMatrix)
+                    overlapMatrix <- data.frame(as.matrix(avgGlobalOverlappingMatrix))
+                    colnames(overlapMatrix) <- Layer
                     overlapMatrix <- cbind(data.frame(Layer),overlapMatrix)
-                    listOverlap <<- overlapMatrix
-    
-                    output$overlappingSummaryTable <- renderGvis({
-                        if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                        
-                        gvisTable(overlapMatrix,options=googleVisOverlapMatrixSummaryTableOptions())
-                    })   
+                    listOverlap <<- overlapMatrix    
                 }
 
                 if(input$chkMULTIPLEX_NODEOVERLAPPING && LAYERS>1){
-                    #create the config file for calling Octave's computation
-                    createOctaveConfigFile()
                     progress$set(message = 'Calculating node overlapping...', value = 0.05)
                                         
-                    #call octave
-                    #system("octave -qf octave/muxMultisliceNodeOverlappingMatrix.m",intern=T)
-                    octave.call("octave/muxMultisliceNodeOverlappingMatrix.m")
-                    Sys.sleep(3)
-                    
-                    #read output.
-                    resultFile <- paste0(input$txtProjectName,"_node-overlapping_matrix.txt")
-                    
                     Layer <- NULL
                     for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
-    
-                    overlapMatrix2 <- matrix(scan(resultFile, n = LAYERS*LAYERS), ncol=LAYERS, nrow=LAYERS, byrow = TRUE, dimnames=list(NULL, Layer))
-                    if(file.exists(resultFile)) file.remove(resultFile)
-    
-                    output$overlappingNodeHeatmapUI <- renderUI({
-                        d3heatmapOutput("overlappingNodeHeatmap", width = "100%")
-                    })
 
-                    overlapMatrix2.df <- as.data.frame(t(overlapMatrix2))
-                    colnames(overlapMatrix2.df) <- Layer
-                    rownames(overlapMatrix2.df) <- Layer
-
-                   output$overlappingNodeHeatmap <- renderD3heatmap({
-                        if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                            
-                        d3heatmap(
-                            overlapMatrix2.df,
-                            color = input$selAssortativityTypeColorPalette,
-                            dendrogram = if (input$chkOverlappingNodeHeatmapShowDendrogram){"both"}else{"none"}
-                            )
-                    })
-
+                    avgGlobalNodeOverlappingMatrix <<- GetAverageGlobalNodeOverlappingMatrix(SupraAdjacencyMatrix,LAYERS,Nodes)
     
-                    overlapMatrix2 <- data.frame(overlapMatrix2)
+
+                    avgGlobalNodeOverlappingMatrix.df <<- as.data.frame(t(as.matrix(avgGlobalNodeOverlappingMatrix)))
+                    colnames(avgGlobalNodeOverlappingMatrix.df) <<- Layer
+                    rownames(avgGlobalNodeOverlappingMatrix.df) <<- Layer
+    
+                    overlapMatrix2 <- data.frame(as.matrix(avgGlobalNodeOverlappingMatrix))
+                    colnames(overlapMatrix2) <- Layer
                     overlapMatrix2 <- cbind(data.frame(Layer),overlapMatrix2)
-                    listNodeOverlap <<- overlapMatrix2
-    
-                    output$overlappingNodeSummaryTable <- renderGvis({
-                        if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                        
-                        gvisTable(overlapMatrix2,options=googleVisNodeOverlapMatrixSummaryTableOptions())
-                    })   
+                    listNodeOverlap <<- overlapMatrix2    
                 }
     
                 if(input$chkMULTIPLEX_INTERASSORTATIVITY_PEARSON && LAYERS>1){
                     progress$set(message = 'Calculating Pearson...', value = 0.05)
-                    
-                    #create the config file for calling Octave's computation
-                    createOctaveConfigFile()
-    
-                    #call octave
-                    #system("octave -qf octave/muxMultisliceInterAssortativityPearson.m",intern=T)
-                    octave.call("octave/muxMultisliceInterAssortativityPearson.m")
-                    Sys.sleep(3)
-                    
-                    #read output
-                    resultFile <- paste0(input$txtProjectName,"_interassortativity_pearson",input$selAssortativityType,".txt")
-    
+
                     Layer <- NULL
                     for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
-    
-                    interPearson <- matrix(scan(resultFile, n = LAYERS*LAYERS), ncol=LAYERS, nrow=LAYERS, byrow = TRUE, dimnames=list(NULL, Layer))
-                    if(file.exists(resultFile)) file.remove(resultFile)
-    
-                    output$interPearsonHeatmapUI <- renderUI({
-                        d3heatmapOutput("interPearsonHeatmap", width = "100%")
-                    })
 
-                    interPearson.df <- as.data.frame(t(interPearson))
-                    colnames(interPearson.df) <- Layer
-                    rownames(interPearson.df) <- Layer
-
-                   output$interPearsonHeatmap <- renderD3heatmap({
-                        if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                            
-                        d3heatmap(
-                            interPearson.df,
-                            color = input$selAssortativityTypeColorPalette,
-                            dendrogram = if (input$chkInterPearsonHeatmapShowDendrogram){"both"}else{"none"}
-                            )
-                    })
+                    interPearson <- GetInterAssortativityTensor(SupraAdjacencyMatrix,LAYERS,Nodes,
+                                                                                        DIRECTED,input$selAssortativityType)$InterPearson
     
-                    interPearson <- data.frame(interPearson)
+                    interPearson.df <<- as.data.frame(t(as.matrix(interPearson)))
+                    colnames(interPearson.df) <<- Layer
+                    rownames(interPearson.df) <<- Layer
+    
+                    interPearson <- data.frame(as.matrix(interPearson))
+                    colnames(interPearson) <- Layer
                     interPearson <- cbind(data.frame(Layer),interPearson)
-                    listInterPearson <<- interPearson
-                    
-                    output$interPearsonSummaryTable <- renderGvis({
-                        if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                        
-                        gvisTable(interPearson,options=googleVisInterPearsonSummaryTableOptions())
-                    })   
+                    listInterPearson <<- interPearson                    
                 }
     
                 if(input$chkMULTIPLEX_INTERASSORTATIVITY_SPEARMAN && LAYERS>1){
                     progress$set(message = 'Calculating Spearman...', value = 0.05)
-                    
-                    #create the config file for calling Octave's computation
-                    createOctaveConfigFile()
-    
-                    #call octave
-                    #system("octave -qf octave/muxMultisliceInterAssortativitySpearman.m",intern=T)
-                    octave.call("octave/muxMultisliceInterAssortativitySpearman.m")
-                    Sys.sleep(3)
-                    
-                    #read output
-                    resultFile <- paste0(input$txtProjectName,"_interassortativity_spearman",input$selAssortativityType,".txt")
-    
+                        
                     Layer <- NULL
                     for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
+
+
+                    interSpearman <- GetInterAssortativityTensor(SupraAdjacencyMatrix,LAYERS,Nodes,
+                                                                                    DIRECTED,input$selAssortativityType)$InterSpearman
     
-                    interSpearman <- matrix(scan(resultFile, n = LAYERS*LAYERS), ncol=LAYERS, nrow=LAYERS, byrow = TRUE, dimnames=list(NULL, Layer))
-                    if(file.exists(resultFile)) file.remove(resultFile)
-    
-                    output$interSpearmanHeatmapUI <- renderUI({
-                        d3heatmapOutput("interSpearmanHeatmap", width = "100%")
-                    })
-
-                    interSpearman.df <- as.data.frame(t(interSpearman))
-                    colnames(interSpearman.df) <- Layer
-                    rownames(interSpearman.df) <- Layer
-
-                   output$interSpearmanHeatmap <- renderD3heatmap({
-                        if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                            
-                        d3heatmap(
-                            interSpearman.df,
-                            color = input$selAssortativityTypeColorPalette,
-                            dendrogram = if (input$chkInterSpearmanHeatmapShowDendrogram){"both"}else{"none"}
-                            )
-                    })
-
+                    interSpearman.df <<- as.data.frame(t(as.matrix(interSpearman)))
+                    colnames(interSpearman.df) <<- Layer
+                    rownames(interSpearman.df) <<- Layer
                     
-                    interSpearman <- data.frame(interSpearman)
+                    interSpearman <- data.frame(as.matrix(interSpearman))
+                    colnames(interSpearman) <- Layer
                     interSpearman <- cbind(data.frame(Layer),interSpearman)
-                    listInterSpearman <<- interSpearman
-                    
-                    output$interSpearmanSummaryTable <- renderGvis({
-                        if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                        
-                        gvisTable(interSpearman,options=googleVisInterSpearmanSummaryTableOptions())
-                    })   
+                    listInterSpearman <<- interSpearman                    
                 }            
 
                 if(input$chkMULTIPLEX_SHORTESTPATH && LAYERS>1){
@@ -2284,52 +2578,145 @@ shinyServer(function(input, output, session) {
                     }
                     frobeniusNorm <- 1 - frobeniusNorm/max(frobeniusNorm)
     
-                    output$distanceSimilarityHeatmapUI <- renderUI({
-                        d3heatmapOutput("distanceSimilarityHeatmap", width = "100%")
-                    })
-
                     colnames(frobeniusNorm) <- Layer
                     rownames(frobeniusNorm) <- Layer
-                    frobeniusNorm.df <- as.data.frame(t(frobeniusNorm))
-                    colnames(frobeniusNorm.df) <- Layer
-                    rownames(frobeniusNorm.df) <- Layer
-
-                   output$distanceSimilarityHeatmap <- renderD3heatmap({
-                        if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                            
-                        d3heatmap(
-                            frobeniusNorm.df,
-                            color = input$selAssortativityTypeColorPalette,
-                            dendrogram = if (input$chkDistanceSimilarityHeatmapShowDendrogram){"both"}else{"none"}
-                            )
-                    })
+                    frobeniusNorm.df <<- as.data.frame(t(frobeniusNorm))
+                    colnames(frobeniusNorm.df) <<- Layer
+                    rownames(frobeniusNorm.df) <<- Layer
 
                     frobeniusNorm <- data.frame(frobeniusNorm)
                     frobeniusNorm <- cbind(data.frame(Layer),frobeniusNorm)
                     listDistanceSimilarity <<- frobeniusNorm
-                    
-                    output$distanceSimilaritySummaryTable <- renderGvis({
-                        if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                        
-                        gvisTable(frobeniusNorm,options=googleVisDistanceSimilaritySummaryTableOptions())
-                    })   
                 }            
 
-
-                btnCalculateCorrelationDiagnosticsValue <<- input$btnCalculateCorrelationDiagnostics
                 progress$set(message = 'Correlation Diagnostics Completed!', value = 1)
                 Sys.sleep(2)
-
             })
+        }, ignoreInit = TRUE)
+        
+        output$overlappingEdgeHeatmapUI <- renderUI({
+            d3heatmapOutput("overlappingEdgeHeatmap", width = "100%")
+        })
+
+        output$globalDiagnosticsOverlapping <- reactive({
+            if (input$btnCalculateCorrelationDiagnostics == 0 || input$btnImportNetworks == 0 || length(input$project_file)==0)
+                return(list())
+
+            #be careful: "=" is required instead of "<-"
+            return(list(
+                sumAvgGlobalOverlapping = as.character(avgGlobalOverlapping)
+            ))
+        })
+
+        output$overlappingEdgeHeatmap <- renderD3heatmap({
+            if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                return(NULL)
+                
+            d3heatmap(
+                avgGlobalOverlappingMatrix.df,
+                color = input$selAssortativityTypeColorPalette,
+                dendrogram = if (input$chkOverlappingEdgeHeatmapShowDendrogram){"both"}else{"none"}
+                )
         })
         
-        observe({
-            if(input$btnCalculateCentralityDiagnostics==0 || input$btnImportNetworks == 0 ||  LAYERS==0)
-                return()
+        output$overlappingSummaryTable <- renderGvis({
+            if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                return(NULL)
             
-            if(btnCalculateCentralityDiagnosticsValue==input$btnCalculateCentralityDiagnostics) return()
+            gvisTable(listOverlap,options=googleVisOverlapMatrixSummaryTableOptions())
+        })   
+
+        output$overlappingNodeHeatmapUI <- renderUI({
+            d3heatmapOutput("overlappingNodeHeatmap", width = "100%")
+        })
+
+        output$overlappingNodeHeatmap <- renderD3heatmap({
+            if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                return(NULL)
+                
+            d3heatmap(
+                avgGlobalNodeOverlappingMatrix.df,
+                color = input$selAssortativityTypeColorPalette,
+                dendrogram = if (input$chkOverlappingNodeHeatmapShowDendrogram){"both"}else{"none"}
+                )
+        })
+
+        output$overlappingNodeSummaryTable <- renderGvis({
+            if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                return(NULL)
+            
+            gvisTable(listNodeOverlap,options=googleVisNodeOverlapMatrixSummaryTableOptions())
+        })   
+
+        output$interPearsonHeatmapUI <- renderUI({
+            d3heatmapOutput("interPearsonHeatmap", width = "100%")
+        })
+
+        output$interPearsonHeatmap <- renderD3heatmap({
+            if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                return(NULL)
+                
+            d3heatmap(
+                interPearson.df,
+                color = input$selAssortativityTypeColorPalette,
+                dendrogram = if (input$chkInterPearsonHeatmapShowDendrogram){"both"}else{"none"}
+                )
+        })
+
+        output$interPearsonSummaryTable <- renderGvis({
+            if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                return(NULL)
+            
+            gvisTable(listInterPearson,options=googleVisInterPearsonSummaryTableOptions())
+        })   
+
+        output$interSpearmanHeatmapUI <- renderUI({
+            d3heatmapOutput("interSpearmanHeatmap", width = "100%")
+        })
+
+        output$interSpearmanHeatmap <- renderD3heatmap({
+            if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                return(NULL)
+                
+            d3heatmap(
+                interSpearman.df,
+                color = input$selAssortativityTypeColorPalette,
+                dendrogram = if (input$chkInterSpearmanHeatmapShowDendrogram){"both"}else{"none"}
+                )
+        })
+
+        output$interSpearmanSummaryTable <- renderGvis({
+            if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                return(NULL)
+            
+            gvisTable(listInterSpearman,options=googleVisInterSpearmanSummaryTableOptions())
+        })   
+
+        output$distanceSimilarityHeatmapUI <- renderUI({
+            d3heatmapOutput("distanceSimilarityHeatmap", width = "100%")
+        })
+
+        output$distanceSimilarityHeatmap <- renderD3heatmap({
+            if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                return(NULL)
+                
+            d3heatmap(
+                frobeniusNorm.df,
+                color = input$selAssortativityTypeColorPalette,
+                dendrogram = if (input$chkDistanceSimilarityHeatmapShowDendrogram){"both"}else{"none"}
+                )
+        })
+
+        output$distanceSimilaritySummaryTable <- renderGvis({
+            if(input$btnCalculateCorrelationDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                return(NULL)
+            
+            gvisTable(listDistanceSimilarity,options=googleVisDistanceSimilaritySummaryTableOptions())
+        })   
+        
+        observeEvent(input$btnCalculateCentralityDiagnostics, {
+            if(input$btnImportNetworks == 0 ||  LAYERS==0)
+                return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -2348,11 +2735,11 @@ shinyServer(function(input, output, session) {
                     #listDiagnosticsMerge <<- NULL
                     #listDiagnosticsMergeSingleLayer <<- NULL
                     
-                    if(input$chkNODE_CENTRALITY_MULTIPLEX){
-                        #calculation in the multiplex. For the moment the output is obtained calling octave.
+                    if(input$radCentralityAlgorithm=="CENTRALITY_MULTILAYER"){
                         #the output will be stored in [[l]] for the multiplex and [[LAYERS+1]] for the aggregated.
                         listDiagnostics <<- GetCentralityDataFrameArray("Multiplex") 
                         diagnosticsMultiplexOK <<- T
+                        listDiagnosticsMerge <<- NULL
                         
                         for(l in 1:(LAYERS+1)){
                             listDiagnosticsMerge <<- rbind(listDiagnosticsMerge,listDiagnostics[[l]])
@@ -2365,51 +2752,40 @@ shinyServer(function(input, output, session) {
                         
                         listDiagnosticsSingleLayer <<- GetCentralityDataFrameArray("SingleLayer")
                         diagnosticsSingleLayerOK <<- T
+                        listDiagnosticsMergeSingleLayer <<- NULL
                         
                         for(l in 1:(LAYERS+1)){
                             listDiagnosticsMergeSingleLayer <<- rbind(listDiagnosticsMergeSingleLayer,listDiagnosticsSingleLayer[[l]])
                         }             
 
                     }
-
-    
-                    progress$set(message = 'Creating tables...', value = 0.95)
-                    Sys.sleep(1)
-
-                    if(input$chkNODE_CENTRALITY_MULTIPLEX){
-                        #Fill the table summarizing centrality 
-                        output$centralityTable <- renderGvis({
-                            if(input$btnCalculateCentralityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                                return(NULL)
-                            
-                            return(gvisTable(listDiagnosticsMerge,options=list(page='enable',pageSize=Nodes)))
-                            #googleVisCentralityTableOptions()))
-                        })   
-                    }else{
-                        #Fill the table summarizing centrality 
-                        output$centralityTableSingleLayer <- renderGvis({
-                            if(input$btnCalculateCentralityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                                return(NULL)
-                            
-                            return(gvisTable(listDiagnosticsMergeSingleLayer,options=list(page='enable',pageSize=Nodes)))
-                            #googleVisCentralityTableOptions()))
-                        })                           
-                    }
                 }
-                
-                btnCalculateCentralityDiagnosticsValue <<- input$btnCalculateCentralityDiagnostics
                 
                 progress$set(message = 'Centrality Completed!', value = 1)
                 Sys.sleep(2)
             })
-        })
+        }, ignoreInit = TRUE)
         
-        observe({
-            if(input$btnCalculateCommunityDiagnostics==0 || input$btnImportNetworks == 0 ||  LAYERS==0)
+        #Fill the table summarizing centrality 
+        output$centralityTable <- renderGvis({
+            if(diagnosticsMultiplexOK){
+                return(gvisTable(listDiagnosticsMerge, options=list(page='enable', pageSize=Nodes)))
+                #googleVisCentralityTableOptions()))
+            }
+        })   
+            
+        #Fill the table summarizing centrality 
+        output$centralityTableSingleLayer <- renderGvis({
+            if(diagnosticsSingleLayerOK){
+                return(gvisTable(listDiagnosticsMergeSingleLayer, options=list(page='enable', pageSize=Nodes)))
+                #googleVisCentralityTableOptions()))
+            }
+        }) 
+        
+        observeEvent(input$btnCalculateCommunityDiagnostics, {
+            if(input$btnImportNetworks == 0 ||  LAYERS==0)
                 return()
             
-            if(btnCalculateCommunityDiagnosticsValue==input$btnCalculateCommunityDiagnostics) return()
-    
             isolate({
                 progress <- shiny::Progress$new(session)
                 on.exit(progress$close())
@@ -2420,7 +2796,8 @@ shinyServer(function(input, output, session) {
 
                 progress$set(message = 'Calculating community structure...', value = 0.05)
                 print("  Detecting communities...")    
-
+                if(is.null(input$radCommunityAlgorithm)) return()
+                
                 if(input$radCommunityAlgorithm=="COMMUNITY_MULTIPLEX_MODMAX" || input$radCommunityAlgorithm=="COMMUNITY_MULTIPLEX_INFOMAP"){
                     #calculation in the multiplex
                     listCommunities <<- NULL
@@ -2430,85 +2807,84 @@ shinyServer(function(input, output, session) {
                     communityOK <<- T
     
                     if(input$radCommunityAlgorithm=="COMMUNITY_MULTIPLEX_MODMAX"){
-                        #calculation in the multiplex. For the moment the output is obtained calling octave.
                         #the output will be stored in [[l]] for the multiplex and [[LAYERS+1]] for the aggregated.
     
-                        for(l in 1:LAYERS){
-                            listCommunities[[l]] <<- data.frame(Layer = rep(paste(l,"Multi",sep="-"),Nodes))
-                            listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Node = 1:Nodes))
-                            listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Label=nodesLabel[[l]]))
-                        }
-                        l <- LAYERS+1
-                        listCommunities[[l]] <<- data.frame(Layer = rep("Aggr",Nodes))
-                        listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Node = 1:Nodes))
-                        listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Label=nodesLabel[[l]]))
-                        
-                        sumCommunities[[1]] <- data.frame(Layer = "Multi")
-                        sumCommunities[[2]] <- data.frame(Layer = "Aggr")
-    
-                        createOctaveConfigFile()
-                        #call octave
-                        #system("octave -qf octave/muxMultisliceCommunity.m",intern=T)
-                        octave.call("octave/muxMultisliceCommunity.m")
-                        Sys.sleep(3)
-                        
-                        #read output.
-                        resultFile <- paste0(input$txtProjectName,"_community_membership.txt")
-                        wmemb_membership <- matrix(scan(resultFile, n = Nodes*LAYERS), ncol=LAYERS, nrow=Nodes, byrow = TRUE)   
-                        if(file.exists(resultFile)) file.remove(resultFile)             
-                        resultFile <- paste0(input$txtProjectName,"_community_modularity.txt")
-                        wtmod <- as.numeric(read.table(resultFile)[1,1])
-                        if(file.exists(resultFile)) file.remove(resultFile)
-    
-                        print(paste("  Modularity: ",wtmod))
-                        maxCom <- max(wmemb_membership)
-                        numComms <- maxCom
-    
-                        resultFile <- paste0(input$txtProjectName,"_community_membership_aggregate.txt")
-                        wmemb_membership_aggregate <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)        
-                        if(file.exists(resultFile)) file.remove(resultFile)        
-                        resultFile <- paste0(input$txtProjectName,"_community_modularity_aggregate.txt")
-                        wtmod_aggregate <- as.numeric(read.table(resultFile)[1,1])
-                        if(file.exists(resultFile)) file.remove(resultFile)
-    
-                        print(paste("  Modularity aggregate: ",wtmod_aggregate))
-                        maxComAggr <- max(wmemb_membership_aggregate)
-                        numCommsAggr <- maxComAggr
-
-                              
-                        #eventual community merging, if any, here.
-                        #todo: this can be improved by finding isolated nodes at the very beginning
-                        isolatedNodes <- 0
-                        for(l in 1:LAYERS){
-                            final.memb <- rep(0, Nodes)
-                            idx.nonisolated <- which(degree(g[[l]], mode="total")>0)
-                            isolatedNodes <- isolatedNodes + Nodes - length(idx.nonisolated)
-                            final.memb[ idx.nonisolated ] <- wmemb_membership[idx.nonisolated,l]
-                            
-                            listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Community=final.memb))
-                            listCommunitiesMerge <<- rbind(listCommunitiesMerge,listCommunities[[l]])
-                        }
-                        listCommunities[[LAYERS+1]] <<- cbind(listCommunities[[LAYERS+1]],data.frame(Community=wmemb_membership_aggregate))
-                        listCommunitiesMerge <<- rbind(listCommunitiesMerge,listCommunities[[LAYERS+1]])
-                        #print(listCommunities)
-                        
-                        if(as.numeric(input$txtOmega)==0){
-                            numComms <- numComms - isolatedNodes
-                        }
-                        
-    
-                        #Multiplex
-                        l <- 1
-                        sumCommunities[[l]] <- cbind(sumCommunities[[l]],data.frame(Communities = numComms))                        
-                        sumCommunities[[l]] <- cbind(sumCommunities[[l]],data.frame(Modularity = round(wtmod,3)))
-                        sumCommunitiesMerge <<- rbind(sumCommunitiesMerge,sumCommunities[[l]])
-                        #Aggregate: change numcoms and modularity here
-                        l <- 2
-                        sumCommunities[[l]] <- cbind(sumCommunities[[l]],data.frame(Communities = numCommsAggr))                        
-                        sumCommunities[[l]] <- cbind(sumCommunities[[l]],data.frame(Modularity = round(wtmod_aggregate,3)))
-                        sumCommunitiesMerge <<- rbind(sumCommunitiesMerge,sumCommunities[[l]])
-    
-                        #print(listCommunitiesMerge)
+#                        for(l in 1:LAYERS){
+#                            listCommunities[[l]] <<- data.frame(Layer = rep(paste(l,"Multi",sep="-"),Nodes))
+#                            listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Node = 1:Nodes))
+#                            listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Label=nodesLabel[[l]]))
+#                        }
+#                        l <- LAYERS+1
+#                        listCommunities[[l]] <<- data.frame(Layer = rep("Aggr",Nodes))
+#                        listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Node = 1:Nodes))
+#                        listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Label=nodesLabel[[l]]))
+#                        
+#                        sumCommunities[[1]] <- data.frame(Layer = "Multi")
+#                        sumCommunities[[2]] <- data.frame(Layer = "Aggr")
+#    
+#                        createOctaveConfigFile()
+#                        #call octave
+#                        #system("octave -qf octave/muxMultisliceCommunity.m",intern=T)
+#                        octave.call("octave/muxMultisliceCommunity.m")
+#                        Sys.sleep(3)
+#                        
+#                        #read output.
+#                        resultFile <- paste0(input$txtProjectName,"_community_membership.txt")
+#                        wmemb_membership <- matrix(scan(resultFile, n = Nodes*LAYERS), ncol=LAYERS, nrow=Nodes, byrow = TRUE)   
+#                        if(file.exists(resultFile)) file.remove(resultFile)             
+#                        resultFile <- paste0(input$txtProjectName,"_community_modularity.txt")
+#                        wtmod <- as.numeric(read.table(resultFile)[1,1])
+#                        if(file.exists(resultFile)) file.remove(resultFile)
+#    
+#                        print(paste("  Modularity: ",wtmod))
+#                        maxCom <- max(wmemb_membership)
+#                        numComms <- maxCom
+#    
+#                        resultFile <- paste0(input$txtProjectName,"_community_membership_aggregate.txt")
+#                        wmemb_membership_aggregate <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)        
+#                        if(file.exists(resultFile)) file.remove(resultFile)        
+#                        resultFile <- paste0(input$txtProjectName,"_community_modularity_aggregate.txt")
+#                        wtmod_aggregate <- as.numeric(read.table(resultFile)[1,1])
+#                        if(file.exists(resultFile)) file.remove(resultFile)
+#    
+#                        print(paste("  Modularity aggregate: ",wtmod_aggregate))
+#                        maxComAggr <- max(wmemb_membership_aggregate)
+#                        numCommsAggr <- maxComAggr
+#
+#                              
+#                        #eventual community merging, if any, here.
+#                        #todo: this can be improved by finding isolated nodes at the very beginning
+#                        isolatedNodes <- 0
+#                        for(l in 1:LAYERS){
+#                            final.memb <- rep(0, Nodes)
+#                            idx.nonisolated <- which(degree(g[[l]], mode="total")>0)
+#                            isolatedNodes <- isolatedNodes + Nodes - length(idx.nonisolated)
+#                            final.memb[ idx.nonisolated ] <- wmemb_membership[idx.nonisolated,l]
+#                            
+#                            listCommunities[[l]] <<- cbind(listCommunities[[l]],data.frame(Community=final.memb))
+#                            listCommunitiesMerge <<- rbind(listCommunitiesMerge,listCommunities[[l]])
+#                        }
+#                        listCommunities[[LAYERS+1]] <<- cbind(listCommunities[[LAYERS+1]],data.frame(Community=wmemb_membership_aggregate))
+#                        listCommunitiesMerge <<- rbind(listCommunitiesMerge,listCommunities[[LAYERS+1]])
+#                        #print(listCommunities)
+#                        
+#                        if(as.numeric(input$txtOmega)==0){
+#                            numComms <- numComms - isolatedNodes
+#                        }
+#                        
+#    
+#                        #Multiplex
+#                        l <- 1
+#                        sumCommunities[[l]] <- cbind(sumCommunities[[l]],data.frame(Communities = numComms))                        
+#                        sumCommunities[[l]] <- cbind(sumCommunities[[l]],data.frame(Modularity = round(wtmod,3)))
+#                        sumCommunitiesMerge <<- rbind(sumCommunitiesMerge,sumCommunities[[l]])
+#                        #Aggregate: change numcoms and modularity here
+#                        l <- 2
+#                        sumCommunities[[l]] <- cbind(sumCommunities[[l]],data.frame(Communities = numCommsAggr))                        
+#                        sumCommunities[[l]] <- cbind(sumCommunities[[l]],data.frame(Modularity = round(wtmod_aggregate,3)))
+#                        sumCommunitiesMerge <<- rbind(sumCommunitiesMerge,sumCommunities[[l]])
+#    
+#                        #print(listCommunitiesMerge)
                     }else if(input$radCommunityAlgorithm=="COMMUNITY_MULTIPLEX_INFOMAP"){
                         for(l in 1:LAYERS){
                             listCommunities[[l]] <<- data.frame(Layer = rep(paste(l,"Multi",sep="-"),Nodes))
@@ -2604,6 +2980,7 @@ shinyServer(function(input, output, session) {
                             exeFlags <- paste("-s", floor(runif(1)*1e7), 
                                                           "-N", as.numeric(input$txtMultimapTries),
                                                           "-multiplex -physical -smartinit",
+                                                          "-switchrate", as.numeric(input$txtMultimapRelaxRate),
                                                           inputFile)
                         }                        
 
@@ -2611,8 +2988,6 @@ shinyServer(function(input, output, session) {
                         progress$set(message = 'Finding communities...', value = 0.5)
                         #print( paste(exePath,exeFlags) )
                         system(paste(exePath,exeFlags),intern=T)
-                        Sys.sleep(3)
-                        if(file.exists(inputFile)) file.remove(inputFile)
                         
                         #import the results (clu and modularity value)
                         resultFile <- paste0(input$txtProjectName,"_multimap_Multiplex_Physical.clu")
@@ -2662,95 +3037,85 @@ shinyServer(function(input, output, session) {
                     }
                     
                     communityMultiplexOK <<- T
-                    
-                    progress$set(message = 'Creating tables...', value = 0.95)
-                    Sys.sleep(1)
+                    values$communityMultiplexOK <- T
 
+                    if(input$chkMultimapBatchExploration){ 
+                        print("  Entering multiscale mode")
+                        
+                        r.min <- as.numeric(input$txtMultimapMinRelaxRate)
+                        r.max <- as.numeric(input$txtMultimapMaxRelaxRate)
+                        r.step <- (r.max - r.min)/as.numeric(input$txtMultimapStepsRelaxRate)
+                        r.rates <- seq(r.min, r.max, r.step)
 
-                    matComm <- matrix(nrow=LAYERS, ncol=Nodes, 0)
-                    Layer <- NULL
-                    for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
-                    for(l in 1:(LAYERS)){
-                        matComm[l,] <- listCommunities[[l]]$Community
+                        df.batch_memb <- data.frame(node=1:nrow(wmemb_membership), stringsAsFactors = FALSE)
+                        df.batch_data <- data.frame()
+
+                        #setup the adequate flags
+                        exePath <- getExecutablePath("multiplex-infomap")
+
+                        #progress' step
+                        prog <- 0.5
+                        
+                        cnt <- 1
+                        for(relax.rate in r.rates){
+                            print(paste("    Relax rate: ", relax.rate))
+                            progress$set(message = paste('Batch exploration, rate:', relax.rate, '...'), value = prog)     
+                            exeFlags <- ""
+                        
+                            if(input$radMultiplexModel=='MULTIPLEX_IS_EDGECOLORED'){
+                                exeFlags <- paste("-s", floor(runif(1)*1e7), 
+                                                              "-N", as.numeric(input$txtMultimapTries),
+                                                              "-multiplex -physical -smartinit -proportionalswitch",
+                                                              "-switchrate", relax.rate,
+                                                              inputFile)
+                            }else{
+                                exeFlags <- paste("-s", floor(runif(1)*1e7), 
+                                                              "-N", as.numeric(input$txtMultimapTries),
+                                                              "-multiplex -physical -smartinit",
+                                                              "-switchrate", relax.rate,
+                                                              inputFile)
+                            }                        
+
+                            #make the external call
+                            system(paste(exePath,exeFlags),intern=T)
+
+                            #import the results (clu and modularity value)
+                            resultFile <- paste0(input$txtProjectName,"_multimap_Multiplex_Physical.clu")
+                            wmemb_membership <- read.table(resultFile, header=F, sep=" ")
+                            if(file.exists(resultFile)) file.remove(resultFile)             
+                            resultFile <- paste0(input$txtProjectName,"_multimap_Multiplex_Physical.tree") 
+                            wtcod.tmp <- as.numeric(strsplit(readLines(resultFile, n=1), " ")[[1]][4])
+                            if(file.exists(resultFile)) file.remove(resultFile)
+
+                            numComms.tmp <- max(wmemb_membership$V3)
+                            
+                            df.batch_memb <- cbind(df.batch_memb, paste0("R", cnt, "_", wmemb_membership$V3))
+                                                                            
+                            df.batch_data <- rbind(df.batch_data, data.frame(Rate=relax.rate,
+                                                                                                            Multi.Communities=numComms.tmp,
+                                                                                                            Multi.CodeLength=wtcod.tmp,
+                                                                                                            Aggr.Communities=numCommsAggr,
+                                                                                                            Aggr.CodeLength=wtcod_aggregate
+                                                                                                        ))
+
+                            cnt <- cnt + 1    
+                            prog <- prog + 0.4/as.numeric(input$txtMultimapStepsRelaxRate)
+                        }
+                        
+                        df.batch_memb$node <- NULL
+                        colnames(df.batch_memb) <- paste0("R", 1:(cnt-1))
+
+                        #update the global variables
+                        communityBatchMembership <<- df.batch_memb
+                        communityBatchData <<- df.batch_data
+                        
+                        communityMultiplexBatchOK <<- T
+                        values$communityMultiplexBatchOK <- T
                     }
 
-
-                    rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selCommunityColorPalette],input$selCommunityColorPalette))(max(matComm))
-                    #rgb.palette <- c("white", rgb.palette)
-
-                   matComm.df <- as.data.frame(t(matComm))
-                   colnames(matComm.df) <- Layer
-                   rownames(matComm.df) <- paste0("n",1:Nodes)
-
-                    output$communityHeatmapUI <- renderUI({
-                        d3heatmapOutput("communityHeatmap",
-                                                     width = "100%",
-                                                     height = paste0(max(Nodes*3,600),"px")
-                            )
-                        })
-                   
-                   output$communityHeatmap <- renderD3heatmap({
-                        if(input$btnCalculateCommunityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                            
-                        d3heatmap(
-                            matComm.df,
-                            color = input$selCommunityHeatmapColorPalette,
-                            dendrogram = if (input$chkCommunityHeatmapShowDendrogram){"both"}else{"none"}
-                            )
-                        })
-
-                    output$communityDistributionPlot <- renderChart2({
-                        X <- data.frame()
-                        categs.tmp <- unique(as.numeric(matComm))
-                        for(l in 1:LAYERS){
-                            distr.tmp <- as.data.frame(table(matComm.df[,l]),stringsAsFactors=F)
-                            distr.tmp <- distr.tmp[as.character(distr.tmp$Var1)!="0",]
-                            missing.tmp <- categs.tmp[which(!categs.tmp %in% distr.tmp$Var1)]
-                            missing.tmp <- missing.tmp[as.character(missing.tmp)!="0"]
-                            if(length(missing.tmp)>0){
-                                missing.tmp <- data.frame(Var1=missing.tmp, Freq=0,stringsAsFactors=F)
-                                #add zero-counts categories. See https://github.com/ramnathv/rCharts/issues/545
-                                distr.tmp <- rbind(distr.tmp, missing.tmp)
-                            }
-
-                            distr.tmp <- distr.tmp[order(as.numeric(distr.tmp$Var1)),]
-    
-                            X <- rbind(X, data.frame(Layer=l, 
-                                                                   Community=distr.tmp$Var1, 
-                                                                   Nodes=distr.tmp$Freq)
-                                                                   )
-                        }
-    
-    
-                        rplot <- nPlot(Nodes ~ Community, 
-                                    data = X, group="Layer", type = "multiBarChart")
-                     
-                        rplot$chart(reduceXTicks = FALSE)
-                        rplot$xAxis(staggerLabels = T)
-                        rplot$xAxis(axisLabel = 'Community ID')
-                        rplot$yAxis(axisLabel = '# Nodes')
-                        return(rplot)
-                    })                
-
-                    #Fill the table summarizing the community
-                    output$communityTable <- renderGvis({
-                        if(input$btnCalculateCommunityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                        
-                        gvisTable(listCommunitiesMerge,options=list(page='enable',pageSize=Nodes))
-                        #googleVisCommunityTableOptions())
-                    })
-                    
-                    #Fill the table summarizing the community
-                    output$communitySummaryTable <- renderGvis({
-                        if(input$btnCalculateCommunityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                        
-                        gvisTable(sumCommunitiesMerge,options=list(page='enable',pageSize=Nodes))
-                        #googleVisCommunitySummaryTableOptions())
-                    })
-
+                    #keep this here, to delete the input file even if the batch exploration is not used
+                    Sys.sleep(3)
+                    if(file.exists(inputFile)) file.remove(inputFile)
                 }else{                    
                     #calculation per layer. No needs to specify the weight attribute because the g objects
                     #are built assuming weighted input (where weight is 1 for binary networks), and each measure
@@ -2834,113 +3199,283 @@ shinyServer(function(input, output, session) {
                         listCommunitiesMergeSingleLayer <<- rbind(listCommunitiesMergeSingleLayer,listCommunitiesSingleLayer[[l]])
                         sumCommunitiesMergeSingleLayer <<- rbind(sumCommunitiesMergeSingleLayer,sumCommunitiesSingleLayer[[l]])
                     }
-                    #print(listCommunitiesMerge)
                     
                     communitySingleLayerOK <<- T
-                    
-                    progress$set(message = 'Creating tables...', value = 0.95)
-                    Sys.sleep(1)
-
-
-                    matComm <- matrix(nrow=LAYERS, ncol=Nodes, 0)
-                    Layer <- NULL
-                    for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
-                    for(l in 1:(LAYERS)){
-                        matComm[l,] <- listCommunitiesSingleLayer[[l]]$Community
-                    }
-
-
-                    rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selCommunityColorPalette],input$selCommunityColorPalette))(max(matComm))
-                    #rgb.palette <- c("white", rgb.palette)
-
-                   matComm.df <- as.data.frame(t(matComm))
-                   colnames(matComm.df) <- Layer
-                   rownames(matComm.df) <- paste0("n",1:Nodes)
-
-                    output$communityHeatmapSingleLayerUI <- renderUI({
-                        d3heatmapOutput("communityHeatmapSingleLayer",
-                                                     width = "100%",
-                                                     height = paste0(max(Nodes*3,600),"px")
-                            )
-                        })
-                   
-                   output$communityHeatmapSingleLayer <- renderD3heatmap({
-                        if(input$btnCalculateCommunityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                            
-                        d3heatmap(
-                            matComm.df,
-                            color = input$selCommunityHeatmapColorPalette,
-                            dendrogram = if (input$chkCommunityHeatmapShowDendrogram){"both"}else{"none"}
-                            )
-                    })
-
-                    output$communityDistributionPlotSingleLayer <- renderChart2({
-                        X <- data.frame()
-                        categs.tmp <- unique(as.numeric(matComm))
-                        for(l in 1:LAYERS){
-                            distr.tmp <- as.data.frame(table(matComm.df[,l]),stringsAsFactors=F)
-                            distr.tmp <- distr.tmp[as.character(distr.tmp$Var1)!="0",]
-                            missing.tmp <- categs.tmp[which(!categs.tmp %in% distr.tmp$Var1)]
-                            missing.tmp <- missing.tmp[as.character(missing.tmp)!="0"]
-                            if(length(missing.tmp)>0){
-                                missing.tmp <- data.frame(Var1=missing.tmp, Freq=0,stringsAsFactors=F)
-                                #add zero-counts categories. See https://github.com/ramnathv/rCharts/issues/545
-                                distr.tmp <- rbind(distr.tmp, missing.tmp)
-                            }
-
-                            distr.tmp <- distr.tmp[order(as.numeric(distr.tmp$Var1)),]
-    
-                            X <- rbind(X, data.frame(Layer=l, 
-                                                                   Community=distr.tmp$Var1, 
-                                                                   Nodes=distr.tmp$Freq)
-                                                                   )
-                        }
-    
-    
-                        rplot <- nPlot(Nodes ~ Community, 
-                                    data = X, group="Layer", type = "multiBarChart")
-                     
-                        rplot$chart(reduceXTicks = FALSE)
-                        rplot$xAxis(staggerLabels = T)
-                        rplot$xAxis(axisLabel = 'Community ID')
-                        rplot$yAxis(axisLabel = '# Nodes')
-                        return(rplot)
-                    })                
-
-                    #Fill the table summarizing the community
-                    output$communityTableSingleLayer <- renderGvis({
-                        if(input$btnCalculateCommunityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                        
-                        gvisTable(listCommunitiesMergeSingleLayer,options=list(page='enable',pageSize=Nodes))
-                        #googleVisCommunityTableOptions())
-                    })
-                    
-                    #Fill the table summarizing the community
-                    output$communitySummaryTableSingleLayer <- renderGvis({
-                        if(input$btnCalculateCommunityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                        
-                        gvisTable(sumCommunitiesMergeSingleLayer,options=list(page='enable',pageSize=Nodes))
-                        #googleVisCommunitySummaryTableOptions())
-                    })
+                    values$communitySingleLayerOK <- T
                 }
-                
-                btnCalculateCommunityDiagnosticsValue <<- input$btnCalculateCommunityDiagnostics
-    
+                    
                 progress$set(message = 'Community Detection Completed!', value = 1)
                 Sys.sleep(2)
             })  
-        })
+        }, ignoreInit = TRUE)
 
         observe({
-            if(input$btnCalculateComponentsDiagnostics==0 || input$btnImportNetworks == 0 ||  LAYERS==0)
+            values$communityMultiplexOK
+            input$btnRefreshCommunityDiagnostics
+            
+            #todo: cannot do reactive on global variable, unless it's a reactiveValues
+            
+            if(communityMultiplexOK){
+                matComm <- matrix(nrow=LAYERS, ncol=Nodes, 0)
+                Layer <- NULL
+                for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
+                for(l in 1:(LAYERS)){
+                    matComm[l,] <- listCommunities[[l]]$Community
+                }
+
+
+                #not used: possibly removable
+                #rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selCommunityColorPalette],input$selCommunityColorPalette))(max(matComm))
+                #rgb.palette <- c("white", rgb.palette)
+
+                matComm.df <- as.data.frame(t(matComm))
+                colnames(matComm.df) <- Layer
+                
+
+                output$communityHeatmapUI <- renderUI({
+                    d3heatmapOutput("communityHeatmap",
+                                                    width = "100%",
+                                                    height = paste0(max(Nodes*3,600),"px")
+                        )
+                })
+                
+                output$communityHeatmap <- renderD3heatmap({
+                    if(input$communityHeatmapShowLabels){
+                        rownames(matComm.df) <- nodesLabel[[1]]
+                    }else{
+                        rownames(matComm.df) <- paste0("n",1:Nodes)
+                    }
+
+
+                    d3heatmap(
+                        matComm.df,
+                        color = input$selCommunityHeatmapColorPalette,
+                        dendrogram = if (input$chkCommunityHeatmapShowDendrogram){"both"}else{"none"}
+                        )
+                })
+
+                output$communityDistributionPlot <- renderChart2({
+                    X <- data.frame()
+                    categs.tmp <- unique(as.numeric(matComm))
+                    for(l in 1:LAYERS){
+                        distr.tmp <- as.data.frame(table(matComm.df[,l]),stringsAsFactors=F)
+                        distr.tmp <- distr.tmp[as.character(distr.tmp$Var1)!="0",]
+                        missing.tmp <- categs.tmp[which(!categs.tmp %in% distr.tmp$Var1)]
+                        missing.tmp <- missing.tmp[as.character(missing.tmp)!="0"]
+                        if(length(missing.tmp)>0){
+                            missing.tmp <- data.frame(Var1=missing.tmp, Freq=0,stringsAsFactors=F)
+                            #add zero-counts categories. See https://github.com/ramnathv/rCharts/issues/545
+                            distr.tmp <- rbind(distr.tmp, missing.tmp)
+                        }
+
+                        distr.tmp <- distr.tmp[order(as.numeric(distr.tmp$Var1)),]
+
+                        X <- rbind(X, data.frame(Layer=l, 
+                                                                Community=distr.tmp$Var1, 
+                                                                Nodes=distr.tmp$Freq)
+                                                                )
+                    }
+
+
+                    rplot <- nPlot(Nodes ~ Community, 
+                                data = X, group="Layer", type = "multiBarChart")
+                    
+                    rplot$chart(reduceXTicks = FALSE)
+                    rplot$xAxis(staggerLabels = T)
+                    rplot$xAxis(axisLabel = 'Community ID')
+                    rplot$yAxis(axisLabel = '# Nodes')
+                    return(rplot)
+                })        
+        
+                
+                #Fill the table summarizing the community
+                output$communitySummaryTable <- renderGvis({                    
+                    gvisTable(sumCommunitiesMerge,options=list(page='enable',pageSize=2))
+                })
+                
+                #Fill the table summarizing the community
+                output$communityTable <- renderGvis({                    
+                    gvisTable(listCommunitiesMerge,options=list(page='enable',pageSize=Nodes))
+                })
+            }      
+        })
+
+
+        observe({
+            values$communityMultiplexBatchOK
+            input$btnRefreshCommunityDiagnostics
+            
+            #todo: cannot do reactive on global variable, unless it's a reactiveValues
+            
+            if(communityMultiplexBatchOK){
+                #Fill the table summarizing the community batch
+                output$communityBatchTable <- renderGvis({                    
+                    gvisTable(communityBatchData,options=list(page='enable',pageSize=5))
+                })
+                
+                output$batchMultiplexCommunityData1 <- renderChart2({
+                    data <- data.frame(Rate=communityBatchData$Rate, Multi.Communities=communityBatchData$Multi.Communities)
+    
+                    linechart <- nPlot(Multi.Communities ~ Rate, data = data, type = 'lineChart')
+                    linechart$addParams(width = 400, height = 400, title="Multiscale analysis") 
+                    linechart$xAxis(axisLabel="Relax rate")
+                    linechart$yAxis(axisLabel="Number of Communities")
+        
+                    linechart$chart(forceY=c(floor(min(data$Multi.Communities))-1,floor(max(data$Multi.Communities))+1), 
+                                        forceX=c(-0.05, 1.05))
+        
+                    return(linechart)
+                })    
+        
+                output$batchMultiplexCommunityData2 <- renderChart2({
+                    data <- data.frame(Rate=communityBatchData$Rate, Multi.CodeLength=communityBatchData$ Multi.CodeLength)
+    
+                    linechart <- nPlot(Multi.CodeLength ~ Rate, data = data, type = 'lineChart')
+                    linechart$addParams(width = 400, height = 400, title="Multiscale analysis") 
+                    linechart$xAxis(axisLabel="Relax rate")
+                    linechart$yAxis(axisLabel="Code Length")
+        
+                    linechart$chart(forceY=c(0.95*min(data$Multi.CodeLength),1.05*max(data$Multi.CodeLength)), 
+                                        forceX=c(-0.05,1.05))
+        
+                    return(linechart)
+                })    
+            }
+        })
+
+        observeEvent(input$btnPrintCommunityMultiplexChord, {
+            if(communityMultiplexOK){
+                if(WEIGHTED){
+                    g.chord <- graph.adjacency(SupraAdjacencyMatrix, weighted=WEIGHTED)
+                }else{
+                    g.chord <- graph.adjacency(SupraAdjacencyMatrix)
+                }
+                memb.chord <- c()
+                lapply(1:LAYERS, function(x) memb.chord <<- c(memb.chord, listCommunities[[x]]$Community))
+                g.mod.chord <- getCommunityNetwork(g.chord, memb.chord)                
+    
+                A.mod.tmp <- as.matrix(get.adjacency(g.mod.chord, attr="weight"))
+
+                colorPalette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selCommunityHeatmapColorPalette],input$selCommunityHeatmapColorPalette))(length(V(g.mod.chord))+1)
+
+                print( chordNetwork(A.mod.tmp, useTicks = 0, 
+                                                labels = c(as.character(V(g.mod.chord))),
+                                                colourScale=colorPalette
+                                                ) )
+            }
+        })
+
+
+
+
+        observeEvent(input$btnPrintCommunityMultiplexSankey, {
+            if(communityMultiplexBatchOK){
+                muxSankey <- buildSankeyFromCommunity(communityBatchMembership)
+
+                print(sankeyNetwork(Links = muxSankey$links, Nodes = muxSankey$nodes, Source = "source",
+                  Target = "target", Value = "sum", NodeID = "name", fontSize = 12, nodeWidth = 30)
+                  )
+            }
+        })
+
+
+        observe({
+            values$communitySingleLayerOK 
+            input$btnRefreshCommunityDiagnostics
+            
+            if(communitySingleLayerOK){
+                matComm <- matrix(nrow=LAYERS, ncol=Nodes, 0)
+                Layer <- NULL
+                for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
+                for(l in 1:(LAYERS)){
+                    matComm[l,] <- listCommunitiesSingleLayer[[l]]$Community
+                }
+
+
+                #not used: possibly removable
+                #rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selCommunityColorPalette],input$selCommunityColorPalette))(max(matComm))
+                #rgb.palette <- c("white", rgb.palette)
+
+                matComm.df <- as.data.frame(t(matComm))
+                colnames(matComm.df) <- Layer
+
+                output$communityHeatmapSingleLayerUI <- renderUI({
+                    d3heatmapOutput("communityHeatmapSingleLayer",
+                                                    width = "100%",
+                                                    height = paste0(max(Nodes*3,600),"px")
+                        )
+                    })
+                
+                output$communityHeatmapSingleLayer <- renderD3heatmap({
+                    if(input$communityHeatmapShowLabels){
+                        rownames(matComm.df) <- nodesLabel[[1]]
+                    }else{
+                        rownames(matComm.df) <- paste0("n",1:Nodes)
+                    }
+
+                    d3heatmap(
+                        matComm.df,
+                        color = input$selCommunityHeatmapColorPalette,
+                        dendrogram = if (input$chkCommunityHeatmapShowDendrogram){"both"}else{"none"}
+                        )
+                })
+
+                output$communityDistributionPlotSingleLayer <- renderChart2({
+                    X <- data.frame()
+                    categs.tmp <- unique(as.numeric(matComm))
+                    for(l in 1:LAYERS){
+                        distr.tmp <- as.data.frame(table(matComm.df[,l]),stringsAsFactors=F)
+                        distr.tmp <- distr.tmp[as.character(distr.tmp$Var1)!="0",]
+                        missing.tmp <- categs.tmp[which(!categs.tmp %in% distr.tmp$Var1)]
+                        missing.tmp <- missing.tmp[as.character(missing.tmp)!="0"]
+                        if(length(missing.tmp)>0){
+                            missing.tmp <- data.frame(Var1=missing.tmp, Freq=0,stringsAsFactors=F)
+                            #add zero-counts categories. See https://github.com/ramnathv/rCharts/issues/545
+                            distr.tmp <- rbind(distr.tmp, missing.tmp)
+                        }
+
+                        distr.tmp <- distr.tmp[order(as.numeric(distr.tmp$Var1)),]
+
+                        X <- rbind(X, data.frame(Layer=l, 
+                                                                Community=distr.tmp$Var1, 
+                                                                Nodes=distr.tmp$Freq)
+                                                                )
+                    }
+
+
+                    rplot <- nPlot(Nodes ~ Community, 
+                                data = X, group="Layer", type = "multiBarChart")
+                    
+                    rplot$chart(reduceXTicks = FALSE)
+                    rplot$xAxis(staggerLabels = T)
+                    rplot$xAxis(axisLabel = 'Community ID')
+                    rplot$yAxis(axisLabel = '# Nodes')
+                    return(rplot)
+                })                
+
+                #Fill the table summarizing the community
+                output$communityTableSingleLayer <- renderGvis({
+                    gvisTable(listCommunitiesMergeSingleLayer,options=list(page='enable',pageSize=Nodes))
+                })
+                
+                #Fill the table summarizing the community
+                output$communitySummaryTableSingleLayer <- renderGvis({
+                    gvisTable(sumCommunitiesMergeSingleLayer,options=list(page='enable',pageSize=Nodes))
+                })
+
+            }
+        })
+
+        ###############
+        ## Components
+        ###############
+
+
+        observeEvent(input$btnCalculateComponentsDiagnostics, {
+            if(input$btnImportNetworks == 0 ||  LAYERS==0)
                 return()
                 
             if( as.numeric(input$txtOmega)==0 && input$radMultiplexModel=='MULTIPLEX_IS_EDGECOLORED' ) return()
-            
-            if(btnCalculateComponentsDiagnosticsValue==input$btnCalculateComponentsDiagnostics) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -2959,7 +3494,6 @@ shinyServer(function(input, output, session) {
                     listComponentsMerge <<- NULL
                     sumComponentsMerge <<- NULL
 
-                    #calculation in the multiplex. For the moment the output is obtained calling octave.
                     #the output will be stored in [[l]] for the multiplex and [[LAYERS+1]] for the aggregated.
 
                     for(l in 1:LAYERS){
@@ -2974,20 +3508,9 @@ shinyServer(function(input, output, session) {
                     
                     sumComponents[[1]] <- data.frame(Layer = "Multi")
                     sumComponents[[2]] <- data.frame(Layer = "Aggr")
-
-                    createOctaveConfigFile()
-                    #call octave
-                    #system("octave -qf octave/muxMultisliceConnectedComponents.m",intern=T)
-                    octave.call("octave/muxMultisliceConnectedComponents.m")
-                    Sys.sleep(3)
                     
-                    #read output.
-                    resultFile <- paste0(input$txtProjectName,"_components_membership.txt")
-                    wmemb_membership <- NULL
-                    
-                    wmemb_membership <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)   
+                    wmemb_membership <- GetConnectedComponents(SupraAdjacencyMatrix,LAYERS,Nodes)    
                     wmemb_membership <- t(matrix(rep(wmemb_membership,LAYERS), nrow=LAYERS, ncol=Nodes, byrow=T))
-                    if(file.exists(resultFile)) file.remove(resultFile)             
                         
                     maxCom <- max(wmemb_membership)
                     numComms <- maxCom
@@ -2999,8 +3522,6 @@ shinyServer(function(input, output, session) {
                     maxComAggr <- max(wmemb_membership_aggregate)
                     numCommsAggr <- maxComAggr
 
-                            
-                    #eventual community merging, if any, here.
                     #todo: this can be improved by finding isolated nodes at the very beginning
                     isolatedNodes <- 0
                     for(l in 1:LAYERS){
@@ -3026,93 +3547,9 @@ shinyServer(function(input, output, session) {
                     sumComponentsMerge <<- rbind(sumComponentsMerge,sumComponents[[l]])
                     
                     componentsMultiplexOK <<- T 
+                    values$componentsMultiplexOK <- T 
                     #print(listComponentsMerge)
-                    
-                    #mdebug(listComponentsMerge)
-                                
-                    progress$set(message = 'Creating tables...', value = 0.95)
-                    Sys.sleep(1)
-    
-                    matComm <- matrix(nrow=LAYERS, ncol=Nodes, 0)
-                    Layer <- NULL
-                    for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
-                    
-                    for(l in 1:(LAYERS)){
-                        matComm[l,] <- listComponents[[l]]$Component
-                    }
-                    
-                    matComm.df <- as.data.frame(t(matComm))
-                    colnames(matComm.df) <- Layer
-                    rownames(matComm.df) <- paste0("n",1:Nodes)
-
-
-                    output$componentsHeatmapUI <- renderUI({
-                        d3heatmapOutput("componentsHeatmap",
-                                                        width = "100%",
-                                                        height = paste0(max(Nodes*3,600),"px")
-                            )
-                        })
-                    
-                    output$componentsHeatmap <- renderD3heatmap({
-                        if(input$btnCalculateComponentsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                            
-                        d3heatmap(
-                            matComm.df,
-                            color = input$selComponentsHeatmapColorPalette,
-                            dendrogram = if (input$chkComponentsHeatmapShowDendrogram){"both"}else{"none"}
-                            )
-                        })
-    
-                    output$componentsDistributionPlot <- renderChart2({
-                        X <- data.frame()
-                        categs.tmp <- unique(as.numeric(matComm))
-                        for(l in 1:LAYERS){
-                            distr.tmp <- as.data.frame(table(matComm.df[,l]),stringsAsFactors=F)
-                            distr.tmp <- distr.tmp[as.character(distr.tmp$Var1)!="0",]
-                            missing.tmp <- categs.tmp[which(!categs.tmp %in% distr.tmp$Var1)]
-                            missing.tmp <- missing.tmp[as.character(missing.tmp)!="0"]                            
-                            if(length(missing.tmp)>0){
-                                missing.tmp <- data.frame(Var1=missing.tmp, Freq=0,stringsAsFactors=F)
-                                #add zero-counts categories. See https://github.com/ramnathv/rCharts/issues/545
-                                distr.tmp <- rbind(distr.tmp, missing.tmp)
-                            }
-    
-                            distr.tmp <- distr.tmp[order(as.numeric(distr.tmp$Var1)),]
-    
-                            X <- rbind(X, data.frame(Layer=l, 
-                                                                    Component=distr.tmp$Var1, 
-                                                                    Nodes=distr.tmp$Freq)
-                                                                    )
-                        }
-                        
-                        rplot <- nPlot(Nodes ~ Component, 
-                                    data = X, group="Layer", type = "multiBarChart")
-                     
-                        rplot$chart(reduceXTicks = FALSE)
-                        rplot$xAxis(staggerLabels = T)
-                        rplot$xAxis(axisLabel = 'Component ID')
-                        rplot$yAxis(axisLabel = '# Nodes')
-                        return(rplot)
-                    })                
-    
-                    #Fill the table summarizing the components
-                    output$componentsTable <- renderGvis({
-                        if(input$btnCalculateComponentsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                        
-                        gvisTable(listComponentsMerge,options=list(page='enable',pageSize=Nodes))
-                        #googleVisCommunityTableOptions())
-                    })
-                    
-                    #Fill the table summarizing the components
-                    output$componentsSummaryTable <- renderGvis({
-                        if(input$btnCalculateComponentsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                        
-                        gvisTable(sumComponentsMerge,options=list(page='enable',pageSize=Nodes))
-                        #googleVisComponentsSummaryTableOptions())
-                    })
+                    #mdebug(listComponentsMerge)    
                 }else{                    
                     #calculation per layer. 
                     listComponentsSingleLayer <<- NULL
@@ -3162,105 +3599,534 @@ shinyServer(function(input, output, session) {
                     }
                     #print(listComponentsMerge)
                     componentsSingleLayerOK <<- T
-
-                    matComm <- matrix(nrow=LAYERS, ncol=Nodes, 0)
-                    Layer <- NULL
-                    for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
-                    
-                    for(l in 1:(LAYERS)){
-                        matComm[l,] <- listComponentsSingleLayer[[l]]$Component
-                    }
-                    
-                    matComm.df <- as.data.frame(t(matComm))
-                    colnames(matComm.df) <- Layer
-                    rownames(matComm.df) <- paste0("n",1:Nodes)
-
-                    output$componentsHeatmapSingleLayerUI <- renderUI({
-                        d3heatmapOutput("componentsHeatmapSingleLayer",
-                                                        width = "100%",
-                                                        height = paste0(max(Nodes*3,600),"px")
-                            )
-                        })
-                    
-                    output$componentsHeatmapSingleLayer <- renderD3heatmap({
-                        if(input$btnCalculateComponentsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                            
-                        d3heatmap(
-                            matComm.df,
-                            color = input$selComponentsHeatmapColorPalette,
-                            dendrogram = if (input$chkComponentsHeatmapShowDendrogram){"both"}else{"none"}
-                            )
-                        })
-    
-                    output$componentsDistributionPlotSingleLayer <- renderChart2({
-                        X <- data.frame()
-                        categs.tmp <- unique(as.numeric(matComm))
-                        for(l in 1:LAYERS){
-                            distr.tmp <- as.data.frame(table(matComm.df[,l]),stringsAsFactors=F)
-                            distr.tmp <- distr.tmp[as.character(distr.tmp$Var1)!="0",]
-                            missing.tmp <- categs.tmp[which(!categs.tmp %in% distr.tmp$Var1)]
-                            missing.tmp <- missing.tmp[as.character(missing.tmp)!="0"]
-                            if(length(missing.tmp)>0){
-                                missing.tmp <- data.frame(Var1=missing.tmp, Freq=0,stringsAsFactors=F)
-                                #add zero-counts categories. See https://github.com/ramnathv/rCharts/issues/545
-                                distr.tmp <- rbind(distr.tmp, missing.tmp)
-                            }
-
-                            distr.tmp <- distr.tmp[order(as.numeric(distr.tmp$Var1)),]
-    
-                            X <- rbind(X, data.frame(Layer=l, 
-                                                                    Component=distr.tmp$Var1, 
-                                                                    Nodes=distr.tmp$Freq)
-                                                                    )
-                        }
-                        
-                        rplot <- nPlot(Nodes ~ Component, 
-                                    data = X, group="Layer", type = "multiBarChart")
-                     
-                        rplot$chart(reduceXTicks = FALSE)
-                        rplot$xAxis(staggerLabels = T)
-                        rplot$xAxis(axisLabel = 'Component ID')
-                        rplot$yAxis(axisLabel = '# Nodes')
-                        return(rplot)
-                    })                
-    
-                    #Fill the table summarizing the components
-                    output$componentsTableSingleLayer <- renderGvis({
-                        if(input$btnCalculateComponentsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                        
-                        gvisTable(listComponentsMergeSingleLayer,options=list(page='enable',pageSize=Nodes))
-                        #googleVisCommunityTableOptions())
-                    })
-                    
-                    #Fill the table summarizing the components
-                    output$componentsSummaryTableSingleLayer <- renderGvis({
-                        if(input$btnCalculateComponentsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                            return(NULL)
-                        
-                        gvisTable(sumComponentsMergeSingleLayer,options=list(page='enable',pageSize=Nodes))
-                        #googleVisComponentsSummaryTableOptions())
-                    })
+                    values$componentsSingleLayerOK <- T
                 }
-                                                
-                btnCalculateComponentsDiagnosticsValue <<- input$btnCalculateComponentsDiagnostics
     
                 progress$set(message = 'Connected Components Completed!', value = 1)
                 Sys.sleep(2)
             })  
+        }, ignoreInit = TRUE)
+
+        observe({
+            values$componentsMultiplexOK
+            input$btnRefreshComponentsDiagnostics
+            
+            if(componentsMultiplexOK){
+                matComm <- matrix(nrow=LAYERS, ncol=Nodes, 0)
+                Layer <- NULL
+                for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
+                
+                for(l in 1:(LAYERS)){
+                    matComm[l,] <- listComponents[[l]]$Component
+                }
+                
+                matComm.df <- as.data.frame(t(matComm))
+                colnames(matComm.df) <- Layer
+
+                output$componentsHeatmapUI <- renderUI({
+                    d3heatmapOutput("componentsHeatmap",
+                                                    width = "100%",
+                                                    height = paste0(max(Nodes*3,600),"px")
+                        )
+                    })
+                
+                output$componentsHeatmap <- renderD3heatmap({
+                    #if(input$btnCalculateComponentsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                    #    return(NULL)
+
+                    if(input$componentsHeatmapShowLabels){
+                        rownames(matComm.df) <- nodesLabel[[1]]
+                    }else{
+                        rownames(matComm.df) <- paste0("n",1:Nodes)
+                    }
+
+                    d3heatmap(
+                        matComm.df,
+                        color = input$selComponentsHeatmapColorPalette,
+                        dendrogram = if (input$chkComponentsHeatmapShowDendrogram){"both"}else{"none"}
+                        )
+                    })
+
+                output$componentsDistributionPlot <- renderChart2({
+                    X <- data.frame()
+                    categs.tmp <- unique(as.numeric(matComm))
+                    for(l in 1:LAYERS){
+                        distr.tmp <- as.data.frame(table(matComm.df[,l]),stringsAsFactors=F)
+                        distr.tmp <- distr.tmp[as.character(distr.tmp$Var1)!="0",]
+                        missing.tmp <- categs.tmp[which(!categs.tmp %in% distr.tmp$Var1)]
+                        missing.tmp <- missing.tmp[as.character(missing.tmp)!="0"]                            
+                        if(length(missing.tmp)>0){
+                            missing.tmp <- data.frame(Var1=missing.tmp, Freq=0,stringsAsFactors=F)
+                            #add zero-counts categories. See https://github.com/ramnathv/rCharts/issues/545
+                            distr.tmp <- rbind(distr.tmp, missing.tmp)
+                        }
+
+                        distr.tmp <- distr.tmp[order(as.numeric(distr.tmp$Var1)),]
+
+                        X <- rbind(X, data.frame(Layer=l, 
+                                                                Component=distr.tmp$Var1, 
+                                                                Nodes=distr.tmp$Freq)
+                                                                )
+                    }
+                    
+                    rplot <- nPlot(Nodes ~ Component, 
+                                data = X, group="Layer", type = "multiBarChart")
+                    
+                    rplot$chart(reduceXTicks = FALSE)
+                    rplot$xAxis(staggerLabels = T)
+                    rplot$xAxis(axisLabel = 'Component ID')
+                    rplot$yAxis(axisLabel = '# Nodes')
+                    return(rplot)
+                })                
+
+                #Fill the table summarizing the components
+                output$componentsTable <- renderGvis({
+                    #if(input$btnCalculateComponentsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                    #    return(NULL)
+                    
+                    gvisTable(listComponentsMerge,options=list(page='enable',pageSize=Nodes))
+                    #googleVisCommunityTableOptions())
+                })
+                
+                #Fill the table summarizing the components
+                output$componentsSummaryTable <- renderGvis({
+                    #if(input$btnCalculateComponentsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                    #    return(NULL)
+                    
+                    gvisTable(sumComponentsMerge,options=list(page='enable',pageSize=Nodes))
+                    #googleVisComponentsSummaryTableOptions())
+                })
+
+            }
         })
 
+        observe({
+            values$componentsSingleLayerOK
+            input$btnRefreshComponentsDiagnostics
+            
+            if(componentsSingleLayerOK){
+                matComm <- matrix(nrow=LAYERS, ncol=Nodes, 0)
+                Layer <- NULL
+                for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
+                
+                for(l in 1:(LAYERS)){
+                    matComm[l,] <- listComponentsSingleLayer[[l]]$Component
+                }
+                
+                matComm.df <- as.data.frame(t(matComm))
+                colnames(matComm.df) <- Layer
+
+                output$componentsHeatmapSingleLayerUI <- renderUI({
+                    d3heatmapOutput("componentsHeatmapSingleLayer",
+                                                    width = "100%",
+                                                    height = paste0(max(Nodes*3,600),"px")
+                        )
+                    })
+                
+                output$componentsHeatmapSingleLayer <- renderD3heatmap({
+                    #if(input$btnCalculateComponentsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                    #    return(NULL)
+
+                    if(input$componentsHeatmapShowLabels){
+                        rownames(matComm.df) <- nodesLabel[[1]]
+                    }else{
+                        rownames(matComm.df) <- paste0("n",1:Nodes)
+                    }
+
+                    d3heatmap(
+                        matComm.df,
+                        color = input$selComponentsHeatmapColorPalette,
+                        dendrogram = if (input$chkComponentsHeatmapShowDendrogram){"both"}else{"none"}
+                        )
+                    })
+
+                output$componentsDistributionPlotSingleLayer <- renderChart2({
+                    X <- data.frame()
+                    categs.tmp <- unique(as.numeric(matComm))
+                    for(l in 1:LAYERS){
+                        distr.tmp <- as.data.frame(table(matComm.df[,l]),stringsAsFactors=F)
+                        distr.tmp <- distr.tmp[as.character(distr.tmp$Var1)!="0",]
+                        missing.tmp <- categs.tmp[which(!categs.tmp %in% distr.tmp$Var1)]
+                        missing.tmp <- missing.tmp[as.character(missing.tmp)!="0"]
+                        if(length(missing.tmp)>0){
+                            missing.tmp <- data.frame(Var1=missing.tmp, Freq=0,stringsAsFactors=F)
+                            #add zero-counts categories. See https://github.com/ramnathv/rCharts/issues/545
+                            distr.tmp <- rbind(distr.tmp, missing.tmp)
+                        }
+
+                        distr.tmp <- distr.tmp[order(as.numeric(distr.tmp$Var1)),]
+
+                        X <- rbind(X, data.frame(Layer=l, 
+                                                                Component=distr.tmp$Var1, 
+                                                                Nodes=distr.tmp$Freq)
+                                                                )
+                    }
+                    
+                    rplot <- nPlot(Nodes ~ Component, 
+                                data = X, group="Layer", type = "multiBarChart")
+                    
+                    rplot$chart(reduceXTicks = FALSE)
+                    rplot$xAxis(staggerLabels = T)
+                    rplot$xAxis(axisLabel = 'Component ID')
+                    rplot$yAxis(axisLabel = '# Nodes')
+                    return(rplot)
+                })                
+
+                #Fill the table summarizing the components
+                output$componentsTableSingleLayer <- renderGvis({
+                    #if(input$btnCalculateComponentsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                     #   return(NULL)
+                    
+                    gvisTable(listComponentsMergeSingleLayer,options=list(page='enable',pageSize=Nodes))
+                    #googleVisCommunityTableOptions())
+                })
+                
+                #Fill the table summarizing the components
+                output$componentsSummaryTableSingleLayer <- renderGvis({
+                    #if(input$btnCalculateComponentsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                    #    return(NULL)
+                    
+                    gvisTable(sumComponentsMergeSingleLayer,options=list(page='enable',pageSize=Nodes))
+                    #googleVisComponentsSummaryTableOptions())
+                })
+            }
+        })
+
+       ################
+       # Triads
+       ################ 
+
+        observeEvent(input$btnCalculateTriadsDiagnostics, {
+            if(input$btnImportNetworks == 0 ||  LAYERS==0)
+                return()
+    
+            isolate({
+                progress <- shiny::Progress$new(session)
+                on.exit(progress$close())
+                
+                ###############
+                ## Triadic Closure
+                ###############
+                progress$set(message = 'Calculating triadic closure...', value = 0.05)
+                print("  Finding triangles...")    
+                triadsOK <<- T
+
+                if(input$radTriadicClosureAlgorithm=="TRIADIC_CLOSURE_MULTILAYER"){
+                    listTriads <<- NULL
+                    listTriadsMerge <<- NULL
+                    sumTriads <- NULL
+                    sumTriadsMerge <<- NULL
+
+                    #the output will be stored in [[l]] for the multiplex and [[LAYERS+1]] for the aggregated.
+
+                    for(l in 1:LAYERS){
+                        listTriads[[l]] <<- data.frame(Layer = rep(paste(l,"Multi",sep="-"),Nodes))
+                        listTriads[[l]] <<- cbind(listTriads[[l]],data.frame(Node = 1:Nodes))
+                        listTriads[[l]] <<- cbind(listTriads[[l]],data.frame(Label=nodesLabel[[l]]))
+                    }
+                    l <- LAYERS+1
+                    listTriads[[l]] <<- data.frame(Layer = rep("Aggr",Nodes))
+                    listTriads[[l]] <<- cbind(listTriads[[l]],data.frame(Node = 1:Nodes))
+                    listTriads[[l]] <<- cbind(listTriads[[l]],data.frame(Label=nodesLabel[[l]]))
+
+                    sumTriads[[1]] <- data.frame(Layer = "Multi")
+                    sumTriads[[2]] <- data.frame(Layer = "Aggr")
+                    
+                    wclus <- c(GetLocalClustering(SupraAdjacencyMatrix,LAYERS,Nodes))
+                    wclus <- t(matrix(rep(wclus,LAYERS), nrow=LAYERS, ncol=Nodes, byrow=T))
+                        
+                    maxClus <- max(wclus)
+                    numTriads <- GetGlobalNumberTriangles(SupraAdjacencyMatrix,Layers,Nodes)
+
+                    wclus_aggregate <- transitivity(g[[LAYERS+1]], type="local")
+                    
+                    maxClusAggr <- max(wclus_aggregate)
+                    numTriadsAggr <- GetGlobalNumberTriangles(AdjMatrix[[LAYERS+1]],1,Nodes)
+
+                    #todo: this can be improved by finding isolated nodes at the very beginning
+                    isolatedNodes <- 0
+                    for(l in 1:LAYERS){
+                        final.val <- rep(0, Nodes)
+                        idx.nonisolated <- which(degree(g[[l]], mode="total")>0)
+                        isolatedNodes <- isolatedNodes + Nodes - length(idx.nonisolated)
+                        final.val[ idx.nonisolated ] <- wclus[idx.nonisolated,l]
+                        
+                        listTriads[[l]] <<- cbind(listTriads[[l]],data.frame(Transitivity=final.val))
+                        listTriadsMerge <<- rbind(listTriadsMerge,listTriads[[l]])
+                    }
+                    listTriads[[LAYERS+1]] <<- cbind(listTriads[[LAYERS+1]],data.frame(Transitivity=wclus_aggregate))
+                    listTriadsMerge <<- rbind(listTriadsMerge,listTriads[[LAYERS+1]])
+                    #print(listTriads)
+                                        
+                    #Multiplex
+                    l <- 1
+                    sumTriads[[l]] <- cbind(sumTriads[[l]],data.frame(Triangles = numTriads)) 
+                    sumTriadsMerge <<- rbind(sumTriadsMerge,sumTriads[[l]])
+                    #Aggregate: change numtriads here
+                    l <- 2
+                    sumTriads[[l]] <- cbind(sumTriads[[l]],data.frame(Triangles = numTriadsAggr))                        
+                    sumTriadsMerge <<- rbind(sumTriadsMerge,sumTriads[[l]])
+                    
+                    triadsMultiplexOK <<- T 
+                    values$triadsMultiplexOK <- T 
+
+                    #mdebug(listTriadsMerge)
+                }else{                    
+                    #calculation per layer. 
+                    listTriadsSingleLayer <<- NULL
+                    sumTriadsSingleLayer <- NULL
+                    listTriadsMergeSingleLayer <<- NULL
+                    sumTriadsMergeSingleLayer <<- NULL
+
+                    for(l in 1:(LAYERS)){
+                        listTriadsSingleLayer[[l]] <<- data.frame(Layer = rep(l,Nodes))
+                        listTriadsSingleLayer[[l]] <<- cbind(listTriadsSingleLayer[[l]],data.frame(Node = 1:Nodes))
+                        listTriadsSingleLayer[[l]] <<- cbind(listTriadsSingleLayer[[l]],data.frame(Label=nodesLabel[[l]]))
+
+                        sumTriadsSingleLayer[[l]] <- data.frame(Layer = as.character(l))
+                    }
+
+                    listTriadsSingleLayer[[LAYERS+1]] <<- data.frame(Layer = rep("Aggr",Nodes))
+                    listTriadsSingleLayer[[LAYERS+1]] <<- cbind(listTriadsSingleLayer[[LAYERS+1]],data.frame(Node = 1:Nodes))
+                    listTriadsSingleLayer[[LAYERS+1]] <<- cbind(listTriadsSingleLayer[[LAYERS+1]],data.frame(Label=nodesLabel[[LAYERS+1]]))
+
+                    sumTriadsSingleLayer[[LAYERS+1]] <- data.frame(Layer = "Aggr")
+                    
+                    for(l in 1:(LAYERS+1)){      
+
+                        wclus <- transitivity(g[[l]], type="local")
+
+                        maxClus <- max(wclus)
+                        numTriangles <- GetGlobalNumberTriangles(AdjMatrix[[l]],1,Nodes)
+
+                        #todo: this can be improved by finding isolated nodes at the very beginning
+
+                        final.val <- rep(0, Nodes)
+                        idx.nonisolated <- which(degree(g[[l]], mode="total")>0)
+                        isolatedNodes <- Nodes - length(idx.nonisolated)
+                        final.val[ idx.nonisolated ] <- wclus[idx.nonisolated]
+                        listTriadsSingleLayer[[l]] <<- cbind(listTriadsSingleLayer[[l]],data.frame(Transitivity=final.val))
+
+                        sumTriadsSingleLayer[[l]] <- cbind(sumTriadsSingleLayer[[l]],data.frame(Triangles = numTriangles)) 
+                    }
+
+                    for(l in 1:(LAYERS+1)){
+                        listTriadsMergeSingleLayer <<- rbind(listTriadsMergeSingleLayer,listTriadsSingleLayer[[l]])
+                        sumTriadsMergeSingleLayer <<- rbind(sumTriadsMergeSingleLayer,sumTriadsSingleLayer[[l]])
+                    }
+
+                    triadsSingleLayerOK <<- T
+                    values$triadsSingleLayerOK <- T
+                }
+    
+                progress$set(message = 'Triadic Closure Completed!', value = 1)
+                Sys.sleep(2)
+            })  
+        }, ignoreInit = TRUE)
+
+        observe({
+            values$triadsMultiplexOK
+            input$btnRefreshTriadsDiagnostics
+            
+            if(triadsMultiplexOK){
+                matTriads <- matrix(nrow=LAYERS, ncol=Nodes, 0)
+                Layer <- NULL
+                for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
+                
+                for(l in 1:(LAYERS)){
+                    matTriads[l,] <- listTriads[[l]]$Transitivity
+                }
+                
+                matTriads.df <- as.data.frame(t(matTriads))
+                colnames(matTriads.df) <- Layer
+
+                output$triadsHeatmapUI <- renderUI({
+                    d3heatmapOutput("triadsHeatmap",
+                                                    width = "100%",
+                                                    height = paste0(max(Nodes*3,600),"px")
+                        )
+                    })
+                
+                output$triadsHeatmap <- renderD3heatmap({
+                    #if(input$btnCalculateTriadsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                    #    return(NULL)
+
+                    if(input$triadsHeatmapShowLabels){
+                        rownames(matTriads.df) <- nodesLabel[[1]]
+                    }else{
+                        rownames(matTriads.df) <- paste0("n",1:Nodes)
+                    }
+
+                    d3heatmap(
+                        matTriads.df,
+                        color = input$selTriadsHeatmapColorPalette,
+                        dendrogram = if (input$chkTriadsHeatmapShowDendrogram){"both"}else{"none"}
+                        )
+                    })
+
+                output$triadsDistributionPlot <- renderChart2({
+                    X <- data.frame()
+
+                    min.val <- round(min(as.numeric(matTriads), na.rm=T),2)
+                    max.val <- round(max(as.numeric(matTriads), na.rm=T),2)
+                    categs.tmp <- round(seq(min.val,max.val,(max.val-min.val)/15),2)
+
+                    for(l in 1:LAYERS){
+                        histog <- hist(matTriads.df[,l], plot=F, breaks=categs.tmp)
+                        distr.tmp <- data.frame( Var1=histog$mids, Freq=histog$counts )
+
+                        distr.tmp <- distr.tmp[as.character(distr.tmp$Var1)!="0",]
+                        missing.tmp <- categs.tmp[which(!categs.tmp %in% distr.tmp$Var1)]
+                        missing.tmp <- missing.tmp[as.character(missing.tmp)!="0"]                            
+                        if(length(missing.tmp)>0){
+                            missing.tmp <- data.frame(Var1=missing.tmp, Freq=0,stringsAsFactors=F)
+                            #add zero-counts categories. See https://github.com/ramnathv/rCharts/issues/545
+                            distr.tmp <- rbind(distr.tmp, missing.tmp)
+                        }
+
+                        distr.tmp <- distr.tmp[order(as.numeric(distr.tmp$Var1)),]
+
+                        X <- rbind(X, data.frame(Layer=l, 
+                                                                Transitivity=distr.tmp$Var1, 
+                                                                Nodes=distr.tmp$Freq)
+                                                                )
+                    }
+
+                    rplot <- nPlot(Nodes ~ Transitivity, 
+                                data = X, group="Layer", type = "multiBarChart")
+                    
+                    rplot$chart(reduceXTicks = FALSE)
+                    rplot$xAxis(staggerLabels = T)
+                    rplot$xAxis(axisLabel = 'Transitivity')
+                    rplot$yAxis(axisLabel = '# Nodes')
+                    return(rplot)
+                })                
+
+                #Fill the table summarizing the triads
+                output$triadsTable <- renderGvis({
+                    #if(input$btnCalculateTriadsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                    #    return(NULL)
+                    
+                    gvisTable(listTriadsMerge,options=list(page='enable',pageSize=Nodes))
+                    #googleVisTriadsTableOptions())
+                })
+                
+                #Fill the table summarizing the triads
+                output$triadsSummaryTable <- renderGvis({
+                    #if(input$btnCalculateTriadsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                    #    return(NULL)
+                    
+                    gvisTable(sumTriadsMerge,options=list(page='enable',pageSize=Nodes))
+                    #googleVisTriadsSummaryTableOptions())
+                })
+
+            }
+        })
+
+        observe({
+            values$triadsSingleLayerOK
+            input$btnRefreshTriadsDiagnostics
+            
+            if(triadsSingleLayerOK){
+                matTriads <- matrix(nrow=LAYERS, ncol=Nodes, 0)
+                Layer <- NULL
+                for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
+                
+                for(l in 1:(LAYERS)){
+                    matTriads[l,] <- listTriadsSingleLayer[[l]]$Transitivity
+                }
+                
+                matTriads.df <- as.data.frame(t(matTriads))
+                colnames(matTriads.df) <- Layer
+
+                output$triadsHeatmapSingleLayerUI <- renderUI({
+                    d3heatmapOutput("triadsHeatmapSingleLayer",
+                                                    width = "100%",
+                                                    height = paste0(max(Nodes*3,600),"px")
+                        )
+                    })
+                
+                output$triadsHeatmapSingleLayer <- renderD3heatmap({
+                    #if(input$btnCalculateTriadsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                    #    return(NULL)
+
+                    if(input$triadsHeatmapShowLabels){
+                        rownames(matTriads.df) <- nodesLabel[[1]]
+                    }else{
+                        rownames(matTriads.df) <- paste0("n",1:Nodes)
+                    }
+
+                    d3heatmap(
+                        matTriads.df,
+                        color = input$selTriadsHeatmapColorPalette,
+                        dendrogram = if (input$chkTriadsHeatmapShowDendrogram){"both"}else{"none"}
+                        )
+                    })
+
+                output$triadsDistributionPlotSingleLayer <- renderChart2({
+                    X <- data.frame()
+                    min.val <- round(min(as.numeric(matTriads), na.rm=T),2)
+                    max.val <- round(max(as.numeric(matTriads), na.rm=T),2)
+                    categs.tmp <- round(seq(min.val,max.val,(max.val-min.val)/15),2)
+
+                    for(l in 1:LAYERS){
+                        histog <- hist(matTriads.df[,l], plot=F, breaks=categs.tmp)
+                        distr.tmp <- data.frame( Var1=histog$mids, Freq=histog$counts )
+
+                        distr.tmp <- distr.tmp[as.character(distr.tmp$Var1)!="0",]
+                        missing.tmp <- categs.tmp[which(!categs.tmp %in% distr.tmp$Var1)]
+                        missing.tmp <- missing.tmp[as.character(missing.tmp)!="0"]
+                        if(length(missing.tmp)>0){
+                            missing.tmp <- data.frame(Var1=missing.tmp, Freq=0,stringsAsFactors=F)
+                            #add zero-counts categories. See https://github.com/ramnathv/rCharts/issues/545
+                            distr.tmp <- rbind(distr.tmp, missing.tmp)
+                        }
+
+                        distr.tmp <- distr.tmp[order(as.numeric(distr.tmp$Var1)),]
+
+                        X <- rbind(X, data.frame(Layer=l, 
+                                                                Transitivity=distr.tmp$Var1, 
+                                                                Nodes=distr.tmp$Freq)
+                                                                )
+                    }
+                    
+                    rplot <- nPlot(Nodes ~ Transitivity, 
+                                data = X, group="Layer", type = "multiBarChart")
+                    
+                    rplot$chart(reduceXTicks = FALSE)
+                    rplot$xAxis(staggerLabels = T)
+                    rplot$xAxis(axisLabel = 'Transitivity')
+                    rplot$yAxis(axisLabel = '# Nodes')
+                    return(rplot)
+                })                
+
+                #Fill the table summarizing the triads
+                output$triadsTableSingleLayer <- renderGvis({
+                    #if(input$btnCalculateTriadsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                    #    return(NULL)
+                    
+                    gvisTable(listTriadsMergeSingleLayer,options=list(page='enable',pageSize=Nodes))
+                    #googleVisTriadsTableOptions())
+                })
+                
+                #Fill the table summarizing the triads
+                output$triadsSummaryTableSingleLayer <- renderGvis({
+                    #if(input$btnCalculateTriadsDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                    #    return(NULL)
+                    
+                    gvisTable(sumTriadsMergeSingleLayer,options=list(page='enable',pageSize=Nodes))
+                    #googleVisTriadsSummaryTableOptions())
+                })
+            }
+        })
     
       	################################################
       	# Annular Visualization
       	################################################
     
-        observe({
+        observeEvent(input$btnAnularViz, {
             if(input$btnCalculateCentralityDiagnostics==0 || input$btnImportNetworks == 0 || input$btnAnularViz==0 ||LAYERS==0)
                 return()
-            
-            if(btnAnularVizValue==input$btnAnularViz) return()
         
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -3562,23 +4428,19 @@ shinyServer(function(input, output, session) {
                 #if(file.exists(outfile2)) file.remove(outfile2)
     
                 ###############################################
-                    
-                btnAnularVizValue <<- input$btnAnularViz
     
                 progress$set(message = 'Annular Viz Completed!', value = 1)
                 Sys.sleep(2)
             })  
-        })
+        }, ignoreInit = TRUE)
 
       	################################################
       	# Statistics plots
       	################################################
 
-        observe({
+        observeEvent(input$btnMeanPathLengthStatistics, {
             if(input$btnImportNetworks == 0 ||  LAYERS==0)
                 return()
-            
-            if(btnMeanPathLengthStatisticsValue==input$btnMeanPathLengthStatistics) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -3622,13 +4484,11 @@ shinyServer(function(input, output, session) {
                 progress$set(message = 'Completed!', value = 1)
                 Sys.sleep(2)
             })
-        })
+        }, ignoreInit = TRUE)
         
-        observe({
+        observeEvent(input$btnDiameterStatistics, {
             if(input$btnImportNetworks == 0 ||  LAYERS==0)
                 return()
-            
-            if(btnDiameterStatisticsValue==input$btnDiameterStatistics) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -3672,13 +4532,11 @@ shinyServer(function(input, output, session) {
                 progress$set(message = 'Completed!', value = 1)
                 Sys.sleep(2)
             })
-        })
+        }, ignoreInit = TRUE)
 
-        observe({
+        observeEvent(input$btnComponentsStatistics, {
             if(input$btnImportNetworks == 0 ||  LAYERS==0)
                 return()
-            
-            if(btnComponentsStatisticsValue==input$btnComponentsStatistics) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -3730,13 +4588,11 @@ shinyServer(function(input, output, session) {
                 progress$set(message = 'Completed!', value = 1)
                 Sys.sleep(2)
             })
-        })
+        }, ignoreInit = TRUE)
 
-        observe({
+        observeEvent(input$btnDensityStatistics, {
             if(input$btnImportNetworks == 0 ||  LAYERS==0)
                 return()
-            
-            if(btnDensityStatisticsValue==input$btnDensityStatistics) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -3781,13 +4637,11 @@ shinyServer(function(input, output, session) {
                 progress$set(message = 'Completed!', value = 1)
                 Sys.sleep(2)
             })
-        })
+        }, ignoreInit = TRUE)
 
-        observe({
+        observeEvent(input$btnNodeStatistics, {
             if(input$btnImportNetworks == 0 ||  LAYERS==0)
                 return()
-            
-            if(btnNodeStatisticsValue==input$btnNodeStatistics) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -3832,13 +4686,11 @@ shinyServer(function(input, output, session) {
                 progress$set(message = 'Completed!', value = 1)
                 Sys.sleep(2)
             })
-        })
+        }, ignoreInit = TRUE)
 
-        observe({
+        observeEvent(input$btnEdgeStatistics, {
             if(input$btnImportNetworks == 0 ||  LAYERS==0)
                 return()
-            
-            if(btnEdgeStatisticsValue==input$btnEdgeStatistics) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -3882,17 +4734,15 @@ shinyServer(function(input, output, session) {
                 progress$set(message = 'Completed!', value = 1)
                 Sys.sleep(2)
             })
-        })
+        }, ignoreInit = TRUE)
     
       	################################################
       	# Diagnostics centrality plots
       	################################################
 
-        observe({
-            if(input$btnCalculateCentralityDiagnostics == 0 || input$btnCentralityDiagnosticsAnalysis ==0 || input$btnImportNetworks == 0 ||  LAYERS==0)
+        observeEvent(input$btnCentralityDiagnosticsAnalysis, {
+            if(input$btnCalculateCentralityDiagnostics == 0 || input$btnImportNetworks == 0 ||  LAYERS==0)
                 return()
-            
-            if(btnCentralityDiagnosticsAnalysisValue==input$btnCentralityDiagnosticsAnalysis) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -3902,7 +4752,7 @@ shinyServer(function(input, output, session) {
 
                 this.descriptor <- input$selDiagnosticsCentralityVizID
 
-                featureDataFrameList <- NULL
+                featureDataFrameList <- list()
                 layersToInclude <- as.numeric(strsplit(input$txtDiagnosticsCentralityStructureLayer,",")[[1]])
 
                 if(length(listDiagnosticsSingleLayer)>0 && length(listDiagnostics)>0){
@@ -4247,102 +5097,46 @@ shinyServer(function(input, output, session) {
                     })
 
                 }
-                                
-                btnCentralityDiagnosticsAnalysisValue <<- input$btnCentralityDiagnosticsAnalysis
     
                 progress$set(message = 'Diagnostics analysis Completed!', value = 1)
                 Sys.sleep(2)
             })  
-        })
+        }, ignoreInit = TRUE)
 
                 
       	################################################
       	# Reducibility
       	################################################
     
-        observe({
-            if(input$btnCalculateReducibility ==0 || input$btnImportNetworks == 0 ||  LAYERS==0)
+        observeEvent(input$btnCalculateReducibility, {
+            if(input$btnImportNetworks == 0 ||  LAYERS==0)
                 return()
-            
-            if(btnCalculateReducibilityValue==input$btnCalculateReducibility) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
                 on.exit(progress$close())
     
                 progress$set(message = 'Calculating Redundancy...', value = 0.05)
-                    
-                #create the config file for calling Octave's computation
-                createOctaveConfigFile()
-    
-                write(input$selReducibilityClusterMethod, file="hclust_method.tmp", append=F)
-    
-                #call octave
-                #system("octave -qf octave/muxMultisliceReducibility.m",intern=T)
-                octave.call("octave/muxMultisliceReducibility.m")
-                Sys.sleep(3)
-                    
-                #read output
-                resultFile <- paste0(input$txtProjectName,"_reducibility_jsd.txt")
+                
+                listReducibility <<- GetMultilayerReducibility(SupraAdjacencyMatrix,LAYERS,Nodes,input$selReducibilityClusterMethod)
                 
                 progress$set(message = 'Hierarchical clustering...', value = 0.6)
-                
-                Layer <- NULL
-                for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
-    
-                distanceMatrix <- matrix(scan(resultFile, n = LAYERS*LAYERS), ncol=LAYERS, nrow=LAYERS, byrow = TRUE, dimnames=list(NULL, Layer))
-                #if(file.exists(resultFile)) file.remove(resultFile)
-    
-#                outfile6 <- buildTmpPath("image_jsd.png")
-#                
-#                png(outfile6, width=650, height=650)
-#                rgb.palette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selReducibilityColorPalette],input$selReducibilityColorPalette))(200)
-#
-#               
-#                heatmap.2(distanceMatrix,
-#                                  labRow=Layer,
-#                                  labCol=Layer,
-#                                  cexRow=as.numeric(input$txtREDUCIBILITY_HEATMAP_FONT_SIZE),
-#                                  cexCol=as.numeric(input$txtREDUCIBILITY_HEATMAP_FONT_SIZE),
-#                                  hclustfun=function(x) hclust(x,method=input$selReducibilityClusterMethod),
-#                                  col=rgb.palette,
-#                                  symm=F,
-#                                  dendrogram="column",
-#                                  trace="none",
-#                                  offsetCol=-0.4,
-#                                  offsetRow=-0.4)
+                    
+#                outfile7 <- buildTmpPath("image_dendrogram.png")
+#                png(outfile7, width=650, height=650)
+#                plot(hclust(as.dist(distanceMatrix),
+#                       method=input$selReducibilityClusterMethod),
+#                       col = "#1F77B4", col.main = "#1F77B4", col.lab = "#E08400", 
+#                       col.axis = "#E08400", lwd = 2, 
+#                       labels=Layer,
+#                       cex=as.numeric(input$txtREDUCIBILITY_HEATMAP_FONT_SIZE),
+#                       main="Reducibility Dendrogram",
+#                       sub="", 
+#                       xlab="")
 #                dev.off()
     
-                output$reducibilityHeatmapUI <- renderUI({
-                    d3heatmapOutput("reducibilityHeatmap",
-                                                    width = "650px",
-                                                    height = "650px"
-                        )
-                    })
-                
-                colnames(distanceMatrix) <- Layer
-                rownames(distanceMatrix) <- Layer
-                distanceMatrix.df <- as.data.frame(distanceMatrix)
-                
-                output$reducibilityHeatmap <- renderD3heatmap({
-                    if(input$btnCalculateReducibility==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                        return(NULL)
-                        
-                    d3heatmap(
-                        distanceMatrix.df,
-                        color = input$selReducibilityColorPalette,
-                        labRow=Layer,
-                        labCol=Layer,
-                        cexRow=as.numeric(input$txtREDUCIBILITY_HEATMAP_FONT_SIZE),
-                        cexCol=as.numeric(input$txtREDUCIBILITY_HEATMAP_FONT_SIZE),
-                        hclustfun=function(x) hclust(x,method=input$selReducibilityClusterMethod),
-                        symm=F,
-                        dendrogram="both",
-                        )
-                    })
-
-#                output$jsdMatrixSummaryImage <- renderImage({
-#                    list(src = outfile6,
+#                output$reducibilityDendrogramSummaryImage <- renderImage({
+#                    list(src = outfile7,
 #                        contentType = 'image/png',
 #                        width = 650,
 #                        height = 650,
@@ -4350,81 +5144,67 @@ shinyServer(function(input, output, session) {
 #                        }, 
 #                        deleteFile = FALSE
 #                    )
-                #if(file.exists(outfile6)) file.remove(outfile6)
-    
-                outfile7 <- buildTmpPath("image_dendrogram.png")
-                png(outfile7, width=650, height=650)
-                plot(hclust(as.dist(distanceMatrix),
-                       method=input$selReducibilityClusterMethod),
-                       col = "#1F77B4", col.main = "#1F77B4", col.lab = "#E08400", 
-                       col.axis = "#E08400", lwd = 2, 
-                       labels=Layer,
-                       cex=as.numeric(input$txtREDUCIBILITY_HEATMAP_FONT_SIZE),
-                       main="Reducibility Dendrogram",
-                       sub="", 
-                       xlab="")
-                dev.off()
-    
-                output$reducibilityDendrogramSummaryImage <- renderImage({
-                    list(src = outfile7,
-                        contentType = 'image/png',
-                        width = 650,
-                        height = 650,
-                        alt = "")
-                        }, 
-                        deleteFile = FALSE
-                    )
-
-                output$reducibilityQualityFunction <- renderChart2({
-                    resultFile <- paste0(input$txtProjectName,"_reducibility_quality.txt")
-                    data <- read.table(resultFile, header=T, sep=" ")[,1:2]
-                    colnames(data) <- c("Step", "Q")
-                    linechart <- nPlot(Q ~ Step, data = data, type = 'lineChart')
-                    linechart$addParams(width = 600, height = 400, title="Quality function") 
-                    linechart$xAxis(axisLabel="Step")
-                    linechart$yAxis(axisLabel="Q")
-
-                    linechart$chart(forceY=c(floor(min(data$Q)),floor(max(data$Q))+1), 
-                                      forceX=c(floor(min(data$Step)),floor(max(data$Step))+1))
-
-                    return(linechart)
-                })    
-
-                #interSpearman <- data.frame(interSpearman)
-                #interSpearman <- cbind(data.frame(Layer),interSpearman)
-    
-                #output$interSpearmanSummaryTable <- renderGvis({
-                #    if(input$btnCalculateXXXDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0)
-                #        return(NULL)
-                    
-                #    gvisTable(interSpearman,options=googleVisInterSpearmanSummaryTableOptions())
-                #})   
-                
-                Sys.sleep(2)
-                if(file.exists("hclust_method.tmp")) file.remove("hclust_method.tmp")
-                if(file.exists("hclust_merge.txt")) file.remove("hclust_merge.txt")
-                if(file.exists("jsd_distance_matrix.txt")) file.remove("jsd_distance_matrix.txt")
-                if(file.exists(resultFile)) file.remove(resultFile)
-                resultFile <- paste0(input$txtProjectName,"_reducibility_quality.txt")
-                if(file.exists(resultFile)) file.remove(resultFile)
-                
-                btnCalculateReducibilityValue <<- input$btnCalculateReducibility
     
                 progress$set(message = 'Reducibility analysis Completed!', value = 1)
                 Sys.sleep(2)
             })  
-        })
-    
+        }, ignoreInit = TRUE)
+
+        output$reducibilityHeatmapUI <- renderUI({
+            d3heatmapOutput("reducibilityHeatmap",
+                                            width = "650px",
+                                            height = "650px"
+                )
+            })
+
+        output$reducibilityQualityFunction <- renderChart2({
+            data <- data.frame(Step=0:(LAYERS-1), Q=listReducibility$gQualityFunction)
+
+            linechart <- nPlot(Q ~ Step, data = data, type = 'lineChart')
+            linechart$addParams(width = 600, height = 400, title="Quality function") 
+            linechart$xAxis(axisLabel="Step")
+            linechart$yAxis(axisLabel="Q")
+
+            linechart$chart(forceY=c(floor(min(data$Q)),floor(max(data$Q))+1), 
+                                forceX=c(floor(min(data$Step)),floor(max(data$Step))+1))
+
+            return(linechart)
+        })    
+
+        output$reducibilityHeatmap <- renderD3heatmap({
+            if(input$btnCalculateReducibility==0 || input$btnImportNetworks == 0 || LAYERS==0)
+                return(NULL)
+
+            Layer <- c()
+            for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
+
+            distanceMatrix <- listReducibility$JSD
+                
+            colnames(distanceMatrix) <- Layer
+            rownames(distanceMatrix) <- Layer
+            distanceMatrix.df <- as.data.frame(as.matrix(distanceMatrix))
+                
+            d3heatmap(
+                distanceMatrix.df,
+                color = input$selReducibilityColorPalette,
+                labRow=Layer,
+                labCol=Layer,
+                cexRow=as.numeric(input$txtREDUCIBILITY_HEATMAP_FONT_SIZE),
+                cexCol=as.numeric(input$txtREDUCIBILITY_HEATMAP_FONT_SIZE),
+                hclustfun=function(x) hclust(x,method=input$selReducibilityClusterMethod),
+                symm=F,
+                dendrogram="both",
+                )
+            })
+
     
       	################################################
       	# Apply layout
       	################################################
     
-        observe({
+        observeEvent(input$btnApplyLayout, {
             if(input$btnApplyLayout==0 || input$btnImportNetworks == 0)
                 return()
-    
-            if(btnApplyLayoutValue==input$btnApplyLayout) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -4883,10 +5663,8 @@ shinyServer(function(input, output, session) {
                 progress$set(message = 'Layout Completed!', value = 1)
                 Sys.sleep(2)
                 print("Layouting finished. Proceeding with openGL plot of each layer.")
-            
-                btnApplyLayoutValue <<- input$btnApplyLayout
             })
-        })
+        }, ignoreInit = TRUE)
     
     
       	################################################
@@ -5013,6 +5791,8 @@ shinyServer(function(input, output, session) {
                     V(g[[l]])$label <- nodesLabel[[l]]
                 }
             
+                #NODE SIZE
+            
                 arrayDiagnostics <- 1
                 #if the GUI shows only the UNIFORM and EXTERNAL option
                 if(input$radNodeSizeType=="NODE_SIZE_PROPORTIONAL_TO_UNIFORM"){
@@ -5033,7 +5813,7 @@ shinyServer(function(input, output, session) {
                 }
                 #overwrite arrayDiagnostics if centrality have been calculated and attrib is not Uniform or External
                 if(diagnosticsOK){
-                    if(input$btnCalculateCentralityDiagnostics>0){
+                    if(input$btnCalculateCentralityDiagnostics>0 && !is.null(input$selVizNodeSizeID)){
                         #the GUI is visualizing the list of possibilities
                         attrib <- input$selVizNodeSizeID
                         if(attrib=="Uniform"){
@@ -5059,7 +5839,7 @@ shinyServer(function(input, output, session) {
                         }
                     }
                 }
-                
+
                 if(input$radNodeSizeType2=="NODE_SIZE_PROPORTIONAL_TYPE_NORMAL"){
                     V(g[[l]])$size <- as.numeric(input$txtNODE_DEFAULT_SIZE)*arrayDiagnostics
                 }else if(input$radNodeSizeType2=="NODE_SIZE_PROPORTIONAL_TYPE_LOG"){
@@ -5067,7 +5847,10 @@ shinyServer(function(input, output, session) {
                 }else if(input$radNodeSizeType2=="NODE_SIZE_PROPORTIONAL_TYPE_LOGLOG"){
                     V(g[[l]])$size <- as.numeric(input$txtNODE_DEFAULT_SIZE)*log(1+log(1+arrayDiagnostics));
                 }
-                                
+
+
+                #EDGE SIZE
+                
                 if(input$radEdgeSizeType=="EDGE_SIZE_PROPORTIONAL_TO_UNIFORM"){                
                     E(g[[l]])$size <- as.numeric(input$txtEDGE_DEFAULT_SIZE);
                 }else if(input$radEdgeSizeType=="EDGE_SIZE_PROPORTIONAL_TO_WEIGHT"){
@@ -5080,15 +5863,66 @@ shinyServer(function(input, output, session) {
                             E(g[[l]])$size <- as.numeric(input$txtEDGE_DEFAULT_SIZE)*log(1+log(1+E(g[[l]])$weight))
                         }
                     }else{
-                        E(g[[l]])$size <- as.numeric(input$txtEDGE_DEFAULT_SIZE);
+                        E(g[[l]])$size <- as.numeric(input$txtEDGE_DEFAULT_SIZE)
+                    }
+                }else if(input$radEdgeSizeType=="EDGE_SIZE_PROPORTIONAL_TO_EXTERNAL"){
+                    if(externalEdgeSizeFlag){
+                        #Here we set only intra-layer links. Inter-links are considered later, if they are shown
+                        
+                        E(g[[l]])$size <- as.numeric(input$txtEDGE_DEFAULT_SIZE)
+                        
+                        size.set <- externalEdgeColorTable[ externalEdgeColorTable$layerID.from==l & externalEdgeColorTable$layerID.to==l, ]
+
+                        if(nrow(size.set)>0){
+                            edges.tmp <- igraph::get.edges(g[[l]], E(g[[l]]))
+
+                            E(g[[l]])[which(edges.tmp[,1] %in% size.set$nodeID.from & edges.tmp[,2] %in% size.set$nodeID.to)]$size <- size.set$size
+                        }
                     }
                 }
 
-                #Node coloring
+                #EDGE COLOR
+                if(input$radEdgeColor=="EDGE_COLOR_EXTERNAL"){
+                    #Here we set only intra-layer links. Inter-links are considered later, if they are shown
+
+                    E(g[[l]])$color <- as.character(input$colEDGE_COLOR)
+                    
+                    if(externalEdgeColorFlag){
+                        color.set <- externalEdgeColorTable[ externalEdgeColorTable$layerID.from==l & externalEdgeColorTable$layerID.to==l, ]
+
+                        if(nrow(color.set)>0){
+                            edges.tmp <- igraph::get.edges(g[[l]], E(g[[l]]))
+
+                            E(g[[l]])[which(edges.tmp[,1] %in% color.set$nodeID.from & edges.tmp[,2] %in% color.set$nodeID.to)]$color <- color.set$color
+                        }
+                    }
+                }else if(input$radEdgeColor=="EDGE_COLOR_UNIFORM"){
+                    E(g[[l]])$color <- input$colEDGE_COLOR
+                }else if(input$radEdgeColor=="EDGE_COLOR_RANDOM"){
+                    #colorset for the multiplex                
+                    if( input$selMultiplexEdgeColorPalette=="random" ){
+                        Rcolor <- sample(0:255, 1, replace=T)
+                        Gcolor <- sample(0:255, 1, replace=T)
+                        Bcolor <- sample(0:255, 1, replace=T)
+
+                        #assign the color to the layer
+                        E(g[[l]])$red <- Rcolor
+                        E(g[[l]])$green <- Gcolor
+                        E(g[[l]])$blue <- Bcolor
+                    
+                        E(g[[l]])$color<-rgb(red=E(g[[l]])$red, 
+                                                        green=E(g[[l]])$green, 
+                                                        blue=E(g[[l]])$blue, 
+                                                        maxColorValue=255)
+                    }else{
+                        colorPalette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selMultiplexEdgeColorPalette],input$selMultiplexEdgeColorPalette))(LAYERS+1)
+                        E(g[[l]])$color <- colorPalette[l]
+                    }
+                }
+
+                #NODE COLOR
                 if(input$radNodeColor=="NODE_COLOR_EXTERNAL"){
                     if(externalNodeColorFlag){
-                        E(g[[l]])$color <- as.character(input$colEDGE_COLOR)
-
                         #setting default color for all nodes
                         V(g[[l]])$color <- as.character(input$colNodeColorFileDefaultNodesColor)
 
@@ -5184,28 +6018,28 @@ shinyServer(function(input, output, session) {
                         Bcolor <- sample(0:255, 1, replace=T)
 
                         #assign the color to the layer
-                        E(g[[l]])$red <- Rcolor
-                        E(g[[l]])$green <- Gcolor
-                        E(g[[l]])$blue <- Bcolor
+#                        E(g[[l]])$red <- Rcolor
+#                        E(g[[l]])$green <- Gcolor
+#                        E(g[[l]])$blue <- Bcolor
                         V(g[[l]])$red <- Rcolor
                         V(g[[l]])$green <- Gcolor
                         V(g[[l]])$blue <- Bcolor
                     
-                        E(g[[l]])$color<-rgb(red=E(g[[l]])$red, 
-                                                        green=E(g[[l]])$green, 
-                                                        blue=E(g[[l]])$blue, 
-                                                        maxColorValue=255)
+#                        E(g[[l]])$color<-rgb(red=E(g[[l]])$red, 
+#                                                        green=E(g[[l]])$green, 
+#                                                        blue=E(g[[l]])$blue, 
+#                                                        maxColorValue=255)
                         V(g[[l]])$color <- rgb(red=V(g[[l]])$red, 
                                                             green=V(g[[l]])$green, 
                                                             blue=V(g[[l]])$blue, 
                                                             maxColorValue=255)
                     }else{
                         colorPalette <- colorRampPalette(brewer.pal(brewer.pal.info$maxcolors[row.names(brewer.pal.info)==input$selMultiplexColorPalette],input$selMultiplexColorPalette))(LAYERS+1)
-                        E(g[[l]])$color <- colorPalette[l]
+#                        E(g[[l]])$color <- colorPalette[l]
                         V(g[[l]])$color <- colorPalette[l]
                     }
                 }else if(input$radNodeColor=="NODE_COLOR_UNIFORM"){
-                    E(g[[l]])$color <- input$colNODE_COLOR_UNIFORM_COLOR
+                    #E(g[[l]])$color <- input$colNODE_COLOR_UNIFORM_COLOR
                     V(g[[l]])$color <- input$colNODE_COLOR_UNIFORM_COLOR
                 }else if(input$radNodeColor=="NODE_COLOR_CENTRALITY"){
                     if(diagnosticsOK){
@@ -5230,7 +6064,7 @@ shinyServer(function(input, output, session) {
                         values <- 1 + (bins-1)*(values - min(values, na.rm=T))/(max(values, na.rm=T) - min(values, na.rm=T))
                         values <- floor(values)
                         
-                        E(g[[l]])$color <- as.character(input$colEDGE_COLOR)
+                        #E(g[[l]])$color <- as.character(input$colEDGE_COLOR)
                         V(g[[l]])$color <- colorPalette[ values ]
                     }
                 }else if(input$radNodeColor=="NODE_COLOR_TOPRANK"){
@@ -5306,35 +6140,26 @@ shinyServer(function(input, output, session) {
                     
                     if(input$radMultiplexModel == "MULTIPLEX_IS_EDGECOLORED"){
                         arrayStrength <- graph.strength(g[[l]],mode="total")
-                        
-                        if(any(arrayStrength==0.)){
-                            V(g[[l]])[arrayStrength==0.]$size <- 0
-                            V(g[[l]])[arrayStrength==0.]$label <- ""
-                        }
+                        V(g[[l]])[arrayStrength==0.]$size <- 0
+                        V(g[[l]])[arrayStrength==0.]$label <- ""
                     }else{
                         if(input$chkNODE_ISOLATED_HIDE_INTERLINKS){
                             #account for degree in the multiplex
                             
                             arrayStrength <- graph.strength(g.multi,mode="total")
                             idxtohide <- which(arrayStrength==0.)
-                            
-                            if(length(idxtohide)>0){
-                                inlayers <- floor((idxtohide-1)/Nodes) + 1
-                                innodes <- (idxtohide-1) %% Nodes + 1
-    
-                                idxs <- which(inlayers==l)
-                                nodes2hide <- which(V(g[[l]]) %in% innodes[idxs])
-                                V(g[[l]])[nodes2hide]$size <- 0
-                                V(g[[l]])[nodes2hide]$label <- ""
-                            }
+                            inlayers <- floor((idxtohide-1)/Nodes) + 1
+                            innodes <- (idxtohide-1) %% Nodes + 1
+
+                            idxs <- which(inlayers==l)
+                            nodes2hide <- which(V(g[[l]]) %in% innodes[idxs])
+                            V(g[[l]])[nodes2hide]$size <- 0
+                            V(g[[l]])[nodes2hide]$label <- ""
                         }else{
                             #do not account for interlinks, just intralinks
                             arrayStrength <- graph.strength(g[[l]],mode="total")
-                            
-                            if(any(arrayStrength==0.)){
-                                V(g[[l]])[arrayStrength==0.]$size <- 0
-                                V(g[[l]])[arrayStrength==0.]$label <- ""
-                            }
+                            V(g[[l]])[arrayStrength==0.]$size <- 0
+                            V(g[[l]])[arrayStrength==0.]$label <- ""
                         }
                     }
                 }
@@ -5382,7 +6207,7 @@ shinyServer(function(input, output, session) {
                                         rescale=F)
                 }else{
                     print("  Standard device output...")
-                    
+
                     #plot the graph with openGL    
                     #print(layouts[[l]])
                     plot.igraph(g[[l]], layout=layouts[[l]],
@@ -5411,6 +6236,9 @@ shinyServer(function(input, output, session) {
                 if(input$radMultiplexModel!="MULTIPLEX_IS_EDGECOLORED"){
                     print("Adding interlayer links.")
 
+                    #set default color
+                    E(g.multi)$color <- input$colINTERLINK_COLOR
+
                     #set to 0 the width of intra-layer links
                     E(g.multi)$width <- as.numeric(input$txtINTERLINK_WIDTH)*E(g.multi)$weight
                     E(g.multi)[which(multilayerEdges[,2]==multilayerEdges[,4])]$width <- 0
@@ -5419,7 +6247,44 @@ shinyServer(function(input, output, session) {
                     for(l in vecInactiveLayers){
                         E(g.multi)[which(multilayerEdges[,2]==l | multilayerEdges[,4]==l)]$width <- 0
                     }
+
+                    if(input$radEdgeSizeType=="EDGE_SIZE_PROPORTIONAL_TO_EXTERNAL"){
+                        if(externalEdgeSizeFlag){
+                            #Here we set only intra-layer links. Inter-links are considered later, if they are shown
+
+                            #inter-links set
+                            size.set <- externalEdgeColorTable[ externalEdgeColorTable$layerID.from != externalEdgeColorTable$layerID.to, ]
+
+                            if(nrow(size.set)>0){
+                                #relabeling
+                                size.set$nodeID.from <- size.set$nodeID.from + Nodes*(size.set$layerID.from-1)
+                                size.set$nodeID.to <- size.set$nodeID.to + Nodes*(size.set$layerID.to-1)
+
+                                idxs <- get.edge.ids(g.multi, as.vector(rbind(size.set$nodeID.from, size.set$nodeID.to)), directed=DIRECTED)
+                                E(g.multi)[idxs]$width <- size.set$size
+                            }
+                        }
+                    }
+
+                    if(input$radEdgeColor=="EDGE_COLOR_EXTERNAL"){
+                        #Here we set only inter-layer links. Intra-links are considered above
                     
+                        if(externalEdgeColorFlag){
+                            E(g.multi)$color <- input$colEdgeColorFileDefaultEdgesColor
+                            
+                            color.set <- externalEdgeColorTable[ externalEdgeColorTable$layerID.from != externalEdgeColorTable$layerID.to, ]
+    
+                            if(nrow(color.set)>0){
+                                #relabeling
+                                color.set$nodeID.from <- color.set$nodeID.from + Nodes*(color.set$layerID.from-1)
+                                color.set$nodeID.to <- color.set$nodeID.to + Nodes*(color.set$layerID.to-1)
+
+                                idxs <- get.edge.ids(g.multi, as.vector(rbind(color.set$nodeID.from, color.set$nodeID.to)), directed=DIRECTED)
+                                E(g.multi)[idxs]$color <- color.set$color
+                            }
+                        }
+                    }
+
                     #setup the layout for g.multi by merging the layout of each layer, in order
                     layout.multi <<- matrix(0, ncol=3, nrow=Nodes*LAYERS)
                     
@@ -5436,28 +6301,30 @@ shinyServer(function(input, output, session) {
                                             vertex.label="",
                                             vertex.label.cex=0,
                                             edge.width=E(g.multi)$width, 
-                                            edge.color=input$colINTERLINK_COLOR, 
+                                            edge.color=E(g.multi)$color, 
                                             edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
                                             edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
                                             edge.curved=as.numeric(input$txtEDGE_BENDING),
                                             edge.lty = input$selINTERLINK_TYPE,
                                             rescale=F)
                     }else{
+                        #edge/node transparancy not yet supported by rglplot
+                        #alpha=as.numeric(input$txtINTERLINK_TRANSP))
+                        E(g.multi)$color <- addalpha(E(g.multi)$color, as.numeric(input$txtINTERLINK_TRANSP))
+
                         plot.igraph(g.multi, layout=layout.multi,
                                     vertex.size=0, 
                                     vertex.shape="none",
                                     vertex.label="",
                                     vertex.label.cex=0,
                                     edge.width=E(g.multi)$width, 
-                                    edge.color=addalpha(input$colINTERLINK_COLOR,as.numeric(input$txtINTERLINK_TRANSP)), 
+                                    edge.color=E(g.multi)$color, 
                                     edge.arrow.size=as.numeric(input$txtLAYER_ARROW_SIZE), 
                                     edge.arrow.width=as.numeric(input$txtLAYER_ARROW_WIDTH), 
                                     edge.curved=as.numeric(input$txtEDGE_BENDING),
                                     edge.lty = input$selINTERLINK_TYPE,
                                     rescale=F, add=T)
                     }
-                    #edge/node transparancy not yet supported by rglplot
-                    #alpha=as.numeric(input$txtINTERLINK_TRANSP))
                 }                
             }                
 
@@ -5471,17 +6338,13 @@ shinyServer(function(input, output, session) {
             Sys.sleep(2)
     	 }
     	 
-        observe({
-            if(input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
-    
-            if(btnRenderNetworksValue==input$btnRenderNetworks) return()
+        observeEvent(input$btnRenderNetworks, {
+            if(input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
             
             isolate({    
                 makeRendering()
-                
-                btnRenderNetworksValue <<- input$btnRenderNetworks
             })
-        })
+        }, ignoreInit = TRUE)
         
         ############################################
         ## Global functions
@@ -5957,7 +6820,7 @@ shinyServer(function(input, output, session) {
                     par3d(FOV=as.numeric(input$txtPLOT_FOV), userMatrix=M)
                 }else{
                     #if orientation must be remembered but it's the first rendering:
-                    if(btnRenderNetworksValue==0){
+                    if(input$btnRenderNetworks==1){
                         M <- matrix(0, ncol=4,nrow=4)
                         M[1,] <- c(0.54,0,0.84,0)
                         M[2,] <- c(0.33,0.92,-0.22,0)
@@ -5993,7 +6856,6 @@ shinyServer(function(input, output, session) {
             tmplistDiagnostics <- NULL
             
             if(Type=="Multiplex"){
-                #calculation in the multiplex. For the moment the output is obtained calling octave.
                 #the output will be stored in [[l]] for the multiplex and [[LAYERS+1]] for the aggregated.
                 
                 for(l in 1:LAYERS){
@@ -6012,25 +6874,17 @@ shinyServer(function(input, output, session) {
                     progress2$set(message = paste('Current: Strength...'), value = 0.5)
                     
                     if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
-                        createOctaveConfigFile()
-                        #call octave
-                        octave.call("octave/muxMultisliceCentralityStrength.m")
-                        #system("octave -qf octave/muxMultisliceCentralityStrength.m",intern=T)
-                        Sys.sleep(3)
-                        
-                        #read output.
-                        resultFile <- paste0(input$txtProjectName,"_centrality_strength.txt")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+
+                        centralityVector <- GetMultiStrengthSum(SupraAdjacencyMatrix,LAYERS,Nodes,DIRECTED)
+                                
                         for(l in 1:LAYERS){
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Strength = centralityVector))
                         }
-                        if(file.exists(resultFile)) file.remove(resultFile)
-        
-                        resultFile <- paste0(input$txtProjectName,"_centrality_strength_aggregate.txt")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                        l <- LAYERS+1
+
+                        l <- LAYERS+1        
+                        centralityVector <- GetMultiStrengthSum(AdjMatrix[[l]],1,Nodes,DIRECTED);
+                        
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Strength = centralityVector))
-                        if(file.exists(resultFile)) file.remove(resultFile)
                     }else{
                         #for an interdependent network, it is enough to calculate centrality in the aggregate
                         #http://igraph.sourceforge.net/doc/R/graph.strength.html
@@ -6058,25 +6912,16 @@ shinyServer(function(input, output, session) {
                     
                     if(DIRECTED){
                         if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
-                            createOctaveConfigFile()
-                            #call octave
-                            #system("octave -qf octave/muxMultisliceCentralityInStrength.m",intern=T)
-                            octave.call("octave/muxMultisliceCentralityInStrength.m")
-                            Sys.sleep(3)
-                            
-                            #read output.
-                            resultFile <- paste0(input$txtProjectName,"_centrality_instrength.txt")
-                            centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                            centralityVector <- GetMultiInStrengthSum(SupraAdjacencyMatrix,LAYERS,Nodes,DIRECTED)
+    
                             for(l in 1:LAYERS){
                                 tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthIn = centralityVector))
                             }
-                            if(file.exists(resultFile)) file.remove(resultFile)
-            
-                            resultFile <- paste0(input$txtProjectName,"_centrality_instrength_aggregate.txt")
-                            centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                            l <- LAYERS+1
+
+                            l <- LAYERS+1            
+                            centralityVector <- GetMultiInStrengthSum(AdjMatrix[[l]],1,Nodes,DIRECTED)
+
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthIn = centralityVector))
-                            if(file.exists(resultFile)) file.remove(resultFile)
                         }else{
                             #for an interdependent network, it is enough to calculate centrality in the aggregate
                             #http://igraph.sourceforge.net/doc/R/graph.strength.html
@@ -6111,25 +6956,16 @@ shinyServer(function(input, output, session) {
 
                     if(DIRECTED){
                         if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
-                            createOctaveConfigFile()
-                            #call octave
-                            #system("octave -qf octave/muxMultisliceCentralityOutStrength.m",intern=T)
-                            octave.call("octave/muxMultisliceCentralityOutStrength.m")
-                            Sys.sleep(3)
-                            
-                            #read output.
-                            resultFile <- paste0(input$txtProjectName,"_centrality_outstrength.txt")
-                            centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                            centralityVector <- GetMultiOutStrengthSum(SupraAdjacencyMatrix,LAYERS,Nodes,DIRECTED)
+
                             for(l in 1:LAYERS){
                                 tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthOut = centralityVector))
                             }
-                            if(file.exists(resultFile)) file.remove(resultFile)
-            
-                            resultFile <- paste0(input$txtProjectName,"_centrality_outstrength_aggregate.txt")
-                            centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                            l <- LAYERS+1
+
+                            l <- LAYERS+1            
+                            centralityVector <- GetMultiOutStrengthSum(AdjMatrix[[l]],1,Nodes,DIRECTED)
+                            
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(StrengthOut = centralityVector))
-                            if(file.exists(resultFile)) file.remove(resultFile)
                         }else{
                             #for an interdependent network, it is enough to calculate centrality in the aggregate
                             #http://igraph.sourceforge.net/doc/R/graph.strength.html
@@ -6161,25 +6997,17 @@ shinyServer(function(input, output, session) {
                     progress2$set(message = paste('Current: Degree...'), value = 0.5)
                     
                     if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
-                        createOctaveConfigFile()
-                        #call octave
-                        #system("octave -qf octave/muxMultisliceCentralityDegree.m",intern=T)
-                        octave.call("octave/muxMultisliceCentralityDegree.m")
-                        Sys.sleep(3)
+
+                        centralityVector <- GetMultiDegreeSum(SupraAdjacencyMatrix,LAYERS,Nodes,DIRECTED)
                         
-                        #read output.
-                        resultFile <- paste0(input$txtProjectName,"_centrality_degree.txt")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
                         for(l in 1:LAYERS){
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Degree = centralityVector))
                         }
-                        if(file.exists(resultFile)) file.remove(resultFile)
         
-                        resultFile <- paste0(input$txtProjectName,"_centrality_degree_aggregate.txt")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
                         l <- LAYERS+1
+                        centralityVector <- GetMultiDegreeSum(AdjMatrix[[l]],1,Nodes,DIRECTED)
+                        
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Degree = centralityVector))
-                        if(file.exists(resultFile)) file.remove(resultFile)
                     }else{
                         #for an interdependent network, it is enough to calculate centrality in the aggregate
                         #http://igraph.sourceforge.net/doc/R/degree.html
@@ -6207,25 +7035,17 @@ shinyServer(function(input, output, session) {
                     
                     if(DIRECTED){
                         if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
-                            createOctaveConfigFile()
-                            #call octave
-                            #system("octave -qf octave/muxMultisliceCentralityInDegree.m",intern=T)
-                            octave.call("octave/muxMultisliceCentralityInDegree.m")
-                            Sys.sleep(3)
+
+                            centralityVector <- GetMultiInDegreeSum(SupraAdjacencyMatrix,LAYERS,Nodes,DIRECTED)
                             
-                            #read output.
-                            resultFile <- paste0(input$txtProjectName,"_centrality_indegree.txt")
-                            centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
                             for(l in 1:LAYERS){
                                 tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeIn = centralityVector))
                             }
-                            if(file.exists(resultFile)) file.remove(resultFile)
-            
-                            resultFile <- paste0(input$txtProjectName,"_centrality_indegree_aggregate.txt")
-                            centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+
                             l <- LAYERS+1
+                            centralityVector <- GetMultiInDegreeSum(AdjMatrix[[l]],1,Nodes,DIRECTED)
+
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeIn = centralityVector))
-                            if(file.exists(resultFile)) file.remove(resultFile)
                         }else{
                             #for an interdependent network, it is enough to calculate centrality in the aggregate
                             #http://igraph.sourceforge.net/doc/R/degree.html
@@ -6260,25 +7080,17 @@ shinyServer(function(input, output, session) {
 
                     if(DIRECTED){
                         if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
-                            createOctaveConfigFile()
-                            #call octave
-                            #system("octave -qf octave/muxMultisliceCentralityOutDegree.m",intern=T)
-                            octave.call("octave/muxMultisliceCentralityOutDegree.m")
-                            Sys.sleep(3)
                             
-                            #read output.
-                            resultFile <- paste0(input$txtProjectName,"_centrality_outdegree.txt")
-                            centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                            centralityVector <- GetMultiOutDegreeSum(SupraAdjacencyMatrix,LAYERS,Nodes,DIRECTED)
+                            
                             for(l in 1:LAYERS){
                                 tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeOut = centralityVector))
                             }
-                            if(file.exists(resultFile)) file.remove(resultFile)
-            
-                            resultFile <- paste0(input$txtProjectName,"_centrality_outdegree_aggregate.txt")
-                            centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                            l <- LAYERS+1
+
+                            l <- LAYERS+1            
+                            centralityVector <- GetMultiOutDegreeSum(AdjMatrix[[l]],1,Nodes,DIRECTED)
+
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(DegreeOut = centralityVector))
-                            if(file.exists(resultFile)) file.remove(resultFile)
                         }else{
                             #for an interdependent network, it is enough to calculate centrality in the aggregate
                             #http://igraph.sourceforge.net/doc/R/degree.html
@@ -6310,27 +7122,19 @@ shinyServer(function(input, output, session) {
                     progress$set(message = paste('Current: PageRank...'), value = 0.5)
 
                     if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
-                        createOctaveConfigFile()
-                        #call octave
-                        #system("octave -qf octave/muxMultisliceCentralityPageRank.m",intern=T)
-                        octave.call("octave/muxMultisliceCentralityPageRank.m")
-                        Sys.sleep(3)
+
+                        centralityVector <- GetMultiPageRankCentrality(SupraAdjacencyMatrix,LAYERS,Nodes)
                         
-                        #read output.
-                        resultFile <- paste0(input$txtProjectName,"_centrality_pagerank.txt")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
                         centralityVector <- centralityVector/max(centralityVector)
                         for(l in 1:LAYERS){
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(PageRank = centralityVector))
                         }
-                        if(file.exists(resultFile)) file.remove(resultFile)
-        
-                        resultFile <- paste0(input$txtProjectName,"_centrality_pagerank_aggregate.txt")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+
+                        l <- (LAYERS+1)        
+                        centralityVector <- GetMultiPageRankCentrality(AdjMatrix[[l]],1,Nodes)
                         centralityVector <- centralityVector/max(centralityVector)
-                        l <- (LAYERS+1)
+
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(PageRank = centralityVector))
-                        if(file.exists(resultFile)) file.remove(resultFile)
                     }else{
                         #http://igraph.sourceforge.net/doc/R/page.rank.html
                         #for an interdependent network, it is enough to calculate centrality in the aggregate                        
@@ -6359,14 +7163,8 @@ shinyServer(function(input, output, session) {
                     progress$set(message = paste('Current: Eigenvector...'), value = 0.5)
 
                     if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
-                        #call octave
-                        #system("octave -qf octave/muxMultisliceCentralityEigenvector.m",intern=T)
-                        octave.call("octave/muxMultisliceCentralityEigenvector.m")
-                        Sys.sleep(3)
-                        
-                        #read output.
-                        resultFile <- paste0(input$txtProjectName,"_centrality_eigenvector.txt")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+
+                        centralityVector <- GetMultiEigenvectorCentrality(SupraAdjacencyMatrix,LAYERS,Nodes)
                         centralityVector <- centralityVector/max(centralityVector)
                         if(any(centralityVector<0)){
                             print(paste("WARNING! Eigenvector centralities cannot be calculated. Assigning the same centrality to all nodes."))
@@ -6377,10 +7175,9 @@ shinyServer(function(input, output, session) {
                         for(l in 1:LAYERS){
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Eigenvector = centralityVector))
                         }
-                        if(file.exists(resultFile)) file.remove(resultFile)
-                        
-                        resultFile <- paste0(input$txtProjectName,"_centrality_eigenvector_aggregate.txt")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+
+                        l <- (LAYERS+1)
+                        centralityVector <- GetMultiEigenvectorCentrality(AdjMatrix[[l]],1,Nodes)
                         centralityVector <- centralityVector/max(centralityVector)
                         if(any(centralityVector<0)){
                             print(paste("WARNING! Eigenvector centralities cannot be calculated. Assigning the same centrality to all nodes."))
@@ -6388,10 +7185,8 @@ shinyServer(function(input, output, session) {
                             Sys.sleep(5)
                             centralityVector <- rep(1,Nodes)
                         }
-    
-                        l <- (LAYERS+1)
+
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Eigenvector = centralityVector))
-                        if(file.exists(resultFile)) file.remove(resultFile)
                     }else{
                         #http://igraph.sourceforge.net/doc/R/evcent.html
                         #for an interdependent network, it is enough to calculate centrality in the aggregate
@@ -6422,26 +7217,18 @@ shinyServer(function(input, output, session) {
                     progress$set(message = paste('Current: Hub...'), value = 0.5)
 
                     if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
-                        #call octave
-                        #system("octave -qf octave/muxMultisliceCentralityHub.m",intern=T)
-                        octave.call("octave/muxMultisliceCentralityHub.m")
-                        Sys.sleep(3)
-                        
-                        #read output.
-                        resultFile <- paste0(input$txtProjectName,"_centrality_hub.txt")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+
+                        centralityVector <- GetMultiHubCentrality(SupraAdjacencyMatrix,LAYERS,Nodes)
                         centralityVector <- centralityVector/max(centralityVector)
                         for(l in 1:LAYERS){
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Hub = centralityVector))
                         }
-                        if(file.exists(resultFile)) file.remove(resultFile)
-        
-                        resultFile <- paste0(input$txtProjectName,"_centrality_hub_aggregate.txt")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+
+                        l <- (LAYERS+1)        
+                        centralityVector <- GetMultiHubCentrality(AdjMatrix[[l]],1,Nodes)
                         centralityVector <- centralityVector/max(centralityVector)
-                        l <- (LAYERS+1)
+
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Hub = centralityVector))
-                        if(file.exists(resultFile)) file.remove(resultFile)
                     }else{
                         #http://igraph.sourceforge.net/doc/R/kleinberg.html
                         #for an interdependent network, it is enough to calculate centrality in the aggregate
@@ -6469,26 +7256,18 @@ shinyServer(function(input, output, session) {
                     progress$set(message = paste('Current: Authority...'), value = 0.5)
 
                     if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
-                        #call octave
-                        #system("octave -qf octave/muxMultisliceCentralityAuthority.m",intern=T)
-                        octave.call("octave/muxMultisliceCentralityAuthority.m")
-                        Sys.sleep(3)
                         
-                        #read output.
-                        resultFile <- paste0(input$txtProjectName,"_centrality_authority.txt")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+                        centralityVector <- GetMultiAuthCentrality(SupraAdjacencyMatrix,LAYERS,Nodes)
                         centralityVector <- centralityVector/max(centralityVector)
                         for(l in 1:LAYERS){
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Authority = centralityVector))
                         }
-                        if(file.exists(resultFile)) file.remove(resultFile)
         
-                        resultFile <- paste0(input$txtProjectName,"_centrality_authority_aggregate.txt")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                        centralityVector <- centralityVector/max(centralityVector)
                         l <- (LAYERS+1)
+                        centralityVector <- GetMultiAuthCentrality(AdjMatrix[[l]],1,Nodes)
+                        centralityVector <- centralityVector/max(centralityVector)
+
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Authority = centralityVector))
-                        if(file.exists(resultFile)) file.remove(resultFile)
                     }else{
                         #http://igraph.sourceforge.net/doc/R/kleinberg.html
                         #for an interdependent network, it is enough to calculate centrality in the aggregate
@@ -6516,26 +7295,18 @@ shinyServer(function(input, output, session) {
                     progress$set(message = paste('Current: Katz...'), value = 0.5)
 
                     if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
-                        #call octave
-                        #system("octave -qf octave/muxMultisliceCentralityKatz.m",intern=T)
-                        octave.call("octave/muxMultisliceCentralityKatz.m")
-                        Sys.sleep(3)
-                        
-                        #read output.
-                        resultFile <- paste0(input$txtProjectName,"_centrality_katz.txt")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+
+                        centralityVector <- GetMultiKatzCentrality(SupraAdjacencyMatrix,LAYERS,Nodes)
                         centralityVector <- centralityVector/max(centralityVector)
                         for(l in 1:LAYERS){
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Katz = centralityVector))
                         }
-                        if(file.exists(resultFile)) file.remove(resultFile)
         
-                        resultFile <- paste0(input$txtProjectName,"_centrality_katz_aggregate.txt")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                        centralityVector <- centralityVector/max(centralityVector)
                         l <- (LAYERS+1)
+                        centralityVector <- GetMultiKatzCentrality(AdjMatrix[[l]],1,Nodes)
+                        centralityVector <- centralityVector/max(centralityVector)
+
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Katz = centralityVector))
-                        if(file.exists(resultFile)) file.remove(resultFile)
                     }else{
                         #http://igraph.sourceforge.net/doc/R/alpha.centrality.html
                         #for an interdependent network, it is enough to calculate centrality in the aggregate
@@ -6573,27 +7344,16 @@ shinyServer(function(input, output, session) {
                     progress$set(message = paste('Current: Multiplexity...'), value = 0.5)
 
                     if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
-                        #call octave
-                        #system("octave -qf octave/muxMultisliceCentralityMultiplexity.m",intern=T)
-                        octave.call("octave/muxMultisliceCentralityMultiplexity.m")
-                        Sys.sleep(3)
-                        
-                        #read output.
-                        resultFile <- paste0(input$txtProjectName,"_centrality_multiplexity.txt")
-                        centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
+
+                        centralityVector <- GetMultiplexityCentrality(SupraAdjacencyMatrix,LAYERS,Nodes)
                         #centralityVector <- centralityVector/max(centralityVector)
                         for(l in 1:LAYERS){
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Multiplexity = centralityVector))
                         }
-                        if(file.exists(resultFile)) file.remove(resultFile)
         
-                        #resultFile <- paste0(input$txtProjectName,"_centrality_multiplexity_aggregate.txt")
-                        #centralityVector <- matrix(scan(resultFile, n = Nodes), ncol=1, nrow=Nodes, byrow = TRUE)
-                        #centralityVector <- centralityVector/max(centralityVector)
                         l <- (LAYERS+1)
                         centralityVector <- rep(0, Nodes)
                         tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Multiplexity = centralityVector))
-                        #if(file.exists(resultFile)) file.remove(resultFile)
                     }else{
                         centralityVector <- as.numeric(rowSums(table(  rbind(multilayerEdges[,1],multilayerEdges[,3]), rbind(multilayerEdges[,2],multilayerEdges[,4])  )>0))
                         
@@ -6628,16 +7388,8 @@ shinyServer(function(input, output, session) {
                     progress$set(message = paste('Current: K-core...'), value = 0.5)
 
                     if(input$radMultiplexModel!="MULTIPLEX_IS_INTERDEPENDENT"){
-                        #we can calculate this within R, no octave
-
-                        #calculate centrality in each layer separately and then get the max per node
-                        kcore.table <- matrix(0, nrow=Nodes, ncol=LAYERS)
-
-                        for(l in 1:LAYERS){
-                            kcore.table[,l] <- graph.coreness(g[[l]], mode="all")
-                        }
-                        
-                        centralityVector <- apply(kcore.table, 1, max)
+                                                
+                        centralityVector <- GetMultiKCoreCentrality(SupraAdjacencyMatrix,LAYERS,Nodes)
                         #centralityVector <- centralityVector/max(centralityVector)
                         for(l in 1:LAYERS){
                             tmplistDiagnostics[[l]] <- cbind(tmplistDiagnostics[[l]],data.frame(Kcore = centralityVector))
@@ -6864,11 +7616,9 @@ shinyServer(function(input, output, session) {
         #######################################
         ## Console
         #######################################
-        observe({
-            if(input$btnImportNetworks == 0 || LAYERS<=0) return()
-    
-            if(btnRunConsoleValue==input$btnRunConsole) return()
-    
+        observeEvent(input$btnRunConsole, {
+            #if(input$btnImportNetworks == 0 || LAYERS<=0) return()
+        
             isolate({
                 progress <- shiny::Progress$new(session)
                 on.exit(progress$close())
@@ -6897,19 +7647,69 @@ shinyServer(function(input, output, session) {
                                                 
                 progress$set(message = "OK!", value = 1)
                 Sys.sleep(2)
-    
-                btnRunConsoleValue <<- input$btnRunConsole
             })
-        })
+        }, ignoreInit = TRUE)
 
         
         #######################################
-        ## Export
+        ## Export / Import
         #######################################
-
 #        observe({
+#            if(btnOpenSessionValue==input$btnOpenSession) return()
+#
+#            isolate({
+#                if(length(input$session_file)>0){
+#                    if(!file.exists(input$session_file$datapath)){
+#                        progress <- shiny::Progress$new(session)
+#                        on.exit(progress$close())
+#                        progress$set(message = paste('ERROR! File',input$session_file$datapath,'does not exist.'), value = 0.01)
+#                        Sys.sleep(10)
+#                        return(NULL)
+#                    }
+#                    
+#                    progress <- shiny::Progress$new(session)
+#                    on.exit(progress$close())
+#                    progress$set(message = 'Loading muxViz session...', value = 0.2)
+#                    Sys.sleep(1)
+#
+#                    values <- readRDS(input$session_file$datapath)
+#                    
+#                    globalList.names <- names(values$global)
+#
+#                    print(input$btnImportNetworks)
+#
+#                    sapply(globalList.names, function(x){
+#                                                        if(x!="values$global"){
+#                                                            assign(x, values$global[[x]], envir=.GlobalEnv)
+#                                                        }}, simplify=F, USE.NAMES=T
+#                    )
+#                                        
+##                    lapply(names(values$input),
+##                          function(x) session$sendInputMessage(x, list(value = values$input[[x]]))
+##                      )
+#                    
+#                    inputList.names <- names(values$input)
+#                    for(i in 1:length(inputList.names)){
+#                        x <- inputList.names[i]
+#
+#                            session$sendInputMessage(x, shiny:::dropNulls(list(value = values$input[[x]])))
+#                            print(x)
+#                            print(values$input[[x]])
+#
+#                    }
+#                    print("------------")
+#                    print(input$btnImportNetworks)
+#
+#                    
+#                    progress$set(detail = paste('Session correctly loaded'), value = 1)
+#                    Sys.sleep(2)
+#                }                
+#                btnOpenSessionValue <<- input$btnOpenSession
+#            })
+#        })
+
+#        observeEvent(input$btnSaveSession, {
 #            if(input$btnImportNetworks == 0 || LAYERS<=0) return()
-#            if(btnSaveSessionValue==input$btnSaveSession) return()
 #
 #            isolate({
 #                progress <- shiny::Progress$new(session)
@@ -6919,55 +7719,87 @@ shinyServer(function(input, output, session) {
 #
 #                
 #                outfile <- concatenatePath("sessions", paste0(input$txtProjectName,".mux"))
-#                outlist <- list()
 #                
 #                #http://stackoverflow.com/questions/28166730/how-to-convert-shiny-input-values-into-a-shiny-output-table
-#                elementList <- NULL
-#                for(el in list(reactiveValuesToList(input))){
-#                    elementList <- attributes(el)
-#                }
-#        
-#                df.input <- data.frame(id=rep("",length(elementList$names)), 
-#                                                   type=rep("",length(elementList$names)), 
-#                                                   value=rep("",length(elementList$names)))
-#                
-#                df.input$id <- as.character(df.input$id)
-#                df.input$value <- as.character(df.input$value)
-#
-#                for(r in 1:length(elementList$names)){
-#                    df.input[r,]$id <- as.character(elementList$names[r])
-#                    df.input[r,]$value <- as.character(reactiveValuesToList(input)[ df.input[r,]$id ])
-#                }
+##                elementList <- NULL
+##                for(el in list(reactiveValuesToList(input))){
+##                    elementList <- attributes(el)
+##                }
+##        
+##                df.input <- data.frame(id=rep("",length(elementList$names)), 
+##                                                   type=rep("",length(elementList$names)), 
+##                                                   value=rep("",length(elementList$names)))
+##                
+##                df.input$id <- as.character(df.input$id)
+##                df.input$value <- as.character(df.input$value)
+##
+##                for(r in 1:length(elementList$names)){
+##                    df.input[r,]$id <- as.character(elementList$names[r])
+##                    df.input[r,]$value <- as.character(reactiveValuesToList(input)[ df.input[r,]$id ])
+##                }
 #                #updateCheckboxInput(session, "chkMULTIPLEX_OVERLAPPING", value=F)
 #                #updateSelectInput(session, "selMotifColorPalette", selected="Spectral")
+##                df.input$id <- as.character(df.input$id)
+##                df.input$type <- as.character(df.input$type)
+##                df.input$value <- as.character(df.input$value)
 #
-#                globalList <- ls(all = TRUE)
-#                df.global <- data.frame(id=globalList, 
-#                                                     type=rep("globalvar",length(globalList)), 
-#                                                     value=rep("",length(globalList)))
 #
-#                df.global$id <- as.character(df.global$id)
-#                df.global$type <- as.character(df.global$type)
-#                df.global$value <- as.character(df.global$value)
-#                df.input$id <- as.character(df.input$id)
-#                df.input$type <- as.character(df.input$type)
-#                df.input$value <- as.character(df.input$value)
+#                #http://stackoverflow.com/questions/32922190/saving-state-of-shiny-app-to-be-restored-later
+#                #inputList <- lapply(reactiveValuesToList(input), unclass)
+#                inputList <- reactiveValuesToList(input)
+#                globalList <- as.list(.GlobalEnv)
 #
-#                #print( rbind(df.input, df.global) )
-#                resout <- rbind(df.input, df.global)
+#                resout <- list(input=inputList, global=globalList)
 #                saveRDS(resout, file = outfile)
 #                progress$set(detail = paste('Session correctly saved to',outfile), value = 1)
 #                Sys.sleep(2)
-#                
-#                btnSaveSessionValue <<- input$btnSaveSession
 #            })
 #        })
-        
-        
-        observe({
-            if(input$btnExportRendering==0 || input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
+
+        observeEvent(input$btnLoadSession, {
+            if(is.null(input$selSavedSessionsList)) return()
+            
+            stateID <- strsplit(input$selSavedSessionsList, "|", fixed=T)[[1]][1]
+            showModal(modalDialog(title = "Load session", HTML(paste0("<a href='/?_state_id_=",stateID,"' target='_blank'>Click here to load session ",stateID,"</a>")), easyClose = TRUE))
+        })
+
+        observeEvent(input$btnDeleteSavedSession, {
+            if(is.null(input$selSavedSessionsList)) return()
+            
+            stateID <- strsplit(input$selSavedSessionsList, "|", fixed=T)[[1]][1]
+
+            if(input$chkConfirmDeleteSavedSession){
+                unlink(concatenatePath("shiny_bookmarks", stateID), recursive=T)
+                updateSavedSessionsList()
+                showModal(modalDialog(title = "Delete session", "Done!", easyClose = TRUE))
+            }
+        })
+
+
+        updateSavedSessionsList <- function(){
+            output$selOutputSavedSessionsList <- renderUI({
+                dirs <- list.dirs(path = "shiny_bookmarks", full.names = F, recursive = F)
+                details <- file.info(unlist(lapply(dirs, function(x) concatenatePath("shiny_bookmarks", x))))
+                details <- details[with(details, rev(order(as.POSIXct(mtime)))), ]
     
-            if(btnExportRenderingValue==input$btnExportRendering) return()
+                sessions <- paste0(basename(rownames(details)), "|", details$mtime)
+                session_list <- list()
+                res <- lapply(sessions, function(x) {session_list[x] <<- x})
+    
+                cat("Loading saved sessions list...\n")
+                cat("   + Done!\n")
+    
+                return(
+                    selectInput("selSavedSessionsList", label = getText("selSavedSessionsList"), 
+                            choices = session_list, 
+                            selected = 1)
+                        )
+            })
+        }   
+        updateSavedSessionsList()     
+        
+        observeEvent(input$btnExportRendering, {
+            if(input$btnExportRendering==0 || input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -6981,15 +7813,11 @@ shinyServer(function(input, output, session) {
                                 
                 progress$set(message = paste('Image exported to',FILE_RGL_SNAPSHOT), value = 1)
                 Sys.sleep(5)
-    
-                btnExportRenderingValue <<- input$btnExportRendering
             })
-        })
+        }, ignoreInit = TRUE)
         
-        observe({
+        observeEvent(input$btnExportRenderingPDF, {
             if(input$btnExportRenderingPDF==0 || input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
-    
-            if(btnExportRenderingPDFValue==input$btnExportRenderingPDF) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -7003,15 +7831,11 @@ shinyServer(function(input, output, session) {
 
                 progress$set(message = paste('Image exported to',FILE_RGL_SNAPSHOT), value = 1)
                 Sys.sleep(5)
-    
-                btnExportRenderingPDFValue <<- input$btnExportRenderingPDF
             })
-        })
+        }, ignoreInit = TRUE)
 
-        observe({
+        observeEvent(input$btnExportRenderingSVG, {
             if(input$btnExportRenderingSVG==0 || input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
-    
-            if(btnExportRenderingSVGValue==input$btnExportRenderingSVG) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -7025,16 +7849,12 @@ shinyServer(function(input, output, session) {
 
                 progress$set(message = paste('Image exported to',FILE_RGL_SNAPSHOT), value = 1)
                 Sys.sleep(5)
-    
-                btnExportRenderingSVGValue <<- input$btnExportRenderingSVG
             })
-        })
+        }, ignoreInit = TRUE)
 
     
-        observe({
+        observeEvent(input$btnExportRenderingWeb, {
             if(input$btnExportRenderingWeb==0 || input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
-    
-            if(btnExportRenderingWebValue==input$btnExportRenderingWeb) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -7047,18 +7867,11 @@ shinyServer(function(input, output, session) {
                 writeWebGL(dir=buildPath("export", paste("webGL_",input$txtProjectName,sep="")), width=945)
                 progress$set(message = 'webGL exported. See export folder.', value = 1)
                 Sys.sleep(5)
-
-                btnExportRenderingWebValue <<- input$btnExportRenderingWeb
             })
-        })
+        }, ignoreInit = TRUE)
 
-
-
-
-        observe({
+        observeEvent(input$btnExportRenderingClassicPDF, {
             if(input$btnExportRenderingClassicPDF==0 || input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
-    
-            if(btnExportRenderingClassicPDFValue==input$btnExportRenderingClassicPDF) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -7078,15 +7891,11 @@ shinyServer(function(input, output, session) {
                 
                 progress$set(message = paste('Image exported to',FILE_OUTPUT), value = 1)
                 Sys.sleep(5)
-    
-                btnExportRenderingClassicPDFValue <<- input$btnExportRenderingClassicPDF
             })
-        })
+        }, ignoreInit = TRUE)
 
-        observe({
+        observeEvent(input$btnExportRenderingClassicPNG, {
             if(input$btnExportRenderingClassicPNG==0 || input$btnRenderNetworks==0 || input$btnApplyLayout==0 || input$btnImportNetworks == 0 || LAYERS<=0) return()
-    
-            if(btnExportRenderingClassicPNGValue==input$btnExportRenderingClassicPNG) return()
     
             isolate({
                 progress <- shiny::Progress$new(session)
@@ -7107,15 +7916,8 @@ shinyServer(function(input, output, session) {
 
                 progress$set(message = paste('Image exported to',FILE_OUTPUT), value = 1)
                 Sys.sleep(5)
-    
-                btnExportRenderingClassicPNGValue <<- input$btnExportRenderingClassicPNG
             })
-        })
-
-
-
-
-
+        }, ignoreInit = TRUE)
 
 
         #this is to setup the pageable table output
@@ -7317,6 +8119,53 @@ shinyServer(function(input, output, session) {
         #    content = function(file) { write.table(myData, file, sep = ";", row.names = FALSE) }
         #)
 
+        output$downTriadsSummaryTableSingleLayer <- downloadHandler(    
+            filename = function() { paste0(input$txtProjectName, "_triads_summary_perLayer_table.csv") },
+            content = function(file) { 
+                if(input$btnCalculateTriadsDiagnostics==0 || input$btnImportNetworks == 0 ||  LAYERS<=1){
+                    return(NULL)
+                }else{
+                    write.table(sumTriadsMergeSingleLayer, file, sep = ";", row.names = FALSE) 
+                }
+            }
+        )
+
+        output$downTriadsTableSingleLayer <- downloadHandler(    
+            filename = function() { paste0(input$txtProjectName, "_triads_perLayer_table.csv") },
+            content = function(file) { 
+
+                if(input$btnCalculateTriadsDiagnostics==0 || input$btnImportNetworks == 0 ||  LAYERS<=1){
+                    return(NULL)
+                }else{
+                    write.table(listTriadsMergeSingleLayer, file, sep = ";", row.names = FALSE) 
+                }
+            }
+        )
+
+        output$downTriadsTable <- downloadHandler(    
+            filename = function() { paste0(input$txtProjectName, "_triads_table.csv") },
+            content = function(file) { 
+                if(input$btnCalculateTriadsDiagnostics==0 || input$btnImportNetworks == 0 ||  LAYERS<=1){
+                    return(NULL)
+                }else{
+                    write.table(listTriadsMerge, file, sep = ";", row.names = FALSE) 
+                }
+            }
+        )
+
+        output$downTriadsSummaryTable <- downloadHandler(    
+            filename = function() { paste0(input$txtProjectName, "_triads_summary_table.csv") },
+            content = function(file) { 
+
+                if(input$btnCalculateTriadsDiagnostics==0 || input$btnImportNetworks == 0 ||  LAYERS<=1){
+                    return(NULL)
+                }else{
+                    write.table(sumTriadsMerge, file, sep = ";", row.names = FALSE) 
+                }
+            }
+        )
+
+
         output$downMotifsTable <- downloadHandler(    
             filename = function() { paste0(input$txtProjectName, "_motifs_table.csv") },
             content = function(file) { 
@@ -7324,7 +8173,9 @@ shinyServer(function(input, output, session) {
                 if(input$btnCalculateMotifs==0 || input$btnImportNetworks == 0 ||  LAYERS<=1){
                     return(NULL)
                 }else{
-                    write.table(listMotifs, file, sep = ";", row.names = FALSE) 
+                    tmp <- listMotifs
+                    tmp$Motif <- NULL
+                    write.table(tmp, file, sep = ";", row.names = FALSE) 
                 }
             }
         )
@@ -7409,6 +8260,18 @@ shinyServer(function(input, output, session) {
                     return(NULL)
                 }else{
                     write.table(sumCommunitiesMerge, file, sep = ";", row.names = FALSE) 
+                }
+            }
+        )
+
+        output$downCommunityBatchTable <- downloadHandler(    
+            filename = function() { paste0(input$txtProjectName, "_community_multiscale_table.csv") },
+            content = function(file) { 
+
+                if(input$btnCalculateCommunityDiagnostics==0 || input$btnImportNetworks == 0 || LAYERS==0 || !communityMultiplexBatchOK){
+                    return(NULL)
+                }else{
+                    write.table(communityBatchData, file, sep = ";", row.names = FALSE) 
                 }
             }
         )
@@ -7522,9 +8385,7 @@ shinyServer(function(input, output, session) {
             }
         )
 
-        observe({
-            if(input$btnImportNodeColor==0)
-                return()
+        observeEvent(input$btnImportNodeColor, {
     
             isolate({
                 progress <- shiny::Progress$new()
@@ -7584,11 +8445,8 @@ shinyServer(function(input, output, session) {
                     #progress$set(detail = 'Setting the colors...', value = 0.6)
                     #Sys.sleep(1)
                 }else{
-                    btnImportNodeColorValue <<- input$btnImportNodeColor
                     return()
                 }
-                
-                btnImportNodeColorValue <<- input$btnImportNodeColor
                 
                 progress$set(detail = 'Import Completed!', value = 1)
                 Sys.sleep(2)
@@ -7596,87 +8454,173 @@ shinyServer(function(input, output, session) {
         })
 
 
+        observeEvent(input$btnImportEdgeColor, {
+    
+            isolate({
+                progress <- shiny::Progress$new()
+                on.exit(progress$close())
+                progress$set(message = 'Importing external attributes for edges...', value = 0.2)
+                Sys.sleep(1)
+
+                if(length(input$edgecolor_file)>0){
+                    if(!file.exists(input$edgecolor_file$datapath)){
+                        progress2 <- shiny::Progress$new(session)
+                        on.exit(progress2$close())
+                        progress2$set(message = paste('ERROR! File',input$edgecolor_file$datapath,'does not exist.'), value = 0.01)
+                        Sys.sleep(10)
+                        return(NULL)
+                    }
+                    externalEdgeColorTable <<- read.table(input$edgecolor_file$datapath, sep=as.character(input$txtEdgeColorFileSep), header=T)
+
+                    if(!"nodeID.from" %in% colnames(externalEdgeColorTable)){
+                        progress2 <- shiny::Progress$new(session)
+                        on.exit(progress2$close())
+                        progress2$set(message = paste('ERROR! Missing nodeID.from in external file.'), value = 0.01)
+                        Sys.sleep(10)
+                        return(NULL)                        
+                    }
+                    if(!"layerID.from" %in% colnames(externalEdgeColorTable)){
+                        progress2 <- shiny::Progress$new(session)
+                        on.exit(progress2$close())
+                        progress2$set(message = paste('ERROR! Missing layerID.from in external file.'), value = 0.01)
+                        Sys.sleep(10)
+                        return(NULL)                                                
+                    }
+                    if(!"nodeID.to" %in% colnames(externalEdgeColorTable)){
+                        progress2 <- shiny::Progress$new(session)
+                        on.exit(progress2$close())
+                        progress2$set(message = paste('ERROR! Missing nodeID.to in external file.'), value = 0.01)
+                        Sys.sleep(10)
+                        return(NULL)                        
+                    }
+                    if(!"layerID.to" %in% colnames(externalEdgeColorTable)){
+                        progress2 <- shiny::Progress$new(session)
+                        on.exit(progress2$close())
+                        progress2$set(message = paste('ERROR! Missing layerID.to in external file.'), value = 0.01)
+                        Sys.sleep(10)
+                        return(NULL)                                                
+                    }
+
+                    externalEdgeColorTable$layerID.to <<- as.numeric(externalEdgeColorTable$layerID.to)
+                    externalEdgeColorTable$layerID.from <<- as.numeric(externalEdgeColorTable$layerID.from)
+                    
+                    if("color" %in% colnames(externalEdgeColorTable)){
+                        externalEdgeColorFlag <<- TRUE
+                    }else{
+                        externalEdgeColorFlag <<- FALSE
+                    }
+                    if("size" %in% colnames(externalEdgeColorTable)){
+                        externalEdgeSizeFlag <<- TRUE
+                    }else{
+                        externalEdgeSizeFlag <<- FALSE
+                    }
+                    
+                    externalEdgeColorTable$size <<- as.numeric(externalEdgeColorTable$size)
+                    externalEdgeColorTable$color <<- as.character(externalEdgeColorTable$color)
+                                        
+                    if(input$chkEdgeListLabel){
+                        externalEdgeColorTable$nodeLabel.from <<- externalEdgeColorTable$nodeID.from
+                        externalEdgeColorTable$nodeID.from <<- nodeLabelSeqIdConvTable[ externalEdgeColorTable$nodeLabel.from ]
+                        externalEdgeColorTable$nodeLabel.to <<- externalEdgeColorTable$nodeID.to
+                        externalEdgeColorTable$nodeID.to <<- nodeLabelSeqIdConvTable[ externalEdgeColorTable$nodeLabel.to ]
+                    }
+
+                    externalEdgeColorTable$nodeID.from <<- as.numeric(externalEdgeColorTable$nodeID.from)
+                    externalEdgeColorTable$nodeID.to <<- as.numeric(externalEdgeColorTable$nodeID.to)
+                    print(externalEdgeColorTable)
+                    
+                    #progress$set(detail = 'Setting the colors...', value = 0.6)
+                    #Sys.sleep(1)
+                }else{
+                    return()
+                }
+                
+                progress$set(detail = 'Import Completed!', value = 1)
+                Sys.sleep(2)
+            })
+        })
+
 
                     
         #######################################
-        ## Simple interface with octave
+        ## Simple interface with octave (DEPRECATED)
         #######################################
     
-        createOctaveConfigFile <- function(){
-            if(LAYERS==0) return(NULL)
-            
-            octaveConfigFile <- "octave/muxOctaveConfig.m"
-            
-            write(paste("AnalysisName = \"",input$txtProjectName,"\";",sep=""),
-                file=octaveConfigFile,append=F)
-    
-            if(input$radMultiplexModel=="MULTIPLEX_IS_EDGECOLORED"){
-                write(paste0("isExtendedEdgesList = 0;"), file=octaveConfigFile,append=T)
-                for(l in 1:LAYERS){
-                    if(input$chkEdgeListLabel){
-                        write(paste0("LayersList{",l,"}=\"",normalizePath(paste0(fileName[[l]][1],".rel"), winslash = "/"),"\";"),
-                            file=octaveConfigFile,append=T)                    
-                    }else{
-                        write(paste0("LayersList{",l,"}=\"",normalizePath(fileName[[l]][1], winslash = "/"),"\";"),
-                            file=octaveConfigFile,append=T)
-                    }
-                }
-            }else{
-                write(paste0("isExtendedEdgesList = 1;"), file=octaveConfigFile,append=T) 
-                if(input$chkEdgeListLabel){
-                    write(paste0("MultiLayerEdgesListFile = \"",normalizePath(paste0(fileName[[1]][1],".rel"),winslash = "/"),"\";"),
-                            file=octaveConfigFile,append=T)
-                }else{
-                    write(paste0("MultiLayerEdgesListFile = \"",normalizePath(fileName[[1]][1],winslash = "/"),"\";"),
-                            file=octaveConfigFile,append=T)
-                }
-            }
-                
-            if(!DIRECTED){
-                flag <- "U"
-                if(!input$chkEdgeListUndirectedBoth) flag <- "UD"
-            }else{
-                flag <- "D"
-            }
-            if(WEIGHTED) flag <- paste(flag,"W",sep="")
-            write(paste("Flags = \"",flag,"\";",sep=""),
-                file=octaveConfigFile,append=T)
-    
-            write(paste("MaxNodes = ",Nodes,";"),
-                file=octaveConfigFile,append=T)
-    
-            write(paste("FirstNodeLabel = ",minNodeID,";"),
-                file=octaveConfigFile,append=T)
-
-            if(!is.null(input$txtGamma) && input$txtGamma!=""){
-                #trick necessary because this value is hidden at the beginning and it would recognize its value
-                #only if you pass from multislice community detection panel.. 
-                write(paste("GammaParameter = ",input$txtGamma,";"),
-                    file=octaveConfigFile,append=T)
-            }else{
-                write(paste("GammaParameter = ",1,";"),
-                    file=octaveConfigFile,append=T)                
-            }
-                
-            write(paste("OmegaParameter = ",input$txtOmega,";"),
-                file=octaveConfigFile,append=T)
-    
-            write(paste("InterAssortativityType = \"",input$selAssortativityType,"\";",sep=""),
-                file=octaveConfigFile,append=T)
-
-            write(paste("ConnectedComponentsType = \"","simple","\";",sep=""),
-                file=octaveConfigFile,append=T)
-    
-            if(input$radMultiplexType=="MULTIPLEX_IS_ORDERED"){
-                write(paste("MultisliceType = \"ordered\";"),
-                    file=octaveConfigFile,append=T)
-            }else if(input$radMultiplexType=="MULTIPLEX_IS_CATEGORICAL"){
-                write(paste("MultisliceType = \"categorical\";"),
-                    file=octaveConfigFile,append=T)                    
-            }    
-            
-            return(TRUE)
-        }
+#        createOctaveConfigFile <- function(){
+#            if(LAYERS==0) return(NULL)
+#            
+#            octaveConfigFile <- "octave/muxOctaveConfig.m"
+#            
+#            write(paste("AnalysisName = \"",input$txtProjectName,"\";",sep=""),
+#                file=octaveConfigFile,append=F)
+#    
+#            if(input$radMultiplexModel=="MULTIPLEX_IS_EDGECOLORED"){
+#                write(paste0("isExtendedEdgesList = 0;"), file=octaveConfigFile,append=T)
+#                for(l in 1:LAYERS){
+#                    if(input$chkEdgeListLabel){
+#                        write(paste0("LayersList{",l,"}=\"",normalizePath(paste0(fileName[[l]][1],".rel"), winslash = "/"),"\";"),
+#                            file=octaveConfigFile,append=T)                    
+#                    }else{
+#                        write(paste0("LayersList{",l,"}=\"",normalizePath(fileName[[l]][1], winslash = "/"),"\";"),
+#                            file=octaveConfigFile,append=T)
+#                    }
+#                }
+#            }else{
+#                write(paste0("isExtendedEdgesList = 1;"), file=octaveConfigFile,append=T) 
+#                if(input$chkEdgeListLabel){
+#                    write(paste0("MultiLayerEdgesListFile = \"",normalizePath(paste0(fileName[[1]][1],".rel"),winslash = "/"),"\";"),
+#                            file=octaveConfigFile,append=T)
+#                }else{
+#                    write(paste0("MultiLayerEdgesListFile = \"",normalizePath(fileName[[1]][1],winslash = "/"),"\";"),
+#                            file=octaveConfigFile,append=T)
+#                }
+#            }
+#                
+#            if(!DIRECTED){
+#                flag <- "U"
+#                if(!input$chkEdgeListUndirectedBoth) flag <- "UD"
+#            }else{
+#                flag <- "D"
+#            }
+#            if(WEIGHTED) flag <- paste(flag,"W",sep="")
+#            write(paste("Flags = \"",flag,"\";",sep=""),
+#                file=octaveConfigFile,append=T)
+#    
+#            write(paste("MaxNodes = ",Nodes,";"),
+#                file=octaveConfigFile,append=T)
+#    
+#            write(paste("FirstNodeLabel = ",minNodeID,";"),
+#                file=octaveConfigFile,append=T)
+#
+#            if(!is.null(input$txtGamma) && input$txtGamma!=""){
+#                #trick necessary because this value is hidden at the beginning and it would recognize its value
+#                #only if you pass from multislice community detection panel.. 
+#                write(paste("GammaParameter = ",input$txtGamma,";"),
+#                    file=octaveConfigFile,append=T)
+#            }else{
+#                write(paste("GammaParameter = ",1,";"),
+#                    file=octaveConfigFile,append=T)                
+#            }
+#                
+#            write(paste("OmegaParameter = ",input$txtOmega,";"),
+#                file=octaveConfigFile,append=T)
+#    
+#            write(paste("InterAssortativityType = \"",input$selAssortativityType,"\";",sep=""),
+#                file=octaveConfigFile,append=T)
+#
+#            write(paste("ConnectedComponentsType = \"","simple","\";",sep=""),
+#                file=octaveConfigFile,append=T)
+#    
+#            if(input$radMultiplexType=="MULTIPLEX_IS_ORDERED"){
+#                write(paste("MultisliceType = \"ordered\";"),
+#                    file=octaveConfigFile,append=T)
+#            }else if(input$radMultiplexType=="MULTIPLEX_IS_CATEGORICAL"){
+#                write(paste("MultisliceType = \"categorical\";"),
+#                    file=octaveConfigFile,append=T)                    
+#            }    
+#            
+#            return(TRUE)
+#        }
     
         #######################################
         ## External function for plots

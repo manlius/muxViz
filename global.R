@@ -3,38 +3,7 @@
 ##################################################
 
 #This is to avoid pushing a button and starting all the other ones..
-btnQueryValue <- 0
-btnRunConsoleValue <- 0
-btnCalculateComponentsDiagnosticsValue <- 0
-btnComponentsStatisticsValue <- 0
-btnDiameterStatisticsValue <- 0
-btnMeanPathLengthStatisticsValue <- 0
-btnDensityStatisticsValue <- 0
-btnNodeStatisticsValue <- 0
-btnEdgeStatisticsValue <- 0
-btnCalculateMotifsValue <- 0
-btnCalculateCorrelationDiagnosticsValue <- 0
-btnCalculateCentralityDiagnosticsValue <- 0
-btnCentralityDiagnosticsAnalysisValue <- 0
-btnCalculateCommunityDiagnosticsValue <- 0
 btnImportNetworksValue <- 0
-btnImportTimelineValue <- 0
-btnRenderDynamicsSnapshotsValue <- 0
-#btnFFMPEGDynamicsSnapshotsValue <- 0
-btnApplyLayoutValue <- 0
-btnRenderNetworksValue <- 0
-btnExportRenderingValue <- 0
-btnExportRenderingSVGValue <- 0
-btnExportRenderingPDFValue <- 0
-btnExportRenderingWebValue <- 0
-btnExportRenderingClassicPNGValue <- 0
-btnExportRenderingClassicPDFValue <- 0
-btnAnularVizValue <- 0
-btnCalculateReducibilityValue <- 0
-btnSaveSessionValue <- 0
-btnResetLightsValue <- 0
-btnRenderNetworkOfLayersValue <- 0
-btnImportNodeColorValue <- 0
 
 #Other variables
 fileInput <- NULL
@@ -64,6 +33,13 @@ listDiagnosticsSingleLayer <- data.frame()
 listDiagnosticsMerge <- data.frame()
 listDiagnosticsMergeSingleLayer <- data.frame()
 
+listTriads <- data.frame()
+listTriadsSingleLayer <- data.frame()
+listTriadsMerge <- data.frame()
+listTriadsMergeSingleLayer <- data.frame()
+sumTriadsMerge <- data.frame()
+sumTriadsMergeSingleLayer <- data.frame()
+
 listCommunities <- data.frame()
 listCommunitiesSingleLayer <- data.frame()
 listCommunitiesMerge <- data.frame()
@@ -86,6 +62,8 @@ listNodeOverlap <- data.frame()
 listMotifs <- data.frame()
 
 listQueryResult <- data.frame()
+
+listReducibility <- data.frame()
 
 #the timeline for visualization of dynamical processes
 dfTimeline <- data.frame()
@@ -122,6 +100,9 @@ Edges <- 0
 
 orientationRGL <- NULL
 
+externalEdgeSizeFlag <- FALSE
+externalEdgeColorFlag <- FALSE
+externalEdgeColorTable <- NULL
 externalNodeSizeFlag <- FALSE
 externalNodeColorFlag <- FALSE
 externalNodeColorTable <- NULL
@@ -136,10 +117,25 @@ diagnosticsSingleLayerOK <- F
 diagnosticsOK <- F
 communityOK <- F
 componentsOK <- F
+triadsOK <- F
+inputOK <- F
+communityMultiplexBatchOK <- F
 communityMultiplexOK <- F
 communitySingleLayerOK <- F
 componentsMultiplexOK <- F
 componentsSingleLayerOK <- F
+triadsMultiplexOK <- F
+triadsSingleLayerOK <- F
+
+avgGlobalOverlapping <- NULL
+avgGlobalOverlappingMatrix.df <- NULL
+avgGlobalNodeOverlappingMatrix.df <- NULL
+interPearson.df <- NULL
+interSpearman.df <- NULL
+frobeniusNorm.df <- NULL
+
+communityBatchMembership <- NULL
+communityBatchData <- NULL
 
 welcomeFunction <- function(){
 
@@ -150,7 +146,7 @@ welcomeFunction <- function(){
     cat(":::::::::::::::::::::::::::::::::::::::::::::::::::::::::\n")
     cat("\n")
     cat(":: muxViz: Tool for Multilayer Analysis and Visualization\n")
-    cat(":: Copyright (C) 2013-2015 Manlio De Domenico\n")
+    cat(":: Copyright (C) 2013-2017 Manlio De Domenico\n")
     cat(":: School of Computer Science and Mathematics\n")
     cat(":: Universitat Rovira i Virgili (Tarragona, Spain)\n")
     cat("\n")
@@ -176,10 +172,14 @@ octave.call <- function(arg){
 
 
 buildPath <- function(folder,objname){
+    folder <- gsub("\"","", folder )
+    objname <- gsub("\"","", objname )
     if( Sys.info()["sysname"]=="Windows" ){
-        return( paste(getwd(),folder,objname,sep="\\") )
+        #return( paste(getwd(),folder,objname,sep="\\") )
+        return( paste0("\"",paste(getwd(),folder,objname,sep="\\"),"\"") )
     }else{
-        return( paste(getwd(),folder,objname,sep="/") )        
+        #return( paste(getwd(),folder,objname,sep="/") )        
+        return( paste(getwd(),folder,objname,sep="/") )
     }
 }
 
@@ -188,17 +188,19 @@ buildTmpPath <- function(objname){
 }
 
 concatenatePath <- function(folder,objname){
+    folder <- gsub("\"","", folder )
+    objname <- gsub("\"","", objname )
     if( Sys.info()["sysname"]=="Windows" ){
-        return( paste(folder,objname,sep="\\") )
+        return( paste0("\"",paste(folder, paste0(objname, collapse="\\"), sep="\\"),"\"") )
     }else{
-        return( paste(folder,objname,sep="/") )        
+        return( paste(folder, paste0(objname, collapse="/"), sep="/") )   
     }
 }
 
 getExecutablePath <- function(exec_name){
     path <- ""
     if( Sys.info()["sysname"]=="Windows" ){
-        path <- buildPath("bin",paste0(exec_name,"_windows"))    
+        path <- buildPath("bin",paste0(exec_name,"_windows.exe"))    
     }else if( Sys.info()["sysname"]=="Linux" ){
         path <- buildPath("bin",paste0(exec_name,"_linux"))
     }else{
@@ -294,3 +296,39 @@ Rotz <- function(th){
     return(Rz) 
 }
 
+#' Returns a network where nodes are communities, according to `membership` vector and edges are weighted by the number of edges between original units
+
+getCommunityNetwork <- function(g, membership){
+    Mods <- as.numeric(sort(unique(membership)))
+    
+    edges <- igraph::get.edges(g, E(g))
+    g.mod <- graph.data.frame(data.frame(from=as.numeric(membership[edges[,1]]), 
+                                                                   to=as.numeric(membership[edges[,2]])
+                                                                ),
+                                                vertices=Mods, directed=igraph::is.directed(g)
+                                            )
+    E(g.mod)$weight <- 1
+    g.mod <- simplify(g.mod, edge.attr.comb=list(weight="sum"), remove.loops=F)
+    
+    return(g.mod)
+}
+
+buildSankeyFromCommunity <- function(df.memb){
+    links <- data.frame(stringsAsFactors=F)
+    for(i in 1:(ncol(df.memb)-1)){
+        grp_cols <- names(df.memb)[(i):(i+1)]
+        dots <- lapply(grp_cols, as.symbol)
+    
+        transitions <- df.memb %>% group_by_(.dots=dots) %>% summarise(sum=n())    
+        colnames(transitions)[1:2] <- c("source","target")
+        links <- rbind(links, as.data.frame(transitions))
+    }
+
+    nodes <- data.frame(name=unique(c(as.character(links$source), as.character(links$target))))
+
+    links$source <- match(links$source, nodes$name) - 1
+    links$target <- match(links$target, nodes$name) - 1
+    nodes$name <- unlist(lapply(as.character(nodes$name), function(x) strsplit(x, "_")[[1]][2]))
+    
+    return(list(links=links, nodes=nodes))
+}

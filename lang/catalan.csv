@@ -1,0 +1,54 @@
+object,message,type
+muxVizVersion,"versió muxViz:",ui
+muxVizUpdate,"Última actualització",ui
+muxVizSystem,"Sistema:",ui
+ID,"ID",ui
+ProjectID,"ID del projecte",ui
+txtProjectName,"* Assignar una ID a aquest anàlisi:",ui
+Import,"Importar",ui
+ConfigFile,"Fitxer de configuració:",ui
+NetworkModel,"Model de xarxa",ui
+NetworkFormat,"Format de xarxa",ui
+Configuration,"Configuració",ui
+ConfigurationFileFormat,"* Format d'entrada del fitxer de config.:",ui
+ConfigurationFile,"* Obrir el fitxer de configuració:",ui
+chkConfigFileHeader,"Capçalera",ui
+txtConfigFileSep,"Separador:",ui
+ConfigurationFileSummary,"Taula del fitxer de configuració",ui
+ImportNetworks,"Importar xarxes",ui
+InputFormat,"Format d'entrada",ui
+chkEdgeListFileHeader,"Capçalera",ui
+txtEdgeListFileSep,"Separador (un espai per defecte; ha de ser el mateix que al fitxer de disposicó):",ui
+txtEdgeListFileSepHelp,"<font color='red'>Si els nodes de la llista d'enllaços s'identifiquen amb una etiqueta enlloc d'una seqüencia d'IDs enteres, marqueu la següent casella</font> (cal especificar una seqüencia d'IDs enteres a la columna nodeID del fitxer de disposició)",ui
+chkEdgeListLabel,"Llista d'enllaços dels nodes amb etiqueta (enlloc de ID entera seqüencial)",ui
+chkEdgeListLabel2,"Llista d'enllaços de les capes amb etiqueta (ennloc de ID entera seqüencial)",ui
+selEdgeListType,"* Format de la llista d'enllaços:",ui
+chkEdgeListWeighted,"Pesada",ui
+chkEdgeListUndirectedBoth,"S'especifiquen ambdues direccions (únicament per al cas de xarxes no dirigides)",ui
+chkRESCALE_WEIGHT,"Rescalar els pesos respecte el pes mínim",ui
+chkOutputEdgelistTable,"Imprimir una taula amb la llista d'enllaços (<font color='red'>lent per a xarxes grans</font>)",ui
+btnImportNetworks,"Importar xarxa",ui
+NetworkSummary,"Resum de la xarxa multicapa",ui
+NetworkSummaryInfo,"Capes: <span id="sumLayers"></span><br>Tipus de capa: <span id="sumLayerType"></span><br><br>Nombre de nodes: <span id="sumNodes"></span><br>&nbsp;&nbsp;&nbsp;&nbsp;ID mínima: <span id="sumMinNodeID"></span><br>&nbsp;&nbsp;&nbsp;&nbsp;ID màxima: <span id="sumMaxNodeID"></span><br>Nombre d'enllaços <span id="sumEdges"></span><br><br>Disposició externa: <span id="sumIsLayoutExternal"></span><br>Tipus geogràfic: <span id="sumIsLayoutGeographic"></span><br>",ui
+EdgesTables,"Taules d'enllaços",ui
+ImportedEdgeLists,"Taules d'enllaços importades",ui
+Pageable,"Paginable",ui
+EdgesPerPage,"Enllaços per pàgina",ui
+Console,"Consola",ui
+Run,"Executar",ui
+Query,"Consulta",ui
+QuerySetUp,"Configurar consulta",ui
+selQueryType,"Tipus de consulta:",ui
+chkQueryShowLabels,"Mostrar etiquetes",ui
+btnQuery,"Consulta",ui
+downQueryNodesTable,"Exportar",ui
+navBarFile,"Fitxer",menu
+QuickHelp,"Ajuda ràpida",help
+ImportHelp,"<ul><li>Poseu un nom al vostre anàlisi (o useu aquell per defecte)</li><li>A la pestanya \"Config file\", seleccioneu i obriu el fitxer de configuració</li><li>Useu la pestanya \"Import networks\"  per a importar xarxes que es troben al fitxer de configuració</li></ul><h4>Models de xarxa</h4><span>Enllaços colorejats</span> Els enllaços intra-capa es coloregen; tota parella de capes te com a mínim un node en comú, no hi ha enllaços inter-capa<br><br><span>Inter-conectada:</span> Els enllaços intra-capa es coloregen; qualsevol parella de capes te com a mínim un node en comú, els enllaços inter-capa conecten les rèpliques dels nodes a cada capa. <br><br><span>Interdepenent:</span> Es coloregen els nodes, no hi ha cap parella de capes amb nodes en comú; els enllaços inter-capa conecten nodes de diferent tipus entre capes diverses. <br><br><span>General:</span> Es coloregen els nodes; pot haver-hi alguna parella de capes sense nodes en comú; els enllaços inter-capa poden conectar tant rèpliques de nodes com nodes differents, entre capes diverses. <br><br>Fixeu-vos que cada model té el seu propi format d’entrada (per tal d’usar total la informació disponible i reduïr la memòria). A l’ajuda podeu consultar les particularitats de cada format.",help
+ConsoleHelp,"<h5>Consola</h5>La consola està destianda a usuaris avançats, per a tasques de depuració.<br>El seu llenguatge d'entrada és R, tot i que en un futur es desenvoluparà un llenguatge propo. <br> La sortida de la consola apareix al terminal on muxViz s'està executant.<br><br>Fixeu-vos que la conosola funcionarà només després d'importar les dades correctament.",help
+QueryHelp,"Aquest mòdul permet fer consultes i obtenir informació sobre els nodes i enllaços d'una xarxa multicapa. <hr>Nodes</h5> Podeu seleccionar un o més nodes i especificar quines capes us interessen. La consulta retornarà una taula amb els veïns dels nodes consultats, és a dir, les seves ego-xarxes a cada capa. <br> Fixeu-vos que podeu usar la sortida d'una consulta per a colorejar els nodels en una visualització. <h5>Enllaços</h5>Podeu seleccionar un o més nodes d'origen i un o més nodes de destí, especificant les capes que us interessen. La consulta retornarà una taula amb tots els enllaços que contenen els nodes d'origen i destí, per a cada capa separadament.",help
+GlobalDiagnosticsMuxSetUpHelp,"Utilitzeu aquesta pestanya per a configurar la xarxa multicapa. Especifiqueu-ne el tipus (ordinal, com per al cas de les xarxes temporals; o categòrica, com per al cas de les xarxes amb capes completament interconectades) i el pes dels enllaços inter-capa (que serà el mateix per a tots els enllaços inter-capa).",help
+GlobalDiagnosticsAnnularVizHelp,"<h5>Gràfic anular</h5>ATENCIÓ: aquest modul ha d'utilitzarse *DESPRÉS* de calcular els diagnòstics de la xarxa multicapa en formulació tensorial. Si l'utilitzeu sense haver calcular les centralitats multicapa, es generarà un error.<br><br>",help
+GlobalDiagnosticsCentralityHelp,"<h5>Versatilitat dels nodes</h5>Aquest mòdul calcula la <a href=\"http://en.wikipedia.org/wiki/Centrality\" target=\"_blank\">centralitat</a> dels nodes de la xarxa.<br><br>Els diagnòstics per a xarxes d’una sola capa estan ampliament descrits a la literatura: vegeu <a href=\"http://en.wikipedia.org/wiki/http://en.wikipedia.org/wiki/Degree_(graph_theory)\" target=\"_blank\">Degree centrality</a>, <a href=\"http://en.wikipedia.org/wiki/PageRank\" target=\"_blank\">PageRank centrality</a>, <a href=\"http://en.wikipedia.org/wiki/Centrality#Eigenvector_centrality\" target=\"_blank\">Eigenvector centrality</a>, <a href=\"http://en.wikipedia.org/wiki/HITS_algorithm\" target=\"_blank\">Hub centrality</a>, <a href=\"http://en.wikipedia.org/wiki/HITS_algorithm\" target=\"_blank\">Authority centrality</a>, <a href=\"http://en.wikipedia.org/wiki/Katz_centrality\" target=\"_blank\">Katz centrality</a> i <a href=\"https://en.wikipedia.org/wiki/Degeneracy_(graph_theory)\" target=\"_blank\">K-coreness</a> per a ampliar la informació. La multiplexitat es defineix mitjançant la fracció de capes on els nodes existeixen (fixeu-vos que aquest concepte no està ben definit per la xarxa agregada).<br><br><hr><strong>Referències</strong>:<ul><li> M. De Domenico et al, <i>Mathematical Formulation of Multilayer Networks</i>, Phys. Rev. X 3, 041022 (2013) [<a href=\"http://prx.aps.org/abstract/PRX/v3/i4/e041022\" target=\"_blank\">Open</a>]<li> M. De Domenico et al, <i>Ranking in interconnected multilayer networks reveals versatile nodes</i>, Nature Communications 6, 6868 (2015) [<a href=\"http://www.nature.com/ncomms/2015/150423/ncomms7868/full/ncomms7868.html\" target=\"_blank\">View</a>]<li> N. Azimi-Tafreshi, J. Gomez-Gardenes, and S. N. Dorogovtsev, <i>k−core percolation on multiplex networks</i>, Phys. Rev. E 90, 032816 (2014) [<a href=\"http://journals.aps.org/pre/abstract/10.1103/PhysRevE.90.032816\" target=\"_blank\">View</a>]</ul><br>",help
+GlobalDiagnosticsNetworkLayersHelp,"<h5>Xarxa de capes</h5>Aquest mòdul calcula la xarxa de capes induida per la xarxa multicapa. Visualitzar la xarxa de capes permet entendre còm cada capa depen de les altres capes. S’exclou el cas de multigrafs amb enllaços colorejats ja que donaria lloc a una xarxa amb nodes aïllats.<br><br><hr><strong>Referències</strong>:<ul><li> M. De Domenico et al, <i>Mathematical Formulation of Multilayer Networks</i>, Phys. Rev. X 3, 041022 (2013) [<a href=\"http://prx.aps.org/abstract/PRX/v3/i4/e041022\" target=\"_blank\">Open</a>]</ul><br>",help
+GlobalDiagnosticsCorrelationHelp,"<h5>Mitjana de l’overlap total de nodes</h5>Mesura la fracció de nodes comuns a totes les capes. Vàlid també per al cas de xarxes pesades. És una mesura de similaritat entre capes.<h5> Mitjana de l’overlap total d’enllaços.</h5> Mesura la fracció d’enllaços comuns a totes les capes. Vàlid també per al cas de xarxes pesades. És una mesura de similaritat entre capes. <h5>Assortativitat inter-capes (Pearson)</h5>Calcula la  <a href=\"http://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient\" target=\"_blank\">correlació de Pearson</a> entre el degree (strength) dels nodes i els seus homòlegs a les altres capes, per a tota parella de capes. És una altra mesura de similaritat entre capes. <h5>Assotativita inter-capes (Spearman)</h5>Calcula la <a href=\"http://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient\" target=\"_blank\">correlació de Spearman</a> entre el degree (strength) dels nodes i els seus homòlegs a les altres capes, per a tota parella de capes. Aquesta mesura es recomana quan les hipòtesis d’un test de Pearson no es satisfan. Es tracta d’una altra mesura de similaritat entre capes. <h5>Similaritat inter-capes (usant la distànca donada pel camí més curt entre nodes)</h5> Calcula el <a href=\"https://en.wikipedia.org/wiki/Shortest_path_problem\" target=\"_blank\">camí més curt</a> entre tota parella de nodes, per a cada capa separadament. Per comparar les matrius de distàncies que en resulten, que contenen les distàncies en termes del camí més curt entre nodes, s’utilitza la distància de Frobenius, obtenint així una mesura de similaritat respecte camíns. Es tracta d’una altra mesura de similaritat entre capes.<hr><strong>Referències</strong>:<ul><li> M. De Domenico et al, <i>Ranking in interconnected multilayer networks reveals versatile nodes</i>, Nature Communications 6, 6868 (2015) [<a href=\"http://www.nature.com/ncomms/2015/150423/ncomms7868/full/ncomms7868.html\" target=\"_blank\">View</a>]<li>M. De Domenico, M. Porter and A. Arenas, <i>MuxViz: a tool for multilayer analysis and visualization of networks</i>, Journal of Complex Networks 3, 159 (2015) [<a href=\"http://comnet.oxfordjournals.org/content/3/2/159\" target=\"_blank\">Open</a>]</ul><br>",help

@@ -1,0 +1,3 @@
+nodeID.from layerID.from nodeID.to layerID.to color size
+66 3 141 5 red 15
+172 6 30 1 "#DAE488" 12

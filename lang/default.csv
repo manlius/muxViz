@@ -1,0 +1,332 @@
+object,message,type
+muxVizVersion,"muxViz Version:",ui
+muxVizUpdate,"Last update:",ui
+muxVizSystem,"System:",ui
+ID,"ID",ui
+ProjectID,"Project ID",ui
+txtProjectName,"* Assign an ID to this analysis:",ui
+Import,"Import",ui
+ConfigFile,"Config file",ui
+NetworkModel,"Network model",ui
+NetworkFormat,"Network Type",ui
+Configuration,"Config File",ui
+ConfigurationFileFormat,"* Input format for the config. file:",ui
+ConfigurationFile,"* Open the configuration file:",ui
+chkConfigFileHeader, "With header",ui
+txtConfigFileSep, "Separator:",ui
+ConfigurationFileSummary,"Configuration file table",ui
+ImportNetworks,"Import networks",ui
+InputFormat,"Network File",ui
+chkEdgeListFileHeader,"With header",ui
+txtEdgeListFileSep,"Separator:",ui
+txtEdgeListFileSepHelp,"<font color='red'>If nodes in edges lists are identified by their label instead of a sequential integer ID, check the box below</font> (note that you must specify sequential integer IDs in the nodeID column of the layout file)",ui
+chkEdgeListLabel,"Edges list of labeled nodes (instead of sequential integer)",ui
+chkEdgeListLabel2,"Edges list of labeled layers (instead of sequential integer)",ui
+selEdgeListType,"* EdgeList Format:",ui
+chkEdgeListWeighted, "Weighted",ui
+chkEdgeListUndirectedBoth,"Both directions are specified (for undirected networks only)",ui
+chkRESCALE_WEIGHT,"Rescale weights by the minimum",ui
+chkOutputEdgelistTable,"Print edges lists in a table (<font color='red'>slow for large networks</font>)",ui
+btnImportNetworks,"Import Network",ui
+NetworkSummary,"Summary for the multilayer network",ui
+NetworkSummaryInfo,"Layers: <span id=\"sumLayers\"></span><br>Type of layer: <span id=\"sumLayerType\"></span><br><br>Number of nodes: <span id=\"sumNodes\"></span><br>&nbsp;&nbsp;&nbsp;&nbsp;Minimum ID: <span id=\"sumMinNodeID\"></span><br>&nbsp;&nbsp;&nbsp;&nbsp;Maximum ID: <span id=\"sumMaxNodeID\"></span><br>Number of edges: <span id=\"sumEdges\"></span><br><br>External layout: <span id=\"sumIsLayoutExternal\"></span><br>Is geographical: <span id=\"sumIsLayoutGeographic\"></span><br>",ui
+EdgesTables,"Edges Tables",ui
+ImportedEdgeLists,"Imported Edges Lists",ui
+Pageable,"Pageable",ui
+EdgesPerPage,"Edges per page",ui
+Console,"Console",ui
+Run,"Run",ui
+Query,"Query",ui
+QuerySetUp,"Query set up",ui
+selQueryType,"Type of query:",ui
+chkQueryShowLabels,"Show labels",ui
+btnQuery,"Query",ui
+downQueryNodesTable,"Export",ui
+navBarFile,"File",menu
+QuickHelp,"Quick help",help
+ImportHelp,"<ul><li>Give a name to your analysis (or use the default name)</li><li>In the \"Config file\" tab, select and open the configuration file</li><li>Use the \"Import networks\" tab, to import the networks found in your configuration file</li></ul><h4>Network models</h4><span>Edge-colored:</span> Intra-layer edges are colored; any pair of layers has at least one node in common; inter-layer links are missing and set up from the GUI.<br><br><span>Interconnected:</span> Intra-layer edges are colored; any pair of layers has at least one node in common; inter-layer links connect the replicas of each node across layers.<br><br><span>Interdependent:</span> Nodes are colored; any pair of layers has no nodes in common; inter-layer links connect nodes of different type across layers.<br><br><span>General:</span> Nodes are colored; some pair of layers can have no nodes in common; inter-layer links can connect node replicas or different nodes across layers.<br><br>Note that input format is different for each model (to exploit available information and reduce memory). See the help for details about each format.",help
+ConsoleHelp,"<h5>Console</h5>The console should be used from advanced users for debugging purposes.<br>The expected language is R, although a dedicated language will be developed in the next future.<br>The output of the console is shown in the terminal where muxViz is running.<br><br>Note that the console will work only after importing data correctly.",help
+QueryHelp,"This module allows to query the multilayer network to obtain information about nodes or edges.<h5>Nodes</h5>You can select one or more nodes and specify which layers you are interested into. The query will return a table with the neighbors of the queried nodes, i.e. their ego-networks in each layer.<br>Note that you can use the output of this query to color nodes accordingly in the visualization process.<h5>Edges</h5>You can select one or more origin nodes and one or more destination nodes, specifying which layers you are interested into. The query will return a table with all the edges among origin and destination nodes, in each layer separately.",help
+GlobalDiagnosticsAnnularVizHelp,"<h5>Annular Plot</h5>BE CAREFUL: this module is supposed to work *AFTER* you calculated diagnostics in the multilayer, using the tensorial formulation. If you try to use this module without calculating multilayer centralities, an error will be generated.<br><br>",help
+GlobalDiagnosticsCentralityHelp,"<h5>Node Versatility</h5>This module calculates <a href='http://en.wikipedia.org/wiki/Centrality' target=\"_blank\">centrality</a> of nodes in the network.<br><br>The diagnostics for single-layer networks are widely described in the literature: see <a href='http://en.wikipedia.org/wiki/Degree_(graph_theory)' target=\"_blank\">Degree centrality</a>, <a href='http://en.wikipedia.org/wiki/PageRank' target=\"_blank\">PageRank centrality</a>, <a href='http://en.wikipedia.org/wiki/Centrality#Eigenvector_centrality' target=\"_blank\">Eigenvector centrality</a>, <a href='http://en.wikipedia.org/wiki/HITS_algorithm' target=\"_blank\">Hub centrality</a>, <a href='http://en.wikipedia.org/wiki/HITS_algorithm' target=\"_blank\">Authority centrality</a>, <a href='http://en.wikipedia.org/wiki/Katz_centrality' target=\"_blank\">Katz centrality</a> and <a href='https://en.wikipedia.org/wiki/Degeneracy_(graph_theory)' target=\"_blank\">K-coreness</a> for further information. Multiplexity is defined by the fraction of layers where node exists (note that it is not defined for the aggregate network).<br><br><hr><strong>References</strong>:<ul><li> M. De Domenico et al, <i>Mathematical Formulation of Multilayer Networks</i>, Phys. Rev. X 3, 041022 (2013) [<a href='http://prx.aps.org/abstract/PRX/v3/i4/e041022' target=\"_blank\">Open</a>]<li> M. De Domenico et al, <i>Ranking in interconnected multilayer networks reveals versatile nodes</i>, Nature Communications 6, 6868 (2015) [<a href='http://www.nature.com/ncomms/2015/150423/ncomms7868/full/ncomms7868.html' target=\"_blank\">View</a>]<li> N. Azimi-Tafreshi, J. Gomez-Gardenes, and S. N. Dorogovtsev, <i>k−core percolation on multiplex networks</i>, Phys. Rev. E 90, 032816 (2014) [<a href='http://journals.aps.org/pre/abstract/10.1103/PhysRevE.90.032816' target=\"_blank\">View</a>]</ul><br>",help
+GlobalDiagnosticsNetworkLayersHelp,"<h5>Network of layers</h5>This module calculates the network of layers induced by a multilayer network. Visualizing the network of layers allows to understand how each layer depends on other layers. In the case of edge-colored multigraphs it is not calculated because the result would be a network of isolated nodes.<br><br><hr><strong>References</strong>:<ul><li> M. De Domenico et al, <i>Mathematical Formulation of Multilayer Networks</i>, Phys. Rev. X 3, 041022 (2013) [<a href='http://prx.aps.org/abstract/PRX/v3/i4/e041022' target=\"_blank\">Open</a>]</ul><br>",help
+GlobalDiagnosticsCorrelationHelp,"<h5>Mean global node overlapping</h5>Measure the fraction of node which are common (i.e., non-isolated) to all layers. Valid also in the case of weighted networks. This is a measure of similarity between layers.<h5>Mean global edge overlapping</h5>Measure the fraction of edges which are common to all layers. Valid also in the case of weighted networks. This is a measure of similarity between layers.<h5>Inter-layer assortativity (Pearson)</h5>Calculate the <a href='http://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient' target=\"_blank\">Pearson correlation</a> between the degree (strength) of nodes and their counterparts in other layers, for all pairs of layers. This is another measure of similarity between layers.<h5>Inter-layer assortativity (Spearman)</h5>Calculate the <a href='http://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient' target=\"_blank\">Spearman correlation</a> between the degree (strength) of nodes and their counterparts in other layers, for all pairs of layers. This measure is recommended when the assumptions underlying a Pearson test are not satisfied. This is another measure of similarity between layers.<h5>Inter-layer similarity (by shortest-path distance between nodes)</h5>Calculate the <a href='https://en.wikipedia.org/wiki/Shortest_path_problem' target=\"_blank\">shortest path</a> between the all pairs of nodes in each layer separately. The resulting distance matrices, encoding the shortest path distance between nodes, are then compared each other by means of Frobenius distance, to uncover layer similarity with respect to paths. This is another measure of similarity between layers.<hr><strong>References</strong>:<ul><li> M. De Domenico et al, <i>Ranking in interconnected multilayer networks reveals versatile nodes</i>, Nature Communications 6, 6868 (2015) [<a href='http://www.nature.com/ncomms/2015/150423/ncomms7868/full/ncomms7868.html' target=\"_blank\">View</a>]<li>M. De Domenico, M. Porter and A. Arenas, <i>MuxViz: a tool for multilayer analysis and visualization of networks</i>, Journal of Complex Networks 3, 159 (2015) [<a href='http://comnet.oxfordjournals.org/content/3/2/159' target=\"_blank\">Open</a>]</ul><br>",help
+txtOctaveCheck,"Octave found.",ui
+txtOctaveCheckWarning,"Octave not found. Multilayer descriptors will not be calcualted.",ui
+txtFanmodCheck,"Fanmod found.",ui
+txtFanmodCheckWarning,"Fanmod not found. Analysis of motifs will not be available.",ui
+txtMultimapCheck,"Multimap found.",ui
+txtMultimapCheckWarning,"Multimap not found. Only multislice community detection will be available.",ui
+txtMuxbenchCheck,"muxBenchmark(s) found.",ui
+txtMuxbenchCheckWarning,"muxBenchmark(s) not found.",ui
+Undirected,"Undirected",ui
+Directed,"Directed",ui
+Nodes,"Nodes",ui
+Edges,"Edges",ui
+Diagnostics,"Diagnostics",ui
+ComponentsHelp,"<h5>Multilayer</h5>The best way to understand how connected components are calculated is as follows. Imagine to project all layers, by summing up the corresponding adjacency matrices, to a single weighted network. Then find connected components in this network. This is not the only possible definition, but it is the one implemented in this module. All networks are treated as undirected networks, therefore there is no difference between weak and strong connectivity, for the moment.<h5>Single layer</h5>Connected components are calculated as usual, for each layer separately. All layers are treated as undirected networks, therefore there is no difference between weak and strong connectivity, for the moment.<hr><strong>References</strong>:<ul><li> M. De Domenico, A. Sole-Ribalta, S. Gomez and A. Arenas, <i>Navigability of interconnected networks under random failures</i>, PNAS 111, 8351 (2013) [<a href='http://www.pnas.org/content/111/23/8351.abstract' target=\"_blank\">Open</a>]</ul>",help
+CommunityHelp,"This module unveils the <a href='http://en.wikipedia.org/wiki/Community_structure' target=\"_blank\">community structure</a> of the network and allows to analyze the results with different tools.<br><br><h4>Analytical tools</h4><ul><li><strong>Assignment Heatmap:</strong> allows to visualize, interactively, the community assignment of each node in each layer. It is possible to apply a clustering algorithm to re-order rows and columns to put better in evidence clusters of nodes.</li><li><strong>Mixing Chord Diagram:</strong> (multilayer analysis only) allows to visualize an interactive diagram encoding how multilayer communities are interconnected with each other.</li><li><strong>Multiscale Sankey Diagram:</strong> (edge-colored analysis only) allows to visualize an interactive diagram encoding how multilayer communities change with respect to the relax rate, encoding layer-layer coupling.</ul><h4>Community detection algorithms</h4><h5>Multiplex-Infomap</h5>This method uses community detection based on information flow proposed by <a href='http://journals.aps.org/prx/abstract/10.1103/PhysRevX.5.011027' target=\"_blank\">De Domenico et al</a> to partition the network accounting for the interconnected topology. This algorithm can be applied to edge-colored networks with CATEGORICAL or ORDINAL interconnections, as well as all other multilayer topologies where interconnections are provided from the data. For edge-colored networks, the option ORDINAL considers a multiplex with interconnections existing only between a layer and its adjacent layers (ordered as imported), while the option CATEGORICAL considers a multiplex with interconnections existing between all pairs of layers.<hr><strong>References</strong>:<ul><li> M. De Domenico, A. Lancichinetti, A. Arenas and M. Rosvall, <i>Identifying modular flows on multilayer networks reveals highly overlapping organization in interconnected systems</i>, Physical Review X 5, 011027 (2015) [<a href='http://journals.aps.org/prx/abstract/10.1103/PhysRevX.5.011027' target=\"_blank\">Open</a>]</ul><h5>Infomap</h5>This method performs community detection in each layer separately using the Infomap algorithm proposed by <a href='http://www.pnas.org/content/105/4/1118' target=\"_blank\">Rosvall and Bergstrom</a>. The community structure is found by <a href='http://en.wikipedia.org/wiki/Minimum_description_length' target=\"_blank\">minimizing the expected description length</a> of a <a href='http://en.wikipedia.org/wiki/Random_walk' target=\"_blank\">random walker</a> trajectory in each network. See <a href='http://igraph.org/r/doc/' target=\"_blank\">igraph doc</a> for further details.<h5>Louvain</h5>This method performs community detection in each layer separately using the Louvain multi-level algorithm proposed by <a href='http://iopscience.iop.org/1742-5468/2008/10/P10008' target=\"_blank\">Blondel et al</a>. The community structure is found by a heuristic method that is based on modularity optimization. See <a href='http://igraph.org/r/doc/' target=\"_blank\">igraph doc</a> for further details.<h5>Random Walk Trap</h5>This method performs community detection in each layer separately using the Walktrap algorithm proposed by <a href='http://link.springer.com/chapter/10.1007%2F11569596_31' target=\"_blank\">Pons and Latapy</a>. The community structure is found by trying to identify densely connected subgraphs via <a href='http://en.wikipedia.org/wiki/Random_walk' target=\"_blank\">random walks</a> (exploiting the fact that random walks tend to stay within the same community). See <a href='http://igraph.org/r/doc/' target=\"_blank\">igraph doc</a> for further details.<h5>Edge Betweenness</h5>This method performs community detection in each layer separately using the Edge Betweenness algorithm proposed by <a href='http://pre.aps.org/abstract/PRE/v69/i2/e026113' target=\"_blank\">Newman and Girvan</a>. The community structure is found by exploiting the fact that edges connecting different communities are traversed by a larger number of shortest paths, i.e., all the ones from a module to another: gradually removing edges with highest edge-betweenness will provide the modular structure in each network. See <a href='http://igraph.org/r/doc/' target=\"_blank\">igraph doc</a> for further details.<br>",help
+GlobalHelp,"<h4>Import</h4><strong>'Import' tab/'Config file' tab to select and open the configuration file.</strong><br><h5>Edge-colored networks</h5>The configuration file is a ASCII file including the list of layers to be included in a multiplex, the corresponding labels and the possible layout file to define node properties (e.g., ID, labels, geographical coordinates, etc).<br><br><u>Format of a configuration file:</u> (<a href='example_config.txt' target='_blank'>click here</a> to open an example)<br><pre>path_layer_X;label_layer_X;path_layout_layer_X</pre>where<br><ul><li> <strong>path_layer_X</strong>: [mandatory] specify the path and the filename to the edges list to be used as layer<li> <strong>label_layer_X</strong>: [optional] specify the label to be used in the rendering for that layer<li> <strong>path_layout_layer_X</strong>: [optional] specify the path and the filename to the file containing information about nodes</ul>Each line in the configuration file indicates one layer, and the network format for each layer will be \"standard edges list\" (see below).<h5>Non edge-colored networks</h5>If the multilayer is not edge-colored (i.e., inter-links are allowed), only one line is specified in the configuration file, with format:<pre>path_multilayer;path_to_layers_info;path_to_layers_layout</pre>where<br><ul><li> <strong>path_multilayer</strong>: [mandatory] specify the path and the filename to the extended edges list to be used <li> <strong>path_to_layers_info</strong>: [mandatory] specify the path and the filename to the file containing information about layers<li> <strong>path_to_layers_layout</strong>: [mandatory] specify the path and the filename to the file containing information about nodes</ul>In this case the network format will be \"extended edges list\" (see below).<h5>Standard edges list</h5>A typical edges list is expected to be a file with at most three columns, giving the list of edges from a node (first column) to other nodes (second column), possibly weighted by an integer or floating number (third column). For instance:<br><pre>	1 2 0.5<br>	1 3 1.4<br>	...<br>	18 124 0.1<br></pre>is a typical weighted edges list. Non-sequential integer IDs can be used by checking the appropriate box before importing the networks. In this second case, it is mandatory to provide a layout file (see next section) reporting each node label (field nodeLabel). This would look like<pre>	nodeLabel<br>	alice<br>	bob<br>	john<br>	david<br>	...<br></pre><h5>Extended edges list</h5>An extended edges list is a new format that allows to specify all possible types of links, intra- and inter-layer. Each line specifies the source node (first column) and the source layer (second column), the destination node (third column) and the destination layer (fourth column), possibly weighted by an integer or floating number (fifth column). For instance:<pre>	1 1 2 1 0.5<br>	1 1 3 1 1.4<br>	...<br>	18 2 124 2 0.1<br></pre>is a typical weighted extended edges list. For label-based extended edges lists, the same rules of the standard edges lists apply.<br><br><u>Format of a layout file:</u> (<a href='example_layout.txt' target='_blank'>click here</a> to open an example)<br>The first line of the file must specify the name of the correponding node attributes. Allowed attributes:<ul><li> <strong>nodeID</strong>: [mandatory] numerical integer id to identify each node<li> <strong>nodeLabel</strong>: [optional] string specifying the label attribute<li> <strong>nodeX</strong>: [optional] float value specifying the Cartesian coordinate x for the layout<li> <strong>nodeY</strong>: [optional] float value specifying the Cartesian coordinate x for the layout<li> <strong>nodeLat</strong>: [optional] float value specifying the latitude for the geographical layout<li> <strong>nodeLong</strong>: [optional] float value specifying the longitude for the geographical layout</ul>The order of the columns is not relevant. If nodeLat and nodeLong are specified, they will be automatically converted to Cartesian coordinates (through Mercator projection).<br>The properties of each node in the multilayer must be specified or default values will be used (i.e., automatic labeling and layouting). If the number of nodes in the network is different from the number of nodes provided in the layout file, it will be assumed that something is wrong with the layout file and default values will be used.<br><br><u>Format of a layer-info file:</u> (<a href='example_layer.txt' target='_blank'>click here</a> to open an example)<br>The first line of the file must specify the name of the correponding layer attributes. Allowed attributes:<ul><li> <strong>layerID</strong>: [mandatory] numerical integer id to identify each layer<li> <strong>layerLabel</strong>: [optional] string specifying the label attribute</ul>The order of the columns should not be relevant.<br><br><strong>'Import' tab/'Import' tab to import the networks in your configuration file.</strong><br>The network files are expected to be in edges list format. For edge-colored networks, one file for each layer with format <br><pre>nodeID1 nodeID2</pre>in the case of unweighted edges list, or<br><pre>nodeID1 nodeID2 weight</pre>in the case of weighted edge list.<br>The nodes ID are expected to refer to the same node in each layer. For instance, the ID 1234 with label 'myNode' is expected to indicate the same entity in all layers.<br>The case of non-edge-colored network is a generalization of the above rules.<hr><h4>Diagnostics: calculation and representation</h4><strong>'Diagnostics' tab to set up and start the calculation.</strong><br>The properties of the multilayer network are expected to be set up from the tab 'Import Networks' within the File menu.<br>Successively, it is possible to calculate different types of diagnostics:<ul><li> <strong>Statistics</strong>: basic network descriptors per layer, separately; <li> <strong>Correlation</strong>: calculate edge overlap and inter-layer degree-degree correlations;<li> <strong>Centrality</strong>: calculate several descriptors of influence/importance in the network. It is possible to choose to perform calculations in each layer separately or accounting for the whole multiplex structure; <li> <strong>Triads</strong>: local and global clustering/transitivity analysis. It is possible to choose to perform calculations in each layer separately or accounting for the whole multiplex structure; <li> <strong>Motifs</strong>: analysis of motifs, fundamental building blocks of (multilayer) complex networks; <li> <strong>Community</strong>: unveil the community structure according to different methods. It is possible to choose to perform calculations in each layer separately or accounting for the whole multiplex structure.</ul>The results can be analyzed using interactive analytic tools. Annular visualization of centrality descriptors is allowed and accessible through the 'Annular Viz' tab. It is worth remarking that annular visualization is possible only <u>after centrality diagnostics have been calculated</u>.<br><hr>                            <h4>Visualization</h4><strong>'Visualization' tab to set up the visualization.</strong><br>Several sub-tabs are present, each one allowing to set up particular graphic options.<br>The 'Layout' sub-tab controls the algorithms responsible for the position of nodes and layers in the network. The 'Graphics' sub-tab controls graphic options such as the shift between layers, the lights for the openGL rendering, the plot title, and so on. Note that changing some of those options might require the layout to be re-applied. Options requiring re-application of layout are highlighted.<br>The remaining sub-tabs control the appearance of 'Multiplex', 'Layers', 'Nodes' and 'Edges'.<br>Once the set up is completed, click on the 'Render Network / Apply Viz Options' button.<br><br>Note that it is possible to export the visualization either to a png or to a web page, by means of export buttons available in 'Export' sub-tab.<br><br><h4>Visualization of dynamics</h4>This module allows to build nice animated visualizations corresponding to dynamical processes on the top of a multilayer network. For instance, one can visualize the movements of one (or more) random walker(s) in the network, or the spreading of an epidemics or of a meme in a social network, the traffic (and possible congestions) in a transport/communication network, etc.<br>The idea is to feed the module with a 'timeline' file where the change of the state of nodes and edges in the multilayer network are specified at each time step. The 'state' of an object can be altered by changing its color and/or its size. For instance, in the case of an epidemics spreading in a country, the size of each node (e.g., a metapopulation describing a city) can be proportional to the population and the color can encode the amount of infected people. This description allows a wide variety of dynamics to be represented and visualized: for instance, setting the size of nodes and edges to zero when required, it is possible to visualize a time-varying multilayer network where nodes and edges appear or disappear over time.<br><u>Format of a timeline file:</u> (<a href='example_timeline.txt' target='_blank'>click here</a> to open an example)<br>The first line of the file must specify the name of the correponding timeline attributes. Allowed attributes:<ul><li> <strong>timeStep</strong>: [mandatory] numerical integer id to identify time steps<li> <strong>labelStep</strong>: [mandatory] string specifying the snapshot label<li> <strong>entity</strong>: [mandatory] string specifying if the object to modify is 'node' or 'edge'<li> <strong>layerID</strong>: [mandatory] numerical integer id to identify each layer<li> <strong>nodeID</strong>: [mandatory] numerical integer id if entity is 'node' and string (e.g., '3-7', corresponding to the link from node 3 to node 7) if entity is 'edge'.<li> <strong>color</strong>: [mandatory] Hex color string (e.g. 11DADA) specifying the color to be assigned<li> <strong>sizeFactor</strong>: [mandatory] float value specifying the relative size of the entity, scaling with respect to the default size</ul>The order of the columns is not relevant. If the network has L layers and you want to include the aggregate network in the visualization, then use L+1 in the layerID field for it.<br><br>To keep users with the freedom to use their favorite video making software, the output of muxViz consists of png files representing the temporal snapshots of the dynamics. Snapshots are saved in the folder 'export/timeline/project_name'. Successively, users can use their favorite software to merge the sequence of snapshots into a single video. We recommend to use <a href='https://www.ffmpeg.org/' target='_blank'>FFmpeg</a> with the following parameters:<pre>ffmpeg -r 1  -i /path/xyz_%05d.png -c:v libx264 -pix_fmt yuv420p -r 25 output_file.mp4</pre><hr><h4>Reducibility</h4><strong>Reduce the dimensionality of the multiplex.</strong><br>First, set up the 'Algorithms' to be used for the calculation. The output will be displayed in the 'Results' sub-tab.<br><br>",help
+MotifsHelp,"We provide an interface to <a href='http://theinf1.informatik.uni-jena.de/motifs/' target=\"_blank\">FANMOD</a> and the following is extracted from its <a href='http://theinf1.informatik.uni-jena.de/motifs/fanmod-manual.pdf' target=\"_blank\">manual</a>. This module will <strong>NOT</strong> perform motifs analysis per layer or of single-layer networks.<hr><strong>References</strong>:<ul><li> S. Wernicke and F. Rasche, <i>FANMOD: a tool for fast network motif detection</i>, Bioinformatics 22, 1152 (2006) [<a href=http://bioinformatics.oxfordjournals.org/content/22/9/1152.full' target=\"_blank\">Open</a>]</ul><br><h5>Motif size</h5>Size of the motifs to be searched. Limited to 3 and 4.<h5>Samples</h5>How many samples shall be taken inorder to estimate the number of subgraphs (motif candidates) that will be found during the search.<h5>Null model</h5>Random networks are generated from the original network by a series of edge switching operations, preserving the original degree sequence. With directed networks, the following randomization models are available:<ul><li><strong>Local const.</strong> Unidirectional edges are only exchanged with unidirectional ones. The same applies for bidirectional edges. Therefore, thenumber of incident bidirectional edges remains locally constant, that is, it is constant for each vertex. This model is the only one which can be applied to undirected networks.<li><strong>Global const.</strong> The number of bidirectional edges is kept constant in the overall network. However, a specific vertex may loose or gain incident bidirectional edges.<li><strong>No regard.</strong> Bidirectional edges can be created and destroyed during randomization. This option usually increases the number of bidirectional edges compared to the original network, which is often unwanted because it makes unidirectional edges falsely appear significant.</ul>When randomizing the network, the <strong>edges are exchanged</strong> one after the other. This number states how often the program walks over all the edges. Usually the default (3) fits here, but if the results from the random networks are too similar to those of the original one, then you should increase this number.<br>When it is an edge's turn to be exchanged, an exchange partner edge is randomly selected from those edges that fulfil the desired properties. If the partner is not suitable for the exchange, another partner is selected, until the exchange succeeds or the number of <strong>exchange attempts</strong> is exceeded. So, if too few exchanges succeed, this number should be increased. But keep in mind that a lot of unsuccessful exchanges may also result from the input network structure.",help
+boxMultiplexType,"Interconnectivity",ui
+txtMultiplexType,"Edge-colored networks are interconnected by muxViz to allow analysis with the tensorial framework. Type can be <strong>ORDINAL</strong> (interconnections exist only between pairs of adjacent layers) or <strong>CATEGORICAL</strong> (interconnections exist between all pairs of layers). Select the option below:",ui
+Parameters,"Parameters",ui
+txtOmega,"Inter-layer links weight:",ui
+helpParameters,"Expected > 0. Import again after changing this value.",ui
+txtNoParameters,"No options to set up for non-edge-colored network models.",ui
+txtNumbNonIsolated,"Number of non-isolated nodes per layer",ui
+Plot,"Plot",ui
+txtNumbEdgesPerLayer,"Number of edges per layer",ui
+txtDensityPerLayer,"Edges/node per layer",ui
+Density,"Density",ui
+Components,"Components",ui
+txtComponentsPerLayer,"Components per layer",ui
+Diameter,"Diameter",ui
+txtDiameterPerLayer,"Diameter per layer",ui
+MeanPathLength,"Mean Path Length",ui
+txtMPLPerLayer,"Mean Path Length per layer",ui
+txtNoParametersInterdependent,"No options to set up for interdependent network models.",ui
+txtInterLayerCorrelation,"Inter-layer Correlation",ui
+chkMULTIPLEX_NODEOVERLAPPING,"Mean global node overlapping",ui
+chkMULTIPLEX_OVERLAPPING,"Mean global edge overlapping",ui
+chkMULTIPLEX_INTERASSORTATIVITY_PEARSON,"Inter-layer assortativity (Pearson correlation)",ui
+chkMULTIPLEX_INTERASSORTATIVITY_SPEARMAN,"Inter-layer assortativity (Spearman correlation)",ui
+chkMULTIPLEX_SHORTESTPATH,"Inter-layer similarity (by shortest-path distance between nodes)",ui
+selAssortativityType,"Assortativity type (T=Total, I=In-going, O=Out-going):",ui
+txtGraphicalOptions,"Graphical Options",ui
+chkEXPORT_MATRIX_PLOT,"Export each layer as an image (<font color='red'>slow for larger networks</font>)",ui
+selAssortativityTypeColorPalette,"Color palette to use (see Graphics > Colors):",ui
+btnCalculateCorrelationDiagnostics,"Calculate Correlation Diagnostics",ui
+txtGlobalDiagnostics,"Global diagnostics",ui
+txtNodeOverlapping,"Node Overlapping",ui
+ApplyClustering,"Apply clustering",ui
+downOverlappingNodeSummaryTable,"Export",ui
+downOverlappingSummaryTable,"Export",ui
+downInterPearsonSummaryTable,"Export",ui
+txtInterlayerAssortativityPearson,"Inter-layer Assortativity: Pearson",ui
+txtInterlayerAssortativitySpearman,"Inter-layer Assortativity: Spearman",ui
+downInterSpearmanSummaryTable,"Export",ui
+ShortestPathDistanceSimilarity,"Shortest path distance similarity",ui
+downDistanceSimilaritySummaryTable,"Export",ui
+chkNODE_CENTRALITY_MULTIPLEX,"Use tensorial calculation (uncheck this for calculation of centrality in each layer separately. This will not delete previous calculations, if any.)",ui
+btnCalculateCentralityDiagnostics,"Calculate Centrality Diagnostics",ui
+txtCentralityDiagnostics,"Centrality diagnostics",ui
+downCentralityTable,"Export",ui
+downCentralityTableSingleLayer,"Export",ui
+txtDiagnosticsAnalysis,"Diagnostics analysis",ui
+Analysis,"Analysis",ui
+txtNetworksToInclude,"Networks to include:",ui
+txtDiagnosticsCentralityStructureLayer,"Use the following layer (eg 1,3,7 to use more than one layer):",ui
+txtDiagnosticsCentralityDistributionBins,"Number of bins:",ui
+txtDiagnosticsCentralityTopRankedBins,"Show the top:",ui
+txtDiagnosticsCentralityVizScatterColorTransparency,"Circle transparency (from 0 to 1; 1 means full color):",ui
+selMatrixEplorerHeatmapColorPalette,"Color palette to use (see Graphics > Colors):",ui
+chkShowMatrixExplorer,"Show matrix explorer (<font color='red'>not meaningful and slow for networks with 100+ nodes x layers</font>)",ui
+TriadsHelp,"<h5>Multilayer</h5>Calculation is performed by using the generalized definition based on walks of length 3, given in the paper below. This naturally generalizes the standard definition, where transitivity is calculated by the number of closed 3-cycles appropriately normalized. The definition is valid also for weighted networks. Note that more sophisticated definitions are available (eg, see Cozzo et al, New Journal of Physics 17, 073029 (2015))<h5>Single-layer</h5>The global clustering is calculated as the number of walks of lenght 3, appropriately normalized; valid for weighted networks. Local clustering/transitivity (at node level) is also provided for both multilayer and single-layer cases, as well as the total number of triangles for each layer, the multilayer network and the corresponding aggregation.<hr><strong>References</strong>:<ul><li> M. De Domenico et al, <i>Mathematical Formulation of Multilayer Networks</i>, Phys. Rev. X 3, 041022 (2013) [<a href='http://prx.aps.org/abstract/PRX/v3/i4/e041022' target=\"_blank\">Open</a>]</ul><br>",help
+ShowNodeLabels,"Show node labels",ui
+ColorPalette,"Color palette:",ui
+VisualizationHelp,"<h4>Rendering</h4>Configure the graphical options for layers, nodes and edges. When you are ready, click on the button for rendering.<br><h4>Layout</h4><strong>Suggestions for layout of each layer (see <a href='http://igraph.org/r/doc/' target=\"_blank\">igraph layout doc</a> for further details):</strong><br><ul><li> <span>Fruchterman-Reingold</span> for networks with less than 1000 nodes<li> <span>Large graph layout (LGL)</span> for networks with more than 1000 nodes<li> <span>Force-directed fast (DRL)</span> for networks with more than 1000 nodes<li> <span>Spring</span> for networks with less than 100 nodes<li> <span>Kamada-Kawai</span> for networks with less than 100 nodes<li> <span>Reingold-Tilford</span> for networks with more than 1000 nodes<li> <span>Combined</span></span> for large networks</ul><h4>Type of visualization</h4><ul><li> <span>Multiplex</span> accounts for all layers simultaneously<li> <span>By LayerID</span> forces all layers to layout of LayerID (specified in the textbox below)<li> <span>Independent</span> applies the layout to each layer separately</ul>",help
+ReducibilityHelp,"An information-theoretical approach is adopted to reduce the dimensionality of the multiplex network, while minimizing information loss. This method allows to describe the network using a smaller number of layers, by aggregating the redundant ones.<br>The metric distance is calculated by means of the <a href='http://en.wikipedia.org/wiki/Jensen%E2%80%93Shannon_divergence' target=\"_blank\">Jensen-Shannon divergence</a> and <a href='http://en.wikipedia.org/wiki/Hierarchical_clustering' target=\"_blank\">hierarchical clustering</a> of layers is employed according to the algorithm defined by the user among those available.<br><hr><strong>References:</strong><br><ul><li> M. De Domenico, V. Nicosia, A. Arenas and V. Latora, <i>Structural reducibility of multilayer networks</i>, Nature Communications 6, 6864 (2015) [<a href='http://www.nature.com/ncomms/2015/150423/ncomms7864/full/ncomms7864.html' target=\"_blank\">View</a>]</ul>",help
+DynamicsHelp,"This module allows the visualization of a dynamical process on the top of a multiplex network (although with an adequate timeline input it can also deal with time-varying networks where nodes and edges can appear or disappear). Before importing the timeline (i.e., the file where you specify the dynamics, see the Help for further details) it is mandatory to render the multiplex network at least once to obtain a complete visualization with the desired graphical options.<br>This module is designed to generate the snapshots of your dynamical process (e.g., random walks, diffusion, epidemics and/or information spreading). The snapshots are exported in the export/timeline folder.<br><br>Note that to build an animated visualization from the snapshots you need to use an external/third-party software for merging. For this task, you can use your favorite software, although we recommend <a href='https://www.ffmpeg.org/' target=\"_blank\">FFmpeg</a>. See the Help to know more details about this easy task.",help
+SessionFile,"Select muxviz session file:",ui
+btnOpenSession,"Open session",ui
+btnSaveSession,"Save session",ui
+txtEdgeListFileSepHelp2,"Default is one space; the same is expected for layout file",ui
+btnGenerateReport,"Generate a report",ui
+RefreshResults,"Refresh Results",ui
+downTriadsSummaryTable,"Export",ui
+downTriadsTable,"Export",ui
+triadsHeatmapUI,"Nodes per multilayer transitivity in each layer",ui
+triadsHeatmapSingleLayerUI,"Nodes per transitivity in each layer",ui
+downTriadsSummaryTableSingleLayer,"Export",ui
+downTriadsTableSingleLayer,"Export",ui
+txtMotifSamples,"Number of samples for approximated calculation (larger is better)",ui
+selMotifSize,"Motif size:",ui
+selMotifNullModel,"Null model:",ui
+txtMotifRandomNetworks,"Number of random networks to use for assessing significance",ui
+SortBy,"Sort by:",ui
+selMotifColorPalette,"(Note that if you change the palette and restart the analysis, you might need to empty your browser cache to see the correct results)",ui
+btnCalculateMotifs,"Calculate Motifs",ui
+downMotifsTable,"Export",ui
+helpBoxConnectedComponents,"Note that directed networks will be transformed to undirected before calculation.",ui
+btnCalculateComponentsDiagnostics,"Calculate Connected Components",ui
+componentsHeatmapUI,"Nodes per multilayer component in each layer",ui
+downComponentsSummaryTable,"Export",ui
+downComponentsTable,"Export",ui
+componentsHeatmapSingleLayerUI,"Nodes per component in each layer",ui
+downComponentsSummaryTableSingleLayer,"Export",ui
+downComponentsTableSingleLayer,"Export",ui
+btnCalculateCommunityDiagnostics,"Calculate Community Structure",ui
+communityHeatmapUI,"Nodes per multilayer community in each layer",ui
+downCommunitySummaryTable,"Export",ui
+downCommunityTable,"Export",ui
+downCommunitySummaryTableSingleLayer,"Export",ui
+downCommunityTableSingleLayer,"Export",ui
+communityHeatmapSingleLayerUI,"Nodes per community in each layer",ui
+btnRenderNetworkOfLayers,"Render the network of layers",ui
+panelGlobalDiagnosticsAnnularVizHelp,"No options to set up for interdependent network models.",ui
+radAnularVizCorrelationMethod,"Correlation method for ring ordering:",ui
+txtANULAR_VIZ_BINS,"Number of bins (tune the colors)",ui
+chkANULAR_VIZ_LOG,"Logarithmic binning",ui
+btnAnularViz,"Render Annular Plot",ui
+txtANULAR_VIZ_RCORE,"Core radius:",ui
+txtANULAR_VIZ_RING_DISPLACEMENT,"Rings distance:",ui
+chkANULAR_VIZ_CELL_BORDER,"Show cell border",ui
+chkANULAR_VIZ_SHOW_NODE_LABEL,"Show node IDs around the annular representation",ui
+txtANULAR_VIZ_FONT_SIZE,"Font size:",ui
+helpAnularVizSummaryMuxImage,"Each ring represents a descriptor. Each cell corresponds to a node, with cells following the same radial trajectory corresponding to the same node. Colors code the membership of the node in each ring. The thickness of a ring is proportional to its information entropy.",ui
+helpOutputAnularVizImages,"Each ring represents a layer. Each cell corresponds to a node, with cells following the same radial trajectory corresponding to the same node. Colors code the membership of the node in each ring. The thickness of a ring is proportional to its information entropy.",ui
+outputAnularVizImages,"Comparison per centrality",ui
+btnRenderNetworks,"Render Network",ui
+btnApplyLayout,"Apply Layout",ui
+txtNetworkLayersMultilineRows,"Number of rows:",ui
+txtNetworkLayersMultilineCols,"Number of columns:",ui
+helptxtNetworkLayersMultilineCols,"Note: this layout will not show the aggregate network.",ui
+txtNetworkLayersMatrixRows,"Number of rows:",ui
+txtNetworkLayersMatrixCols,"Number of columns:",ui
+helptxtNetworkLayersMatrixCols,"Note: this layout will not show the aggregate network.",ui
+boxVisualization1,"Very experimental. Layers could overlap in some cases.",ui
+boxVisualization1b,"Note: this layout will not show the aggregate network.",ui
+chkPLOT_AS_EDGE_COLORED,"Visualize as edge-colored multigraph",ui
+helpchkPLOT_WITH_RGL,"Experimental. Uncheck to use standard device",ui
+radLayoutType,"Node arrangement:",ui
+radLayoutTypeMultiplex,"Specify the template method:",ui
+txtLAYOUT_MAXITER,"Maximum # iterations:",ui
+txtPLOT_TITLE,"Plot title:",ui
+txtPLOT_SUBTITLE,"Plot subtitle:",ui
+colBACKGROUND_COLOR,"Background color (any valid R type)",ui
+chkPLOT_LIGHT,"Add a light from direction:",ui
+txtPLOT_LIGHT_PHI,"Phi coordinate (deg):",ui
+txtPLOT_LIGHT_THETA,"Theta coordinate (deg):",ui
+btnResetLights,"Reset",ui
+helpbtnResetLights,"It could be necessary to close the rgl window before rendering again.",ui
+helpboxVisualization6,"Increase (f > 1) or decrease (0 < f < 1) the margins using relative factors.",ui
+txtMARGIN_LEFT,"Left factor f:",ui
+txtMARGIN_RIGHT,"Right factor f:",ui
+txtMARGIN_TOP,"Top factor f:",ui
+txtMARGIN_BOTTOM,"Bottom factor f:",ui
+chkPLOT_AXES3D,"Show axes",ui
+chkPLOT_REMEMBER_ORIENTATION,"Remember orientation",ui
+txtPLOT_FOV,"Field of view (deg):",ui
+boxVisualization7a,"Rotate by angle (deg) around:",ui
+boxVisualization7b,"Note: order of rotations is (x,y,z).",ui
+boxVisualization7c,"Shift/Translate layers",ui
+txtLAYER_SCALE,"Scale by:",ui
+txtLAYER_SPACE,"Spacing:",ui
+chkINTERLINK_SHOW,"Show inter-links",ui
+boxVisualization8,"Recommended for small networks",ui
+colINTERLINK_COLOR,"Color (any valid R type)",ui
+selINTERLINK_TYPE,"Line style:",ui
+txtINTERLINK_WIDTH,"Width:",ui
+txtINTERLINK_TRANSP,"Transparency:",ui
+boxVisualization8b,"From 0 to 1; 1 means full color",ui
+boxVisualization8c,"No options to set up for edge-colored network models.",ui
+txtLAYER_LABEL_PREFIX,"Label prefix:",ui
+helptxtLAYER_LABEL_PREFIX,"Overwritten by config file label, if any",ui
+colLAYER_COLOR,"Color (any valid R type):",ui
+helpcolLAYER_COLOR,"Use commas to indicate a color for each layer",ui
+txtLAYER_TRANSP,"Transparency:",ui
+txtLAYER_TRANSPb,"From 0 to 1; 1 means full color",ui
+txtLAYER_TRANSPc,"Use commas to indicate a color for each layer",ui
+boxVisualization9b,"Show labels on:",ui
+txtLAYER_ID_FONTSIZE,"Label size:",ui
+chkAGGREGATE_SHOW,"Show as a separate layer",ui
+txtLAYER_AGGREGATE_LABEL_PREFIX,"Label:",ui
+colLAYER_AGGREGATE_COLOR,"Color (any valid R type):",ui
+txtLAYER_AGGREGATE_TRANSP,"Transparency:",ui
+txtLAYER_AGGREGATE_TRANSPb,"From 0 to 1; 1 means full color",ui
+txtLAYERS_ACTIVE,"Hide the following layer(s):",ui
+txtLAYERS_ACTIVEb,"Blank to keep all layers; use commas to separate specific layers, eg 1,2,5",ui
+boxVisualization12b,"If geographical layout is provided:",ui
+selOSMType,"Use map (requires Internet connection):",ui
+chkGEOGRAPHIC_BOUNDARIES_SHOW,"Show boundaries",ui
+chkGEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW,"Show boundaries",ui
+boxVisualization12d,"Custom boundaries",ui
+boxVisualization12c,"Keep blank for automatic setting",ui
+radNodeSizeType,"Node size proportional to:",ui
+radNodeSizeType2,"Type of proportionality:",ui
+txtNODE_DEFAULT_SIZE,"Default:",ui
+radNodeColor,"Node color:",ui
+colNodeColorFileDefaultNodesColor,"Default color for unspecified nodes (any valid R type):",ui
+radNodeColorType2,"Type of proportionality:",ui
+helpText1,"You need to calculate diagnostics before using this option.",ui
+colNODE_COLOR_UNIFORM_COLOR,"Color (any valid R type):",ui
+txtNODE_COLOR_TOP,"Number of top-ranked nodes to consider (monoplex or multiplex centrality is considered, according to latest calculation):",ui
+colNODE_COLOR_TOP_COLOR_TOP,"Color of top-ranked nodes (any valid R type):",ui
+colNODE_COLOR_TOP_COLOR_OTHERS,"Color of the other nodes and all edges (any valid R type):",ui
+chkNODE_LABELS_SHOW_ONLY_TOP,"Show nodes labels only for top-ranked nodes:",ui
+colNODE_COLOR_TOP_LABELS_FONT_COLOR,"Color of nodes labels (any valid R type):",ui
+helpText2,"You need to calculate diagnostics before using this option.",ui
+colQUERY_NODES_NODE_COLOR,"Color of nodes (any valid R type):",ui
+colQUERY_NODES_NODE_NEIGH_COLOR,"Color of neighborhood (any valid R type):",ui
+colQUERY_NODES_NODE_OTHER_COLOR,"Color of other nodes (any valid R type):",ui
+chkNODE_LABELS_SHOW_ONLY_QUERY,"Show nodes labels only for queried nodes:",ui
+colNODE_COLOR_QUERY_LABELS_FONT_COLOR,"Color of nodes labels (any valid R type):",ui
+helpText3,"You need to calculate diagnostics before using this option.",ui
+helpText4,"You need to calculate diagnostics before using this option.",ui
+helpText5,"You need to run a query before using this option.",ui
+chkNODE_ISOLATED_HIDE,"Exclude isolated nodes",ui
+chkNODE_ISOLATED_HIDE_INTERLINKS,"Find isolated nodes while accounting for interlayer links",ui
+txtNODE_TRANSP,"Transparency:",ui
+helpText6,"From 0 to 1; 1 means full color",ui
+txtNODE_FRAME_COLOR,"Node frame color (any valid R type):",ui
+helpText7,"Keep it blank to use the same as node color)",ui
+chkNODE_LABELS_SHOW,"Show nodes labels:",ui
+helpText8,"Recommended only for small networks",ui
+chkNODE_LABELS_SHOW_WRAP,"Wrap labels",ui
+txtNODE_LABELS_WRAP,"Wrap length",ui
+helpText9,"With respect to blank spaces",ui
+helpText10,"Usually 0; use this to fine-tune the distance between wrapped labels",ui
+txtNODE_LABELS_WRAP_OFFSET,"Wrap offset",ui
+txtNODE_LABELS_DISTANCE,"Label distance:",ui
+txtNODE_LABELS_FONT_SIZE,"Label size:",ui
+colNODE_LABELS_FONT_COLOR,"Color of nodes labels (any valid R type):",ui
+helpText11,"Use an external file. Expected format (including mandatory header) is: nodeID layerID color size",ui
+txtNodeColorFileSep,"Separator (default: blank space):",ui
+nodecolor_file,"Open the file:",ui
+radEdgeSizeType,"Edge size proportional to:",ui
+radEdgeSizeType2,"Type of proportionality:",ui
+txtEDGE_DEFAULT_SIZE,"Default:",ui
+colEDGE_COLOR,"Edge color (any valid R type):",ui
+helpText12,"Some node-coloring methods allow to customize edge color.",ui
+txtEDGE_BENDING,"Bending factor:",ui
+txtEDGE_TRANSP,"Transparency:",ui
+helpText13,"From 0 to 1; 1 means full color",ui
+txtLAYER_ARROW_SIZE,"Arrow size:",ui
+txtLAYER_ARROW_WIDTH,"Arrow width:",ui
+radRGLExport,"Select the format:",ui
+radNORGLExport,"Select the format:",ui
+helpText14,"No options to set up for interdependent network models.",ui
+radReducibilityCorrelationMethod,"Distance metric:",ui
+selReducibilityClusterMethod,"Hierarchical clustering:",ui
+txtREDUCIBILITY_HEATMAP_FONT_SIZE,"Font size:",ui
+btnCalculateReducibility,"Calculate Reducibility",ui
+helpText16,"Input format for the timeline file:",ui
+txtTimelineFileSep,"Separator (default is one space):",ui
+timeline_file,"Open the timeline file:",ui
+btnImportTimeline,"Import Timeline",ui
+chkTIMELINE_RENDER_TO_FILE,"Render snapshots to file",ui
+btnRenderDynamicsSnapshots,"Render Dynamics Snapshots",ui
+btnFFMPEGDynamicsSnapshots,"Make Video (require ffmpeg)",ui
+txtTimelineDefaultNodesSize,"Default node size:",ui
+helpText17,"Blank to use the Rendering setup",ui
+colTimelineDefaultNodesColor,"Default node color (any valid R type):",ui
+txtTimelineDefaultEdgesSize,"Default size of all edges:",ui
+helpText18,"Blank to use the Rendering setup",ui
+colTimelineDefaultEdgesColor,"Default edge color (any valid R type):",ui
+helpText19,"Blank to use the Rendering setup",ui
+btnLoadSession,"Load session",ui
+btnDeleteSavedSession,"Delete session",ui
+selSavedSessionsList,"Saved sessions:",ui
+WarningMessage1,"This functionality is currently under beta testing. Please, report any anomalous behavior <a href='https://groups.google.com/forum/#!forum/muxviz/' target=\"_blank\">here</a>",ui
+SessionManagerHelp,"<h5>Session Manager</h5>This module allows to: <ul><li><strong>Load</strong> a previously saved session among those ones listed in the menu. Important: once you load a session, you might need to click on the 'Refresh Results' buttons to visualize saved plots or tables; <li><strong>Delete</strong> a previously saved session among those ones listed in the menu; <li><strong>Save</strong> the current session (note that each time you save, a new session ID will be assigned)</ul><br>To facilitate the session management, the last modification time is reported to the right of each saved session ID.",help
+chkConfirmDeleteSavedSession,"Check this to confirm session deletion",ui
+helpText20,"Use an external file. Expected format (including mandatory header) is: nodeID.from layerID.from nodeID.to layerID.to color size",ui
+colEdgeColorFileDefaultEdgesColor,"Default color for unspecified edges (any valid R type):",ui
+txtEdgeColorFileSep,"Separator (default: blank space):",ui
+edgecolor_file,"Open the file:",ui
+btnPrintCommunityMultiplexChord,"View Chord Diagram",ui
+btnPrintCommunityMultiplexSankey,"View Sankey Diagram",ui
+communityMultiplexAlternativeViz,"Complementary visualizations",ui
+communityMultiplexBatchViz,"Visualizations for multiscale analysis",ui
+downCommunityBatchTable,"Export",ui

@@ -1,3 +1,36 @@
+### 12 June 2017
+
+Manlio De Domenico:
+
+
+
+Major in Analysis:
+
+- [Milestone] Removed dependence on Octave: multilayer analysis fully written in R! 
+- Removed support for multislice community detection by modularity maximization, because that code requires octave/matlab. Waiting for an R package or a standalone binary to include
+- Added support for analysis of multilayer and single-layer triads (# triangles and transitivity)
+- Added possibility to study the mixing of multilayer communities (ie, how communities are interconnected each other) by means of an interactive chord diagram
+- Added basic multiscale analysis in community detection. By varying the relax rate in Multiplex Infomap, it is now possible to study how the number of communities and the code length change accordingly. A Sankey diagram of the results allow to visualize how communities are joined or disjoined.
+
+
+Major in GUI:
+
+- [Milestone] It is now possible to save the current state of the session, automatically saving the configuration of all panels, the results of the analysis and the plots. Added a "Session Manager" with the possibility to load/restore (or delete permanently) previously saved sessions
+- Importing data simplified. With default options it's possible to import data in just 2 clicks, within the same panel
+- Added "Matrix Explorer" in the import module, to allow interactive visual inspection of multilayer and aggregate adjacency matrices 
+- Added possibility to color and size inter- and intra-layer edges from external file
+- Motifs moved to Diagnostics framework
+- Help no more present as a side panel. Instead, a small link is shown in the top-right corner
+- Design improved and larger workspace
+
+Other:
+
+- Fixed many minor bugs
+- Fixed call to binaries in Windows (thanks to Kim Klark)
+- Fixed weighting edges in viz of non-edge-colored networks (thanks to Patricia Gonçalves)
+- Added support for multiple languages (several languages in progress, but only English completed)
+- Removed dendrogram image in Reducibility. When an interactive version can be developed, it will be used
+
 
 
 ### 4 December 2015

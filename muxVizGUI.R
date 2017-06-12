@@ -6,17 +6,15 @@ if(!require(devtools)){
     install.packages("devtools")
 }
 if(!require(shiny)){
-    #install.packages("shiny")
     install.packages("shiny")
     library(devtools)
     devtools::install_github("trestletech/ShinyDash")
     devtools::install_github("rstudio/shiny-incubator")
 }else{
     #check the version, and in case update to the latest one
-    if(packageDescription("shiny")$Version!="0.12.1" && packageDescription("shiny")$Version!="0.12.2"){
-        #install.packages("shiny")        
-        library(devtools)
-        install.packages("shiny")
+    if(packageDescription("shiny")$Version!="1.0.3"){
+        install.packages("shiny")        
+        #library(devtools)
         #devtools::install_github("rstudio/shiny")
     }
 }
@@ -80,13 +78,15 @@ if(!require(clue)){
 if(!require(d3Network)){
     install.packages("d3Network")
 }
-
-
-
-if(system("octave -h", ignore.stdout = T, ignore.stderr = T)!=0){
-    print(paste("WARNING! A valid installation of Octave NOT FOUND. \nYou will not be able to calculate multilayer descriptors.\nYou can ignore this warning if you are using muxViz only for visualization purposes."))
+if(!require(Matrix)){
+    install.packages("Matrix")
 }
-
+if(!require(networkD3)){
+    install.packages("networkD3")
+}
+if(!require(dplyr)){
+    install.packages("dplyr")
+}
 
 library(shiny)
 library(ShinyDash)
@@ -95,5 +95,7 @@ library(shinydashboard)
 #uncomment the line below for detailed log of your session. Can be useful for debug purposes
 #options(shiny.trace=TRUE)
 
+enableBookmarking(store = "server")
 runApp(getwd())
 
+#shinyApp(ui, server)

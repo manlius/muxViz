@@ -50,6 +50,13 @@ body{
   font-size: 16px;
 }
 
+#tabDonate  span {
+  color: #944;
+  font-weight: 400;
+  font-size: 16px;
+}
+
+
 #projectLayoutType span {
   color: #944;
   font-weight: 400;

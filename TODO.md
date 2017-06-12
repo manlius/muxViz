@@ -1,4 +1,4 @@
-muxViz 1.0.x
+muxViz 2.x
 ==========
 
 The following list reflects the possible improvements of muxViz. 
@@ -7,7 +7,8 @@ The following list reflects the possible improvements of muxViz.
 
 #### High priority
 
-None, for the moment!
+- Add possibility to color intelinks from timeline
+- Some measures of multiplexity etc could be shown as an interactive piechart
 
 ###### Notes
 
@@ -33,8 +34,6 @@ None, for the moment!
 
 
 #### Low priority
-
-- Alluvial plot for communities
  
 - Reducibility: the dendrogram could have colored branches like [this](http://stackoverflow.com/questions/18036094/how-to-create-a-dendrogram-with-colored-branches), possibly according to a threshold
 
@@ -53,13 +52,15 @@ None, for the moment!
 
 #### High priority
 
-- New versions of Octave (> 4.0.0) deprecated the cor function and use corr instead. Compatibility should be solved somehow (for the moment look at TROUBLESHOOTING).
+- [Milestone] Add possibility to generate markdown reports [Link1](https://shiny.rstudio.com/articles/generating-reports.html) [Link2](http://shiny.rstudio.com/gallery/download-knitr-reports.html)
 
-- Add support to calculation of [shortest paths](http://dl.acm.org/citation.cfm?id=2615687) and their visualization, giving possibility to specify origin/destination, width and color of the path
 
-- Additional centrality descriptors: clustering/transitivity (see [paper1](http://arxiv.org/abs/1405.0425) [paper2](http://arxiv.org/abs/1308.3182) [paper3](http://arxiv.org/abs/1403.1546) [paper4](http://arxiv.org/abs/1307.6780))
+- Add support to calculation of [shortest paths](http://dl.acm.org/citation.cfm?id=2615687) and their visualization, giving possibility to specify origin/destination, width and color of the path. Add new tab Paths in Analysis to establish paths (distinguish between coding and non-coding interlinks) between any two nodes. Possibility to highlight the result in the viz
 
 - Additional centrality descriptors (betweenness, closeness, random walk betweenness, random walk closeness) should be included as soon as possible (see [this paper](http://dl.acm.org/citation.cfm?id=2615687) for some references). 
+
+- Multiplex community detection: given that relax rate can tune the size of partitions, one can do a batch processing for various values and then show results by using an alluvial plot
+
 
 #### Medium priority
 
@@ -79,6 +80,8 @@ None, for the moment!
 
 - It would interesting to have the scatterplots allowing to select subset of nodes according to attributes
 
+- It would be useful to color/size nodes according to additional attributes specified in richer layout files 
+
 
 ## TODO Technical
 
@@ -88,16 +91,13 @@ None, for the moment!
 
 - Improvement of the "console"
 
-- Support for multiple languages
+- Support for multiple languages (Done; only English completed; other languages available, to be extended)
 
+- It would be nice to make a configuration file to guide the installation process, including "language" and "geo" (if geo should be available or not, to save installation time)
 
 - Save the orientation of the rgl plot to allow future import to do exactly the same plot. [See here](http://stackoverflow.com/questions/16362381/save-the-orientation-of-a-rgl-plot3d-plot)
  
- - In general it would be great to export all tables and graphic settings like in gephi, to allow import without redoing the whole analysis. this would be really useful (and requires a file format). For the moment, if there is a button for exporting results (see points above), here we need just a button to save current configuration and import it. [See here](http://www.r-bloggers.com/persistent-data-storage-in-shiny-apps/?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed%3A+RBloggers+%28R+bloggers%29)
+ - In general it would be great to export all tables and graphic settings, to allow import without redoing the whole analysis. This would be really useful (and requires a file format). For the moment, the supported functionality allows to save the current state of the session for later restoring.
 
-###### Notes
+- Add [spinner gif](https://github.com/daattali/advanced-shiny/blob/master/plot-spinner/app.R) while loading
 
-    Full porting of Octave code to R: packages like [RcppOctave](http://cran.r-project.org/web/packages/RcppOctave/vignettes/RcppOctave.pdf) and [R.matlab](http://cran.r-project.org/web/packages/R.matlab/R.matlab.pdf) and [matlab](http://cran.r-project.org/web/packages/matlab/matlab.pdf) are promising, but a full porting would be the best option.
-    It seems that on Mac and Linux it is possible to exploit the already existing linear algebra R packages by forcing R to use a faster BLAS version. On a Mac OS X this is easily achieved by
-  
-    sudo ln -sf /System/Library/Frameworks/Accelerate.framework/Frameworks/vecLib.framework/Versions/Current/libBLAS.dylib /Library/Frameworks/R.framework/Resources/lib/libRblas.dylib

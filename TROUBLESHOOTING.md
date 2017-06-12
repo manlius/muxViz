@@ -1,13 +1,14 @@
-muxViz v1.x
+muxViz v2.x
 ===========
 
 Topics in this troubleshooting:
 
 - **Very quick installation on Linux**- 
-- **Octave, Multimap or FANMOD not found**
+- **Multimap or FANMOD not found**
 - **Possible errors when using Motifs**
 - **Possible errors when using Correlation**
 - **Install muxViz with R 3.3 or higher**
+- **Use existing Linear Algebra Library**
 
 ---
 
@@ -15,22 +16,10 @@ Topics in this troubleshooting:
 
 If you use a Linux (Ubuntu-like) distribution, you are very lucky, because the following BASH script will do the job for you:
 
-    #download Octave and R from their repository
-    wget http://ftp.gnu.org/gnu/octave/octave-3.6.0.tar.gz
+    #download R from their repository
     wget http://cran.es.r-project.org/src/base/R-3/R-3.0.3.tar.gz
     DIR=$PWD
-    
-    #install Octave
-    sudo apt-get build-dep octave
-    sudo mv octave-3.6.0.tar.gz ~
-    cd ~
-    tar xvf octave-3.6.0.tar.gz
-    cd octave-3.6.0
-    ./configure
-    make
-    sudo make install
-    cd $DIR
-    
+        
     #install R
     sudo apt-get build-dep r-base-core
     sudo mv R-3.2.0.tar.gz ~
@@ -49,20 +38,6 @@ If you use a Linux (Ubuntu-like) distribution, you are very lucky, because the f
 
 One of our users, Lucio Agostinho Rocha, reported the following solution for installation on this system.
 
-To install octave 3.6.0, after the first 'make install' it is necessary to replace the following line:
-
-_GL_WARN_ON_USE (gets, "gets is a security hole - use fgets instead");
-
-In files: 
-- libgnu/stdio.h 
-- libgnu/stdio.in.h
-
-With this contents:
-
-	#if defined(__GLIBC__) && !defined(__UCLIBC__) && !__GLIBC_PREREQ(2, 16)
-	_GL_WARN_ON_USE (gets, "gets is a security hole - use fgets instead");
-	#endif
-
 To load muxViz in R environment, he solved modifying the muxVizGUI.R file:
 
 Before:
@@ -76,39 +51,11 @@ After:
 Thank you Lucio!
 
 
-### Octave, Multimap or FANMOD not found
+### Multimap or FANMOD not found
 
-muxViz uses an API to three external softwares: Octave, Multimap (known as multiplex infomap) and Fanmod.
+muxViz uses an API to external softwares: Multimap (known as multiplex infomap) and Fanmod.
 
 The home screen of muxViz will indicate if the available binaries are correctly installed and can be used by the platform. If it is not the case, a WARNING message is generally displayed. 
-
-##### Should I care about missing Octave?
-
-It depends. If you want to use muxViz only for visualization purposes or for single-layer analysis of your networks, then you can skip a working installation of Octave.
-
-###### Installing Octave
-
-If you are interested in multilayer analysis, then Octave is a fundamental requirement (that will be removed from the next version of muxViz). 
-
-Download and install a copy of Octave (3.4.0 or above):
-
-<http://www.gnu.org/software/octave/download.html>
-
-Octave should be accessible through command line from any folder (i.e., it is mandatory to add it in your PATH environment variable). If you are not familiar with this simple task, you should visit <http://www.java.com/en/download/help/path.xml>
-
-In Linux and Mac OS you can do the following.
-
-From the terminal (using vi or nano) open the file ~/.bash_profile and paste the following:
-
-
-	if [ -f ~/.bashrc ]; then
-   		. ~/.bashrc
-	fi
-
-
-Then create the file ~/.bashrc where you can edit the PATH variable by adding this line:
-
-	export PATH=$PATH:/PATH/TO/OCTAVE/BIN/FOLDER
 
 ##### Should I care about missing FANMOD and/or Multimap?
 
@@ -154,36 +101,6 @@ if it does not exist, and set the following parameters:
 
 Restart R and try again to install the dev version of igraph.
 
-### Possible errors when using Correlation 
-
-It seems that the new versions of Octave (above 4.0) deprecated the function "cor", using "corr" instead.
-Users that install new versions of Octave, can manually change the occurrences of "cor(" with "corr(" in the file muxOctaveLib.m to solve the issue.
-
-### Possible errors when using other measures
-
-It seems that some old version of Octave handle some syntax in a different way.
-Users with Mac OS X 10.6.8 (Snow Leopard) and Octave 3.2.3 reported possible errors from function loadNetworkFromFile in muxOctaveLib.m
-Here there is the patch. Substitute
-
-
-	A = spconvert(A);
-	A(size(A,1) + 1:N, size(A,2) + 1:N) = 0;
-
-with
-
-	A = spconvert(A);
-	startRow = size(A,1) + 1
-	startCol = size(A,2) + 1
-	if (startRow > N)
-    	startRow = N
-	endif
-	if (startCol > N)
-   		startCol = N
-	endif
-	A(startRow:N,startCol:N) = 0;
-
-
-Thanks Giuseppe Mangioni!
 
 ### Install muxViz with R 3.3 or higher
 
@@ -199,3 +116,10 @@ Finally, install Shiny Dash from R console: `devtools::install_github("ShinyDash
 Now muxViz should start and work.
 
 Thank you Maria Pereda!
+
+### Use existing Linear Algebra Library
+
+
+On Mac and Linux it is possible to exploit the already existing linear algebra R packages by forcing R to use a faster BLAS version. On a Mac OS X this is easily achieved by
+  
+    sudo ln -sf /System/Library/Frameworks/Accelerate.framework/Frameworks/vecLib.framework/Versions/Current/libBLAS.dylib /Library/Frameworks/R.framework/Resources/lib/libRblas.dylib

@@ -1,5 +1,9 @@
-muxViz v1.0
+muxViz v2.0
 =========
+
+IMPORTANT: muxViz has recently migrated from an Octave core to an R core of algorithms. Although it has been extensively beta-tested, we warmly recommend to carefully check any result. In case of anomalous/unexpected behavior, please report it to the dedicated [Google Group](https://groups.google.com/forum/#!forum/muxviz)
+
+This release will be soon marked as *stable*.
 
 ### Visualization and Analysis of Multilayer Networks
 
@@ -12,9 +16,7 @@ muxViz is a platform for the visualization and the analysis of interconnected mu
 - Multilayer motifs analysis
 - Animated visualization of dynamical processes and time-varying multilayer networks
 
-Support for data analysis is not mandatory and requires a working installation of GNU Octave 3.4.0 or above. 
-
-muxViz now supports the analysis and visualization of the following multilayer networks:
+muxViz supports the analysis and visualization of the following multilayer networks:
 ![Multilayer networks supported in muxViz](www/img/network_type.png "Supported multilayer networks")
 
 and the following layer layouts:
@@ -54,13 +56,11 @@ A 10-minutes tutorial showing how easy is to work with muxViz is also available:
 
 ##### Requirements and Installation
 
-Download and install a copy of Octave (3.4.0 or above):
+muxViz requires R v3.2.0 (or above). The data analysis would benefit from the enhanced R environment developed by Microsoft: it is strongly recommended to download and install Microsoft R Open from
 
-<http://www.gnu.org/software/octave/download.html>
+<https://mran.microsoft.com/download/>
 
-Octave should be accessible through command line from any folder (i.e., it is mandatory to add it in your PATH environment variable). If you are not familiar with this simple task, you should visit <http://www.java.com/en/download/help/path.xml>
-
-muxViz requires R v3.2.0 (or above). Download and install a copy of R from
+Otherwise, download and install a classical copy of R from
 
 <http://www.r-project.org/>
 
@@ -80,22 +80,10 @@ within the R environment. However, in a few cases it can be more complicated and
 
 If you use a Linux (Ubuntu-like) distribution, you are very lucky, because the following BASH script will do the job for you:
 
-    #download Octave and R from their repository
-    wget http://ftp.gnu.org/gnu/octave/octave-3.6.0.tar.gz
+    #download R from their repository
     wget http://cran.es.r-project.org/src/base/R-3/R-3.2.0.tar.gz
     DIR=$PWD
-    
-    #install Octave
-    sudo apt-get build-dep octave
-    sudo mv octave-3.6.0.tar.gz ~
-    cd ~
-    tar xvf octave-3.6.0.tar.gz
-    cd octave-3.6.0
-    ./configure
-    make
-    sudo make install
-    cd $DIR
-    
+        
     #install R
     sudo apt-get build-dep r-base-core
     sudo mv R-3.2.0.tar.gz ~
@@ -109,7 +97,7 @@ If you use a Linux (Ubuntu-like) distribution, you are very lucky, because the f
     #install GDAL
     sudo apt-get install libgdal1-dev libproj-dev
 
-Finally, if your system has a working installation of Octave, R and GDAL, you can download the last version of muxViz, unzip it, go into the unzipped folder and type the following within R environment:
+Finally, if your system has a working installation of R and GDAL, you can download the last version of muxViz, unzip it, go into the unzipped folder and type the following within R environment:
 
 	source('muxVizGUI.R')
 
@@ -292,7 +280,7 @@ The muxViz package now includes a script for the visualization of standard netwo
 Copyright
 =========
 
-##### (C) Copyright 2013-20156, Manlio De Domenico.
+##### (C) Copyright 2013-2017, Manlio De Domenico.
 
 This code has no warranty whatsoever and any kind of support is provided.
 You are free to do what you like with this code as long as you leave this copyright in place.
@@ -323,3 +311,26 @@ I would like to thank Martin Rosvall for allowing to distribute his C++ code for
 The development of muxViz has been funded, or is currently funded, by the following entities and institutions:
 
 ![muxViz funding](www/img/funding.png "muxViz funding")
+
+Donation
+=========
+
+**muxViz** is a free and open-source platform that has been used for scientific purposes in a variety of disciplines, including computational social science, computational neuroscience, computational biology, computational psycholinguistics, multi-modal transportation engineering and physics. 
+
+Since January 2016, **muxViz** is periodically updated and maintained for free by its developer and its enthusiastic community of users (the *muxVizers*).
+
+If **muxViz** helps you with your research and reduces your time to develop, you can give us a cup of good coffee :)
+
+**BTC**: 19RGUCZjSzvbjY5xEWz3GNg7MnMiPyEgbB
+
+**ETH**: 0xe49ce2b74a082edf4926ac6c89e2b830e83f022e
+
+**XMR**: 49pQ1B2m2UHaKotqF8h1E89um9rnMPvAHEfGUET1icQUaxBV1KFhuTNVpsF6Kf4bf5dZwWvmdzYn4D7rKcL4v2ee3tH4E2L
+
+**Paypal**: 
+
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=manlio.dedomenico@gmail.com&item_name=muxViz&item_number=muxViz+development&currency_code=USD)
+
+
+
+

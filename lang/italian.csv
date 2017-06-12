@@ -1,0 +1,56 @@
+object,message,type
+muxVizVersion,"Versione di muxViz:",ui
+muxVizUpdate,"Ultimo aggiornamento:",ui
+muxVizSystem,"Sistema:",ui
+ID,"ID",ui
+ProjectID,"ID del progetto",ui
+txtProjectName,"* Assegna un ID a questa analisi:",ui
+Import,"Importa",ui
+ConfigFile,"File di configurazione",ui
+NetworkModel,"Modello di rete",ui
+NetworkFormat,"Formato della rete",ui
+Configuration,"Configurazione",ui
+ConfigurationFileFormat,"* Formato di input del file di configurazione:",ui
+ConfigurationFile,"* Apri il file di configurazione:",ui
+chkConfigFileHeader, "Header",ui
+txtConfigFileSep, "Separatore:",ui
+ConfigurationFileSummary,"Tabella del file di configurazione",ui
+ImportNetworks,"Importa le reti",ui
+InputFormat,"Formato di input",ui
+chkEdgeListFileHeader,"Header",ui
+txtEdgeListFileSep,"Separatore (predefinito: spazio singolo; lo stesso carattere è atteso per il file di layout):",ui
+txtEdgeListFileSepHelp,"<font color='red'>Se i nodi nella sono identificati da un'etichetta, invece che un numero intero sequenziale, spunta il box qui sotto</font> (nota che nella colonna nodeID del file di layout va specificata una sequenza di ID interi)",ui
+chkEdgeListLabel,"Edges list di nodi etichettati (invece di una sequenza di numeri interi)",ui
+chkEdgeListLabel2,"Edges list di layers etichettati (invece di una sequenza di numeri interi)",ui
+selEdgeListType,"* Formato della edges list:",ui
+chkEdgeListWeighted, "Pesata",ui
+chkEdgeListUndirectedBoth,"Entrambe le direzioni sono specificate (solo per reti non dirette)",ui
+chkRESCALE_WEIGHT,"Riscala i pesi rispetto al valore minimo",ui
+chkOutputEdgelistTable,"Stampa le edges lists in una tabella (<font color='red'>lento per reti grandi</font>)",ui
+btnImportNetworks,"Importa rete",ui
+NetworkSummary,"Sommario per la rete multilayer",ui
+NetworkSummaryInfo,"Layers: <span id=\"sumLayers\"></span><br>Tipo di layer: <span id=\"sumLayerType\"></span><br><br>Numero di nodi: <span id=\"sumNodes\"></span><br>&nbsp;&nbsp;&nbsp;&nbsp;ID minimo: <span id=\"sumMinNodeID\"></span><br>&nbsp;&nbsp;&nbsp;&nbsp;ID massimo: <span id=\"sumMaxNodeID\"></span><br>Numero di edges: <span id=\"sumEdges\"></span><br><br>Layout esterno: <span id=\"sumIsLayoutExternal\"></span><br>E' geografico? <span id=\"sumIsLayoutGeographic\"></span><br>",ui
+EdgesTables,"Tabelle di Edges",ui
+ImportedEdgeLists,"Edges Lists importate",ui
+Pageable,"Paginabile",ui
+EdgesPerPage,"Edges per pagina",ui
+Console,"Console",ui
+Run,"Avvia",ui
+Query,"Query",ui
+QuerySetUp,"Impostazioni della Query",ui
+selQueryType,"Tipo di query:",ui
+chkQueryShowLabels,"Mostra etichette",ui
+btnQuery,"Query",ui
+downQueryNodesTable,"Esporta",ui
+navBarFile,"File",menu
+QuickHelp,"Aiuto rapido",help
+ImportHelp,"<ul><li>Assegna un nome all'analisi (o utilizza il nome predefinito)</li><li>Nel pannello \"File di configurazione\", seleziona ed apri il file di configurazione</li><li>Usa il pannello \"Importa le reti\", per importare le reti che si trovano nel file di configurazione</li></ul><h4>Modelli di reti</h4><span>Edge-colored:</span> Le edges all'interno dello stesso layer sono colorate; ogni coppia di layers ha almeno un nodo in comune; le edges tra i layers non esistono.<br><br><span>Interconnected:</span> Le edges all'interno dello stesso layer sono colorate; ogni coppia di layers ha almeno un nodo in comune; le edges tra i layers collegano le repliche di ogni nodo su tutti i layers.<br><br><span>Interdependent:</span> I nodi sono colorati; ogni coppia di layers non ha nodi in comune; le edges tra i layers collegano nodi di tipo diverso che si trovano su layers differenti.<br><br><span>General:</span> I nodi sono colorati; alcune coppie di layers possono non avere nodi in comune; le edges tra i layers possono collegare le repliche dei nodi o nodi diversi su layers differenti.<br><br>Nota che il formato di input per ogni modello è differente (per migliorare la performance computazionale). Vedere l'Help per ulteriori dettagli riguardanti ogni formato.",help
+ConsoleHelp,"<h5>Console</h5>The console should be used from advanced users for debugging purposes.<br>The expected language is R, although a dedicated language will be developed in the next future.<br>The output of the console is shown in the terminal where muxViz is running.<br><br>Note that the console will work only after importing data correctly.",help
+QueryHelp,"This module allows to query the multilayer network to obtain information about nodes or edges.<h5>Nodes</h5>You can select one or more nodes and specify which layers you are interested into. The query will return a table with the neighbors of the queried nodes, i.e. their ego-networks in each layer.<br>Note that you can use the output of this query to color nodes accordingly in the visualization process.<h5>Edges</h5>You can select one or more origin nodes and one or more destination nodes, specifying which layers you are interested into. The query will return a table with all the edges among origin and destination nodes, in each layer separately.",help
+GlobalDiagnosticsMuxSetUpHelp,"Use this tab to set up your multilayer network. Specify the type (ordinal, like in the case of temporal networks, or categorical, like in the case of fully interconnected layers) and the strength of inter-layer links (it will be the same for all inter-links).",help
+GlobalDiagnosticsAnnularVizHelp,"<h5>Annular Plot</h5>BE CAREFUL: this module is supposed to work *AFTER* you calculated diagnostics in the multilayer, using the tensorial formulation. If you try to use this module without calculating multilayer centralities, an error will be generated.<br><br>",help
+GlobalDiagnosticsCentralityHelp,"<h5>Node Versatility</h5>This module calculates <a href=\"http://en.wikipedia.org/wiki/Centrality\" target=\"_blank\">centrality</a> of nodes in the network.<br><br>The diagnostics for single-layer networks are widely described in the literature: see <a href=\"http://en.wikipedia.org/wiki/http://en.wikipedia.org/wiki/Degree_(graph_theory)\" target=\"_blank\">Degree centrality</a>, <a href=\"http://en.wikipedia.org/wiki/PageRank\" target=\"_blank\">PageRank centrality</a>, <a href=\"http://en.wikipedia.org/wiki/Centrality#Eigenvector_centrality\" target=\"_blank\">Eigenvector centrality</a>, <a href=\"http://en.wikipedia.org/wiki/HITS_algorithm\" target=\"_blank\">Hub centrality</a>, <a href=\"http://en.wikipedia.org/wiki/HITS_algorithm\" target=\"_blank\">Authority centrality</a>, <a href=\"http://en.wikipedia.org/wiki/Katz_centrality\" target=\"_blank\">Katz centrality</a> and <a href=\"https://en.wikipedia.org/wiki/Degeneracy_(graph_theory)\" target=\"_blank\">K-coreness</a> for further information. Multiplexity is defined by the fraction of layers where node exists (note that it is not defined for the aggregate network).<br><br><hr><strong>References</strong>:<ul><li> M. De Domenico et al, <i>Mathematical Formulation of Multilayer Networks</i>, Phys. Rev. X 3, 041022 (2013) [<a href=\"http://prx.aps.org/abstract/PRX/v3/i4/e041022\" target=\"_blank\">Open</a>]<li> M. De Domenico et al, <i>Ranking in interconnected multilayer networks reveals versatile nodes</i>, Nature Communications 6, 6868 (2015) [<a href=\"http://www.nature.com/ncomms/2015/150423/ncomms7868/full/ncomms7868.html\" target=\"_blank\">View</a>]<li> N. Azimi-Tafreshi, J. Gomez-Gardenes, and S. N. Dorogovtsev, <i>k−core percolation on multiplex networks</i>, Phys. Rev. E 90, 032816 (2014) [<a href=\"http://journals.aps.org/pre/abstract/10.1103/PhysRevE.90.032816\" target=\"_blank\">View</a>]</ul><br>",help
+GlobalDiagnosticsNetworkLayersHelp,"<h5>Network of layers</h5>This module calculates the network of layers induced by a multilayer network. Visualizing the network of layers allows to understand how each layer depends on other layers. In the case of edge-colored multigraphs it is not calculated because the result would be a network of isolated nodes.<br><br><hr><strong>References</strong>:<ul><li> M. De Domenico et al, <i>Mathematical Formulation of Multilayer Networks</i>, Phys. Rev. X 3, 041022 (2013) [<a href=\"http://prx.aps.org/abstract/PRX/v3/i4/e041022\" target=\"_blank\">Open</a>]</ul><br>",help
+GlobalDiagnosticsCorrelationHelp,"<h5>Mean global node overlapping</h5>Measure the fraction of node which are common (i.e., non-isolated) to all layers. Valid also in the case of weighted networks. This is a measure of similarity between layers.<h5>Mean global edge overlapping</h5>Measure the fraction of edges which are common to all layers. Valid also in the case of weighted networks. This is a measure of similarity between layers.<h5>Inter-layer assortativity (Pearson)</h5>Calculate the <a href=\"http://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient\" target=\"_blank\">Pearson correlation</a> between the degree (strength) of nodes and their counterparts in other layers, for all pairs of layers. This is another measure of similarity between layers.<h5>Inter-layer assortativity (Spearman)</h5>Calculate the <a href=\"http://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient\" target=\"_blank\">Spearman correlation</a> between the degree (strength) of nodes and their counterparts in other layers, for all pairs of layers. This measure is recommended when the assumptions underlying a Pearson test are not satisfied. This is another measure of similarity between layers.<h5>Inter-layer similarity (by shortest-path distance between nodes)</h5>Calculate the <a href=\"https://en.wikipedia.org/wiki/Shortest_path_problem\" target=\"_blank\">shortest path</a> between the all pairs of nodes in each layer separately. The resulting distance matrices, encoding the shortest path distance between nodes, are then compared each other by means of Frobenius distance, to uncover layer similarity with respect to paths. This is another measure of similarity between layers.<hr><strong>References</strong>:<ul><li> M. De Domenico et al, <i>Ranking in interconnected multilayer networks reveals versatile nodes</i>, Nature Communications 6, 6868 (2015) [<a href=\"http://www.nature.com/ncomms/2015/150423/ncomms7868/full/ncomms7868.html\" target=\"_blank\">View</a>]<li>M. De Domenico, M. Porter and A. Arenas, <i>MuxViz: a tool for multilayer analysis and visualization of networks</i>, Journal of Complex Networks 3, 159 (2015) [<a href=\"http://comnet.oxfordjournals.org/content/3/2/159\" target=\"_blank\">Open</a>]</ul><br>",help
+
+

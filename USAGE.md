@@ -1,4 +1,4 @@
-muxViz v0.2
+muxViz v2.0
 =========
 
 See README.md
