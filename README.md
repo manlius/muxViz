@@ -323,7 +323,7 @@ If **muxViz** helps you with your research and reduces your time to develop, you
 
 **BTC**: 19RGUCZjSzvbjY5xEWz3GNg7MnMiPyEgbB
 
-**ETH**: 0xe49ce2b74a082edf4926ac6c89e2b830e83f022e
+**ETH**: 0xe5027b44782a4b832a23773ffdb57658aff62e31
 
 **XMR**: 49pQ1B2m2UHaKotqF8h1E89um9rnMPvAHEfGUET1icQUaxBV1KFhuTNVpsF6Kf4bf5dZwWvmdzYn4D7rKcL4v2ee3tH4E2L
 
