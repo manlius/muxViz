@@ -92,6 +92,23 @@ library(shiny)
 library(ShinyDash)
 library(shinydashboard)
 
+#muxViz <- function(){
+#    #' Function to load muxViz
+#    #'
+#    #' @author Manlio De Domenico, \email{manlio.dedomenico@gmail.com}
+#    #'
+#    #' @examples
+#    #' muxViz()
+#    #'
+#    #' @import shiny
+#    #' @import ShinyDash
+#    #' @import shinydashboard
+#    #' @export
+#    #'
+#    enableBookmarking(store = "server")
+#    runApp(getwd())    
+#}
+
 #uncomment the line below for detailed log of your session. Can be useful for debug purposes
 #options(shiny.trace=TRUE)
 

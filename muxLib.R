@@ -1035,14 +1035,13 @@ GetGiantConnectedComponent <- function(SupraAdjacencyMatrix,Layers,Nodes){
 ## REDUCIBILITY OF MULTILAYER NETWORKS
 ###################################################################
 
-GetMultilayerReducibility <- function(SupraAdjacencyMatrix,Layers,Nodes,Method){
+GetMultilayerReducibility <- function(SupraAdjacencyMatrix,Layers,Nodes,Method,Type){
     #Calculate the quantum Renyi entropy of a network
     #   References: 
     #   M. De Domenico et al, Phys. Rev. X 3, 041022 (2013)
     #   M. De Domenico, V. Nicosia, A. Arenas, V. Latora, Nature Communications 6, 6864 (2015)
 
     NodesTensor <- SupraAdjacencyToNodesTensor(SupraAdjacencyMatrix,Layers,Nodes)
-
 
     if(Layers > 1){
         #################################
@@ -1051,8 +1050,9 @@ GetMultilayerReducibility <- function(SupraAdjacencyMatrix,Layers,Nodes,Method){
         #single layer entropy
         SingleLayerEntropy <- rep(NA, Layers)
     
-        for(i in 1:Layers){
+        for(i in 1:Layers){            
             SingleLayerEntropy[i] <- GetRenyiEntropyFromAdjacencyMatrix(NodesTensor[[i]],1)
+            if(SingleLayerEntropy[i]<1e-12) SingleLayerEntropy[i] <- 0
         }
     
         ###########################
@@ -1060,11 +1060,24 @@ GetMultilayerReducibility <- function(SupraAdjacencyMatrix,Layers,Nodes,Method){
         ###########################
         JSD <- Matrix(0, Layers, Layers)
     
-        for(i in 1:(Layers-1)){
-            for(j in (i+1):Layers){
+        if(Type=="Ordinal"){
+            #this line is required, because a 0 means no distance..
+            JSD <- Matrix(1, Layers, Layers)
+            
+            for(i in 1:(Layers-1)){
+                j <- i + 1
                 JSD[i,j] <- GetJensenShannonDivergence(NodesTensor[[i]], NodesTensor[[j]], 
-                                                                                  SingleLayerEntropy[i],SingleLayerEntropy[j])
-                JSD[j,i] <- JSD[i,j]
+                                                                                    SingleLayerEntropy[i],SingleLayerEntropy[j])
+                #JSD[j,i] <- JSD[i,j]
+            }  
+        }
+        if(Type=="Categorical"){
+            for(i in 1:(Layers-1)){
+                for(j in (i+1):Layers){
+                    JSD[i,j] <- GetJensenShannonDivergence(NodesTensor[[i]], NodesTensor[[j]], 
+                                                                                      SingleLayerEntropy[i],SingleLayerEntropy[j])
+                    JSD[j,i] <- JSD[i,j]
+                }
             }
         }
         JSD <- sqrt(JSD)
@@ -1085,16 +1098,16 @@ GetMultilayerReducibility <- function(SupraAdjacencyMatrix,Layers,Nodes,Method){
         
         #aggregate entropy
         AggregateEntropy <- GetRenyiEntropyFromAdjacencyMatrix(AggregateMatrix,1)
-            
+        
         #step zero: full colored-edge graph against fully aggregated network
         gQualityFunction <- rep(0, Layers)
         relgQualityFunction <- rep(0,Layers)
 
         cntCurrentLayers <- sum(SingleLayerEntropy>0)
         gQualityFunction[1] <- cntCurrentLayers*AggregateEntropy - sum(SingleLayerEntropy[SingleLayerEntropy>0])
-        
+                        
         relgQualityFunction[1] <- gQualityFunction[1]/(cntCurrentLayers*AggregateEntropy)
-            
+
         MergedTensor <- list()
         MergedEntropy <- list()
         for(m in 1:(Layers-1)){

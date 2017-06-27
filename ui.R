@@ -14,6 +14,7 @@ source("language.R")
 #library("shinythemes")
 
 
+
 #RGB colors table
 #http://www.javascripter.net/faq/rgbtohex.htm
 paletteWeb <- "<a href='http://www.colorschemer.com/online.html' target='_blank'>Online Color Palette</a>, <a href='http://colorbrewer2.org'>Online Color Scheme</a>"

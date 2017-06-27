@@ -54,6 +54,10 @@ Note that linked data is in a different format and can not be used "as they are"
 A 10-minutes tutorial showing how easy is to work with muxViz is also available:
 [![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/gcpYSdi_-xI/0.jpg)](http://www.youtube.com/watch?v=gcpYSdi_-xI)
 
+#### Plug & Play
+
+A ready-to-use version of muxViz is available through [Docker](https://hub.docker.com/r/fkraeutli/muxviz-docker/).
+
 ##### Requirements and Installation
 
 muxViz requires R v3.2.0 (or above). The data analysis would benefit from the enhanced R environment developed by Microsoft: it is strongly recommended to download and install Microsoft R Open from

@@ -5118,13 +5118,29 @@ shinyServer(function(input, output, session) {
     
                 progress$set(message = 'Calculating Redundancy...', value = 0.05)
                 
-                listReducibility <<- GetMultilayerReducibility(SupraAdjacencyMatrix,LAYERS,Nodes,input$selReducibilityClusterMethod)
+                if(sum(SupraAdjacencyMatrix-t(SupraAdjacencyMatrix))>0){
+                    cat("  Network is directed. Transforming to undirected to apply structural reducibility.\n")
+                }
+                
+                muxType <- ""
+                if(input$radMultiplexType=="MULTIPLEX_IS_ORDERED"){
+                    muxType <- "Ordinal"
+                }
+                if(input$radMultiplexType=="MULTIPLEX_IS_CATEGORICAL"){
+                    muxType <- "Categorical"
+                }
+                
+                listReducibility <<- GetMultilayerReducibility(SupraAdjacencyMatrix,LAYERS,Nodes,input$selReducibilityClusterMethod, muxType)
                 
                 progress$set(message = 'Hierarchical clustering...', value = 0.6)
-                    
+
+
+#            Layer <- c()
+#            for(l in 1:LAYERS) Layer = c(Layer,as.character(layerLabel[[l]]))
+#
 #                outfile7 <- buildTmpPath("image_dendrogram.png")
 #                png(outfile7, width=650, height=650)
-#                plot(hclust(as.dist(distanceMatrix),
+#                plot(hclust(as.dist(listReducibility$JSD),
 #                       method=input$selReducibilityClusterMethod),
 #                       col = "#1F77B4", col.main = "#1F77B4", col.lab = "#E08400", 
 #                       col.axis = "#E08400", lwd = 2, 
@@ -5134,7 +5150,7 @@ shinyServer(function(input, output, session) {
 #                       sub="", 
 #                       xlab="")
 #                dev.off()
-    
+#    
 #                output$reducibilityDendrogramSummaryImage <- renderImage({
 #                    list(src = outfile7,
 #                        contentType = 'image/png',
@@ -5192,7 +5208,7 @@ shinyServer(function(input, output, session) {
                 cexRow=as.numeric(input$txtREDUCIBILITY_HEATMAP_FONT_SIZE),
                 cexCol=as.numeric(input$txtREDUCIBILITY_HEATMAP_FONT_SIZE),
                 hclustfun=function(x) hclust(x,method=input$selReducibilityClusterMethod),
-                symm=F,
+                symm=T,
                 dendrogram="both",
                 )
             })
