@@ -7,6 +7,7 @@ Topics in this troubleshooting:
 - **Multimap or FANMOD not found**
 - **Possible errors when using Motifs**
 - **Possible errors when using Correlation**
+- **Possible errors with rjava**
 - **Install muxViz with R 3.3 or higher**
 - **Use existing Linear Algebra Library**
 
@@ -101,6 +102,20 @@ if it does not exist, and set the following parameters:
 
 Restart R and try again to install the dev version of igraph.
 
+### Possible errors with rjava
+
+Some users reported that, when using muxVix for the first time, they get the following error:
+
+	Warning: Error in : package or namespace load failed for ‘OpenStreetMap’:
+	 .onLoad failed in loadNamespace() for 'rJava', details:
+
+One possible solution is to open the terminal and type
+
+	R CMD javareconf
+
+to reconfigure java to work correctly within R. You might read about possible solutions for [Linux](https://stackoverflow.com/questions/3311940/r-rjava-package-install-failing) and [Mac OS X](https://github.com/MTFA/CohortEx/wiki/Run-rJava-with-RStudio-under-OSX-10.10,-10.11-(El-Capitan)-or-10.12-(Sierra)).
+
+Thanks Sneha Rajen!
 
 ### Install muxViz with R 3.3 or higher
 

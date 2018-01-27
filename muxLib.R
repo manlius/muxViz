@@ -1,10 +1,11 @@
 library(Matrix)
+library(RSpectra)
 
 ####################################################
 # MuxNetLib: Library for Multilayer Network Analysis in muxViz
 #
 # Version: 0.1
-# Last update: May 2017
+# Last update: Dec 2017
 # Authors: Manlio De Domenico
 #
 # History:
@@ -39,12 +40,21 @@ speye <- function(n){
 
 zeros <- function(n,m){
     #return a matrix full of zeros
-    return( Matrix::Matrix(Matrix::kronecker( cbind(rep(0,n)), rbind(rep(1,m)))) )
+    #return( Matrix::Matrix(Matrix::kronecker( cbind(rep(0,n)), rbind(rep(1,m)), sparse=T), sparse=T) )
+    return(Matrix::Matrix(0, n, m, sparse=T))
 }
 
 ones <- function(n,m){
     #return a matrix full of ones
-    return( Matrix::Matrix(Matrix::kronecker( cbind(rep(1,n)), rbind(rep(1,m)) )) )
+    #return( Matrix::Matrix(Matrix::kronecker( cbind(rep(1,n)), rbind(rep(1,m)) )) )
+    return(Matrix::Matrix(1, n, m, sparse=T))
+}
+
+spcan <- function(n, i, j){
+    #return a canonical matrix
+    A <- zeros(n,n)
+    A[i,j] <- 1
+    return(A)
 }
 
 rand <- function(n,m){
@@ -68,7 +78,7 @@ diagR <- function(x, n, offset=0){
     #cannot call this function just "diag", because it's an R builtin command
     #return a matrix with elements on a diagonal specified by offset (0=main diagonal)
     M <- zeros(n,n)
-    M[row(M)+offset == col(M)] <- x
+    M[which(row(M)+offset == col(M))] <- x
     return(M)
 }
 
@@ -229,12 +239,13 @@ GetAggregateNetworkFromNetworkList <- function(g.list){
 
 GetSampleMultiplex <- function(Layers, Nodes, p){
     NodeTensor <- lapply(1:Layers, function(x){
-                                                            A <- rand(Nodes,Nodes)
-                                                            A[which(A < p)] <- 0
-                                                            A[which(A >= p)] <- 1
-                                                            A[lower.tri(A)] <- 0
-                                                            A <- A + t(A)
-                                                            return(A)
+                                                                            A <- rand(Nodes,Nodes)
+                                                                            A[which(A < p)] <- 1
+                                                                            A[which(row(A)==col(A))] <- 0
+                                                                            A[which(A < 1)] <- 0
+                                                                            A[lower.tri(A)] <- 0
+                                                                            A <- A + t(A)
+                                                                            return(A)
                                 })
 
     LayerTensor <- BuildLayersTensor(Layers, 1, "categorical")
@@ -271,45 +282,84 @@ SolveEigenvalueProblem <- function(Matrix){
 
 GetLargestEigenv <- function(Matrix){
     #we must distinguish between symmetric and nonsymmetric matrices to have correct results
-    tmp <- eigen(Matrix)
-    QMatrix <- tmp$vectors
-    LMatrix <- tmp$values
-
-    k <- which.max(abs(LMatrix))
-    LMatrix <- LMatrix[k]
-    QMatrix <- cbind(QMatrix[,k])   #return column vector
+    #still to do for further improvements
+    tmp <- RSpectra::eigs(Matrix, 1, which="LM")
 
     #The result of some computation might return complex numbers with 0 imaginary part
     #If this is the case, we fix it, otherwise a warning is rised
-    if( all(Im(QMatrix)==0) ){
-        QMatrix <- Re(QMatrix)
+    if( all(Im(tmp$vectors)==0) ){
+        tmp$vectors <- Re(tmp$vectors)
     }else{
         cat("Warning! Complex numbers in the leading eigenvector.\n")
     }
 
-    if( all(Im(LMatrix)==0) ){
-        LMatrix <- Re(LMatrix)
+    if( all(Im(tmp$values)==0) ){
+        tmp$values <- Re(tmp$values)
     }else{
         cat("Warning! Complex numbers in the leading eigenvalue.\n")
     }
 
     #check if the eigenvector has all negative components.. in that case we change the sign
     #first, set to zero everything that is so small that can create problems even if it compatible with zero
-    QMatrix[which(QMatrix>-1e-12 & QMatrix<1e-12)] <- 0
+    tmp$vectors[which(tmp$vectors>-1e-12 & tmp$vectors<1e-12)] <- 0
     #now verify that all components are negative and change sign
-    if( all( QMatrix[QMatrix!=0] < 0 ) ){
-        QMatrix <- -QMatrix
+    if( all( tmp$vectors[which(tmp$vectors!=0)] < 0 ) ){
+        tmp$vectors <- -tmp$vectors
     }
     
 
-    return( list(QMatrix=QMatrix, LMatrix=LMatrix) )
+    return( list(QMatrix=tmp$vectors, LMatrix=tmp$values) )
 
     ##remind to return a column vector result.. check always that returned result is compatible with original octave result
 }
 
+#GetLargestEigenv <- function(Matrix){
+#    #we must distinguish between symmetric and nonsymmetric matrices to have correct results
+#    tmp <- eigen(Matrix)
+#    QMatrix <- tmp$vectors
+#    LMatrix <- tmp$values
+#
+#    k <- which.max(abs(LMatrix))
+#    LMatrix <- LMatrix[k]
+#    QMatrix <- cbind(QMatrix[,k])   #return column vector
+#
+#    #The result of some computation might return complex numbers with 0 imaginary part
+#    #If this is the case, we fix it, otherwise a warning is rised
+#    if( all(Im(QMatrix)==0) ){
+#        QMatrix <- Re(QMatrix)
+#    }else{
+#        cat("Warning! Complex numbers in the leading eigenvector.\n")
+#    }
+#
+#    if( all(Im(LMatrix)==0) ){
+#        LMatrix <- Re(LMatrix)
+#    }else{
+#        cat("Warning! Complex numbers in the leading eigenvalue.\n")
+#    }
+#
+#    #check if the eigenvector has all negative components.. in that case we change the sign
+#    #first, set to zero everything that is so small that can create problems even if it compatible with zero
+#    QMatrix[which(QMatrix>-1e-12 & QMatrix<1e-12)] <- 0
+#    #now verify that all components are negative and change sign
+#    if( all( QMatrix[QMatrix!=0] < 0 ) ){
+#        QMatrix <- -QMatrix
+#    }
+#    
+#
+#    return( list(QMatrix=QMatrix, LMatrix=LMatrix) )
+#
+#    ##remind to return a column vector result.. check always that returned result is compatible with original octave result
+#}
+
 binarizeMatrix <- function(A){
-    return( Matrix::Matrix(as.numeric(A>0), dim(A)[1], dim(A)[2], sparse=T) )
+    #A is assumed to be sparse
+    A[which(A != 0)] <- 1
+    return( A )
 }
+
+#binarizeMatrix <- function(A){
+#    return( Matrix::Matrix(as.numeric(A>0), dim(A)[1], dim(A)[2], sparse=T) )
+#}
 
 
 CanonicalVector <- function(N, i){
@@ -485,13 +535,19 @@ GetAverageGlobalOverlapping <- function(SupraAdjacencyMatrix,Layers,Nodes){
     O <- pmin(NodesTensor[[1]],NodesTensor[[2]])
     NormTotal <- sum(sum(NodesTensor[[1]]))
     
-    #assuming that LayerTensor is an undirected clique
-    for(l in 2:Layers){
-        O <- pmin(O,NodesTensor[[l]])
-        NormTotal <- NormTotal + sum(sum(NodesTensor[[l]]))
+    if(Layers > 2){
+        #assuming that LayerTensor is an undirected clique
+        for(l in 2:Layers){
+            O <- pmin(O,NodesTensor[[l]])
+            NormTotal <- NormTotal + sum(sum(NodesTensor[[l]]))
+        }
     }
-
+    
     AvGlobOverl <- Layers*sum(sum(O))/NormTotal
+    
+    if(sum(SupraAdjacencyMatrix-t(SupraAdjacencyMatrix))==0){
+        AvGlobOverl <- AvGlobOverl/2
+    }
     
     return(AvGlobOverl)
 }
@@ -1053,6 +1109,8 @@ GetMultilayerReducibility <- function(SupraAdjacencyMatrix,Layers,Nodes,Method,T
         for(i in 1:Layers){            
             SingleLayerEntropy[i] <- GetRenyiEntropyFromAdjacencyMatrix(NodesTensor[[i]],1)
             if(SingleLayerEntropy[i]<1e-12) SingleLayerEntropy[i] <- 0
+            
+            print(paste("DEBUG:", i, SingleLayerEntropy[i]))
         }
     
         ###########################
@@ -1099,64 +1157,117 @@ GetMultilayerReducibility <- function(SupraAdjacencyMatrix,Layers,Nodes,Method,T
         #aggregate entropy
         AggregateEntropy <- GetRenyiEntropyFromAdjacencyMatrix(AggregateMatrix,1)
         
+        print(paste("DEBUG: Aggregate entropy", AggregateEntropy))
+        print(MergeMatrix)
+        
         #step zero: full colored-edge graph against fully aggregated network
         gQualityFunction <- rep(0, Layers)
         relgQualityFunction <- rep(0,Layers)
 
         cntCurrentLayers <- sum(SingleLayerEntropy>0)
-        gQualityFunction[1] <- cntCurrentLayers*AggregateEntropy - sum(SingleLayerEntropy[SingleLayerEntropy>0])
+        gQualityFunction[1] <- cntCurrentLayers*AggregateEntropy - 
+                                             sum(SingleLayerEntropy[SingleLayerEntropy>0])
                         
         relgQualityFunction[1] <- gQualityFunction[1]/(cntCurrentLayers*AggregateEntropy)
 
         MergedTensor <- list()
-        MergedEntropy <- list()
-        for(m in 1:(Layers-1)){
-            if(MergeMatrix[m,1]<0){
-                #we must use the network in NodesTensor
-                A <- NodesTensor[[ -MergeMatrix[m,1] ]]
-                entropyA <- SingleLayerEntropy[-MergeMatrix[m,1]]
-                SingleLayerEntropy[-MergeMatrix[m,1]] <- 0
+        MergedEntropy <- rep(0,Layers)
+        for(m in 1:nrow(MergeMatrix)){
+            l.A <- MergeMatrix[m,1]
+            l.B <- MergeMatrix[m,2]
+            
+            if(l.A<0){
+                #it's an existing single layer
+                A <- NodesTensor[[-l.A]]
+                entropy.A <- SingleLayerEntropy[-l.A]
+                SingleLayerEntropy[-l.A] <- 0
             }else{
-                #we must use the network stored in MergedTensor
-                A <- MergedTensor[[ MergeMatrix[m,1] ]]
-                entropyA <- MergedEntropy[[ MergeMatrix[m,1] ]]
-                MergedEntropy[[ MergeMatrix[m,1] ]] <- 0
-            }
-    
-            if(MergeMatrix[m,2]<0){
-                #we must use the network in NodesTensor
-                B <- NodesTensor[[ -MergeMatrix[m,2] ]]
-                entropyB <- SingleLayerEntropy[-MergeMatrix[m,2]]
-                SingleLayerEntropy[-MergeMatrix[m,2]] <- 0
-            }else{
-                #we must use the network stored in MergedTensor
-                B <- MergedTensor[[ MergeMatrix[m,2] ]]
-                entropyB <- MergedEntropy[[ MergeMatrix[m,2] ]]
-                MergedEntropy[[ MergeMatrix[m,2] ]] <- 0
+                #it's an aggregated layer
+                A <- MergedTensor[[l.A]]
+                entropy.A <- MergedEntropy[l.A]
+                MergedEntropy[l.A] <- 0
             }
 
-            MergedTensor[[m]] <- A + B
-            tmpLayerEntropy <- GetRenyiEntropyFromAdjacencyMatrix(MergedTensor[[m]],1)
-            MergedEntropy[[m]] <- tmpLayerEntropy
-            diffEntropy <- 2*tmpLayerEntropy - (entropyA + entropyB)
-            reldiffEntropy <- diffEntropy/(2*tmpLayerEntropy)
+            if(l.B<0){
+                #it's an existing single layer
+                B <- NodesTensor[[-l.B]]
+                entropy.B <- SingleLayerEntropy[-l.B]
+                SingleLayerEntropy[-l.B] <- 0
+            }else{
+                #it's an aggregated layer
+                B <- MergedTensor[[l.B]]
+                entropy.B <- MergedEntropy[l.B]
+                MergedEntropy[l.B] <- 0
+            }            
             
             cntCurrentLayers <- Layers - m
             
-            gQualityFunction[m+1] <- sum(SingleLayerEntropy[SingleLayerEntropy>0])
-
-            for(i in 1:m){
-                # the current merge is accounted by position m
-                if(MergedEntropy[[i]]>0){
-                    #resetting the values as above, will guarantee that we consider only layers
-                    #that are still to be merged
-                    gQualityFunction[m+1] <- gQualityFunction[m+1] + MergedEntropy[[i]]
-                }
-            }
-            gQualityFunction[m+1] <- cntCurrentLayers*AggregateEntropy - gQualityFunction[m+1]
-            relgQualityFunction[m+1] <- gQualityFunction[m+1]/(cntCurrentLayers*AggregateEntropy)   
+            MergedTensor[[m]] <- A + B
+            MergedEntropy[m] <- GetRenyiEntropyFromAdjacencyMatrix(MergedTensor[[m]],1)
+            if(MergedEntropy[m]<1e-12) MergedEntropy[m] <- 0
+            
+            gQualityFunction[m+1] <- cntCurrentLayers*AggregateEntropy - 
+                                                     sum(SingleLayerEntropy[SingleLayerEntropy>0]) - 
+                                                     sum(MergedEntropy[MergedEntropy>0])
+            relgQualityFunction[m+1] <- gQualityFunction[m+1]/(cntCurrentLayers*AggregateEntropy)
+            
+            
         }
     }
+    
+#        MergedTensor <- list()
+#        MergedEntropy <- list()
+#        for(m in 1:(Layers-1)){
+#            if(MergeMatrix[m,1]<0){
+#                #we must use the network in NodesTensor
+#                A <- NodesTensor[[ -MergeMatrix[m,1] ]]
+#                entropyA <- SingleLayerEntropy[-MergeMatrix[m,1]]
+#                SingleLayerEntropy[-MergeMatrix[m,1]] <- 0
+#            }else{
+#                #we must use the network stored in MergedTensor
+#                A <- MergedTensor[[ MergeMatrix[m,1] ]]
+#                entropyA <- MergedEntropy[[ MergeMatrix[m,1] ]]
+#                MergedEntropy[[ MergeMatrix[m,1] ]] <- 0
+#            }
+#    
+#            if(MergeMatrix[m,2]<0){
+#                #we must use the network in NodesTensor
+#                B <- NodesTensor[[ -MergeMatrix[m,2] ]]
+#                entropyB <- SingleLayerEntropy[-MergeMatrix[m,2]]
+#                SingleLayerEntropy[-MergeMatrix[m,2]] <- 0
+#            }else{
+#                #we must use the network stored in MergedTensor
+#                B <- MergedTensor[[ MergeMatrix[m,2] ]]
+#                entropyB <- MergedEntropy[[ MergeMatrix[m,2] ]]
+#                MergedEntropy[[ MergeMatrix[m,2] ]] <- 0
+#            }
+#
+#            MergedTensor[[m]] <- A + B
+#            tmpLayerEntropy <- GetRenyiEntropyFromAdjacencyMatrix(MergedTensor[[m]],1)
+#            MergedEntropy[[m]] <- tmpLayerEntropy
+#            diffEntropy <- 2*tmpLayerEntropy - (entropyA + entropyB)
+#            reldiffEntropy <- diffEntropy/(2*tmpLayerEntropy)
+#            
+#            cntCurrentLayers <- Layers - m
+#
+#            gQualityFunction[m+1] <- sum(SingleLayerEntropy[SingleLayerEntropy>0])
+#
+#            print(paste(cntCurrentLayers, sum(SingleLayerEntropy>0), tmpLayerEntropy , diffEntropy ))
+#            #print(MergedTensor)
+#            print(MergedEntropy)
+#
+#            for(i in 1:m){
+#                # the current merge is accounted by position m
+#                if(MergedEntropy[[i]]>0){
+#                    #resetting the values as above, will guarantee that we consider only layers
+#                    #that are still to be merged
+#                    gQualityFunction[m+1] <- gQualityFunction[m+1] + MergedEntropy[[i]]
+#                }
+#            }
+#            gQualityFunction[m+1] <- cntCurrentLayers*AggregateEntropy - gQualityFunction[m+1]
+#            relgQualityFunction[m+1] <- gQualityFunction[m+1]/(cntCurrentLayers*AggregateEntropy)   
+#        }
+#    }
 
     return(list(JSD=JSD, gQualityFunction=gQualityFunction, relgQualityFunction=relgQualityFunction))
 }

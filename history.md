@@ -1,3 +1,17 @@
+### 27 Jan 2018
+
+Manlio De Domenico:
+
+Major in analysis:
+
+- Updates in memory efficiency and performances for centrality calculation. Requires installation of RSpectra (that should happen automatically).
+
+Other:
+
+- Moved to colourpicker package
+
+
+
 ### 12 June 2017
 
 Manlio De Domenico:

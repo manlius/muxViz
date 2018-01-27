@@ -1,4 +1,3 @@
-library(rgl)
 library(RColorBrewer)
 library(colorspace)
 library(igraph)
@@ -176,6 +175,8 @@ shinyServer(function(input, output, session) {
             state$values$externalNodeColorTable <- externalNodeColorTable
             state$values$nodeLabelSeqIdConvTable <- nodeLabelSeqIdConvTable
             
+            state$values$layouts <- layouts
+            
             #needed for renderUI stuff
             reactive.values <<- lapply(reactiveValuesToList(input), unclass)
             
@@ -274,6 +275,8 @@ shinyServer(function(input, output, session) {
             externalNodeColorFlag <<- state$values$externalNodeColorFlag
             externalNodeColorTable <<- state$values$externalNodeColorTable
             nodeLabelSeqIdConvTable <<- state$values$nodeLabelSeqIdConvTable
+            
+            layouts <<- state$values$layouts
             
             #print(reactive.values)
             
@@ -1498,7 +1501,7 @@ shinyServer(function(input, output, session) {
             AdjMatrix <<- vector("list",LAYERS+1)
             
             #Adj_aggr <- matrix(0,ncol=Nodes,nrow=Nodes)
-            AdjMatrix[[LAYERS+1]] <<- matrix(0,ncol=Nodes,nrow=Nodes)
+            AdjMatrix[[LAYERS+1]] <<- Matrix::Matrix(0, ncol=Nodes,nrow=Nodes)
             
             for(l in 1:LAYERS){    
                 #account for the possibility of having layers with no intra-links
@@ -1621,43 +1624,53 @@ shinyServer(function(input, output, session) {
             #build heatmaps for matrix explorer
             
             #multilayer
-            mux.df <- as.data.frame(t(as.matrix(SupraAdjacencyMatrix)))
-            colnames(mux.df) <- paste0(sort(rep(1:LAYERS, Nodes)), "-", rep(nodesLabel[[1]], LAYERS))
-            rownames(mux.df) <- paste0(sort(rep(1:LAYERS, Nodes)), "-", rep(nodesLabel[[1]], LAYERS))
-
-            output$matrixExplorerHeatmapMultilayerUI <- renderUI({
-                d3heatmapOutput("matrixExplorerMultilayerHeatmap", width = "700", height="700")
-            })
+            #mux.df <- as.data.frame.sp(t(SupraAdjacencyMatrix))
             
-            output$matrixExplorerMultilayerHeatmap <- renderD3heatmap({                    
-                if(input$chkShowMatrixExplorer){
-                    d3heatmap(
-                        mux.df,
-                        color = input$selMatrixEplorerHeatmapColorPalette,
-                        dendrogram = if (input$chkMatrixEplorerHeatmapShowDendrogram){"both"}else{"none"}
-                        )
-                }
-            })
+            if(Nodes*LAYERS < 100){
+                #print(paste0(sort(rep(1:LAYERS, Nodes)), "-", rep(nodesLabel[[1]], LAYERS)))
+                
+                mux.df <- as.data.frame(t(as.matrix(SupraAdjacencyMatrix)))
+                colnames(mux.df) <- paste0(sort(rep(1:LAYERS, Nodes)), "-", rep(nodesLabel[[1]], LAYERS))
+                rownames(mux.df) <- paste0(sort(rep(1:LAYERS, Nodes)), "-", rep(nodesLabel[[1]], LAYERS))
+    
+                output$matrixExplorerHeatmapMultilayerUI <- renderUI({
+                    d3heatmapOutput("matrixExplorerMultilayerHeatmap", width = "700", height="700")
+                })
+                
+                output$matrixExplorerMultilayerHeatmap <- renderD3heatmap({                    
+                    if(input$chkShowMatrixExplorer){
+                        d3heatmap(
+                            mux.df,
+                            color = input$selMatrixEplorerHeatmapColorPalette,
+                            dendrogram = if (input$chkMatrixEplorerHeatmapShowDendrogram){"both"}else{"none"}
+                            )
+                    }
+                })
+    
+                #aggregate
+                #agg.df <- as.data.frame(t(as.matrix(AdjMatrix[[LAYERS+1]])))
 
-            #aggregate
-            agg.df <- as.data.frame(t(as.matrix(AdjMatrix[[LAYERS+1]])))
-            colnames(agg.df) <- nodesLabel[[1]]
-            rownames(agg.df) <- nodesLabel[[1]]
+                agg.adj <- t(AdjMatrix[[LAYERS+1]])
+                dimnames(agg.adj) = list(NULL, nodesLabel[[1]]) 
+                agg.df <- as.data.frame(as.matrix(agg.adj))                
+                colnames(agg.df) <- nodesLabel[[1]]
+                rownames(agg.df) <- nodesLabel[[1]]
 
-            output$matrixExplorerHeatmapAggregateUI <- renderUI({
-                d3heatmapOutput("matrixExplorerAggregateHeatmap", width = "700", height="700")
-            })
-
-            output$matrixExplorerAggregateHeatmap <- renderD3heatmap({                    
-                if(input$chkShowMatrixExplorer){
-                    d3heatmap(
-                        agg.df,
-                        color = input$selMatrixEplorerHeatmapColorPalette,
-                        dendrogram = if (input$chkMatrixEplorerHeatmapShowDendrogram){"both"}else{"none"}
-                        )
-                }
-            })
-
+                output$matrixExplorerHeatmapAggregateUI <- renderUI({
+                    d3heatmapOutput("matrixExplorerAggregateHeatmap", width = "700", height="700")
+                })
+    
+                output$matrixExplorerAggregateHeatmap <- renderD3heatmap({                    
+                    if(input$chkShowMatrixExplorer){
+                        d3heatmap(
+                            agg.df,
+                            color = input$selMatrixEplorerHeatmapColorPalette,
+                            dendrogram = if (input$chkMatrixEplorerHeatmapShowDendrogram){"both"}else{"none"}
+                            )
+                    }
+                })
+            }
+            
             btnImportNetworksValue <<- input$btnImportNetworks
         }
     
@@ -2797,14 +2810,15 @@ shinyServer(function(input, output, session) {
                 progress$set(message = 'Calculating community structure...', value = 0.05)
                 print("  Detecting communities...")    
                 if(is.null(input$radCommunityAlgorithm)) return()
-                
+
+                communityOK <<- T
+                    
                 if(input$radCommunityAlgorithm=="COMMUNITY_MULTIPLEX_MODMAX" || input$radCommunityAlgorithm=="COMMUNITY_MULTIPLEX_INFOMAP"){
                     #calculation in the multiplex
                     listCommunities <<- NULL
                     sumCommunities <- NULL
                     listCommunitiesMerge <<- NULL
                     sumCommunitiesMerge <<- NULL
-                    communityOK <<- T
     
                     if(input$radCommunityAlgorithm=="COMMUNITY_MULTIPLEX_MODMAX"){
                         #the output will be stored in [[l]] for the multiplex and [[LAYERS+1]] for the aggregated.
@@ -3178,7 +3192,12 @@ shinyServer(function(input, output, session) {
                             wmemb$membership[idx.nodes]  <- -1
                             mergedNodes <- mergedNodes + length(idx.nodes)
                         }                            
-                                                
+                        
+                        #Transform community ids to sequential integers
+                        com.ids <- sort(unique(wmemb$membership[wmemb$membership!=-1]))
+                        com.ids.map <- setNames(1:length(com.ids), com.ids)
+                        wmemb$membership[wmemb$membership!=-1] <- com.ids.map[as.character(wmemb$membership[wmemb$membership!=-1])]
+
                         print(paste("  There are", mergedNodes, "isolated nodes."))
                                 
                         maxCom <- max(wmemb$membership) 
@@ -4852,13 +4871,14 @@ shinyServer(function(input, output, session) {
                                  group = "Type",
                                  data = X, type = "multiBarHorizontalChart")
 
-                        rplot$xAxis(axisLabel="Node")
+                        rplot$xAxis(axisLabel="")
 
                         if(input$centralityAnalysisTopRankedLog){
-                            rplot$yAxis(axisLabel=paste0("log10 ", this.descriptor))
+                            rplot$yAxis(axisLabel=paste0("log10 ", this.descriptor), width = 40)
                         }else{
-                            rplot$yAxis(axisLabel=this.descriptor)
+                            rplot$yAxis(axisLabel=this.descriptor, width = 40)
                         }
+                        rplot$chart(margin = list(left = 120))
                         
                         #rplot$chart(reduceXTicks = FALSE)
                         #rplot$xAxis(staggerLabels = TRUE)
@@ -5078,7 +5098,7 @@ shinyServer(function(input, output, session) {
                                  data = X, type = "scatterChart")
 
                         if(input$centralityAnalysisScatterLogy){
-                            rplot$xyAxis(axisLabel=paste0("log10 ", this.descriptor.y))
+                            rplot$yAxis(axisLabel=paste0("log10 ", this.descriptor.y))
                         }else{
                             rplot$yAxis(axisLabel=this.descriptor.y)
                         }
@@ -5949,10 +5969,10 @@ shinyServer(function(input, output, session) {
                         }
                     }
                 }else if(input$radNodeColor=="NODE_COLOR_COMMUNITY"){
+                    tmpColor <- rep("#959595", Nodes)
+                                                
                     if(communityOK){
                         if(input$btnCalculateCommunityDiagnostics>0){
-                            tmpColor <- rep("#959595", Nodes)
-                            
                             if(input$selVizNodeColorCommunityType=="Single-Layer"){
                                 #color-code by single-layer community
                                 idx.tmp <- which(listCommunitiesSingleLayer[[l]]$Community>0)
@@ -5982,16 +6002,17 @@ shinyServer(function(input, output, session) {
                                 }
                                 
                                 tmpColor[idx.tmp] <- colorPalette[ listCommunities[[l]]$Community[idx.tmp] ]
-                            }
-                            
-                            V(g[[l]])$color <- tmpColor
+                            }                            
                         }
                     }
+                    #print(tmpColor)
+                    V(g[[l]])$color <- tmpColor
                 }else if(input$radNodeColor=="NODE_COLOR_COMPONENT"){
+                    tmpColor <- rep("#959595", Nodes)
+                    
                     if(componentsOK){
                         if(input$btnCalculateComponentsDiagnostics>0){
-                            tmpColor <- rep("#959595", Nodes)
-                            
+
                             if(input$selVizNodeColorComponentType=="Single-Layer"){
                                 #color-code by single-layer component
                                 idx.tmp <- which(listComponentsSingleLayer[[l]]$Component>0)
@@ -6022,10 +6043,9 @@ shinyServer(function(input, output, session) {
                                 
                                 tmpColor[idx.tmp] <- colorPalette[ listComponents[[l]]$Component[idx.tmp] ]
                             }
-                            
-                            V(g[[l]])$color <- tmpColor
                         }
                     }
+                    V(g[[l]])$color <- tmpColor
                 }else if(input$radNodeColor=="NODE_COLOR_RANDOM"){
                     #colorset for the multiplex                
                     if( input$selMultiplexColorPalette=="random" ){
@@ -6204,6 +6224,11 @@ shinyServer(function(input, output, session) {
                 
                 if(input$chkPLOT_WITH_RGL){
                     print("  openGL phase...")
+
+#print(V(g[[l]])$size)
+#print(V(g[[l]])$color)
+#print(V(g[[l]])$vertex.label.color)
+
 
                     #plot the graph with openGL    
                     #print(layouts[[l]])

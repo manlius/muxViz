@@ -332,3 +332,9 @@ buildSankeyFromCommunity <- function(df.memb){
     
     return(list(links=links, nodes=nodes))
 }
+
+as.data.frame.sp <- function(A){
+    #A is expected to be a sparse matrix
+    return(data.frame(summary(A)))
+}
+

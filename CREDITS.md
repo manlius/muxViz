@@ -19,6 +19,8 @@ I would also like to thank the following people for their unvaluable (voluntary)
 - Francesc Font
 - Patricia Gonçalves
 - Kim Klark
+- Sneha Rajen
 - Maria Pereda
 - Hiroki Sayama
 - Tzu-Chi Yen
+- Rafael Pereira

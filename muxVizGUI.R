@@ -42,9 +42,14 @@ if(!require(rCharts)){
 if(!require(RColorBrewer)){
     install.packages("RColorBrewer")
 }
+if(!require(colourpicker)){
+    install.packages("colourpicker")
+    #devtools::install_github("daattali/colourpicker")
+}
 if(!require(colorspace)){
     install.packages("colorspace")
 }
+
 if(!require(digest)){
     install.packages("digest")
 }
@@ -87,27 +92,13 @@ if(!require(networkD3)){
 if(!require(dplyr)){
     install.packages("dplyr")
 }
+if(!require(RSpectra)){
+    install.packages("RSpectra")
+}
 
 library(shiny)
 library(ShinyDash)
 library(shinydashboard)
-
-#muxViz <- function(){
-#    #' Function to load muxViz
-#    #'
-#    #' @author Manlio De Domenico, \email{manlio.dedomenico@gmail.com}
-#    #'
-#    #' @examples
-#    #' muxViz()
-#    #'
-#    #' @import shiny
-#    #' @import ShinyDash
-#    #' @import shinydashboard
-#    #' @export
-#    #'
-#    enableBookmarking(store = "server")
-#    runApp(getwd())    
-#}
 
 #uncomment the line below for detailed log of your session. Can be useful for debug purposes
 #options(shiny.trace=TRUE)

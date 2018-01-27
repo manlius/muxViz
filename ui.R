@@ -6,13 +6,13 @@ library(rCharts)
 #library(shinyIncubator)
 library(digest)
 library(shinyjs)
+library(colourpicker)
 library(d3heatmap)
 library(networkD3)
 source("version.R")
 source("language.R")
 
 #library("shinythemes")
-
 
 
 #RGB colors table
@@ -1121,7 +1121,7 @@ conditionalPanel(condition="input.radConnectedComponentsAlgorithm=='CONNECTED_CO
                                 #HTML('<h4>Options for the rendering of the multiplex</h4>'),
                                 textInputRow('txtPLOT_TITLE', label=getText("txtPLOT_TITLE"), "", width="70px"),
                                 textInputRow('txtPLOT_SUBTITLE', label=getText("txtPLOT_SUBTITLE"), "", width="50px"),
-                                shinyjs::colourInput("colBACKGROUND_COLOR", getText("colBACKGROUND_COLOR"), "white")
+                                colourpicker::colourInput("colBACKGROUND_COLOR", getText("colBACKGROUND_COLOR"), "white")
                                 ),
                             conditionalPanel(condition="input.chkPLOT_WITH_RGL",
                                 myBox("boxVisualization5", "Light Options (RGL)","basic",
@@ -1189,7 +1189,7 @@ conditionalPanel(condition="input.radConnectedComponentsAlgorithm=='CONNECTED_CO
                                 myBox("boxVisualization8", "Inter-link Options","basic",
                                     checkboxInput("chkINTERLINK_SHOW",HTML(getText("chkINTERLINK_SHOW")),TRUE),
                                     HTML(paste("<font color=\"red\">",icon("exclamation-circle"), getText("boxVisualization8"), "</font>")),
-                                    shinyjs::colourInput("colINTERLINK_COLOR", getText("colINTERLINK_COLOR"), "#D8D8D8"),
+                                    colourpicker::colourInput("colINTERLINK_COLOR", getText("colINTERLINK_COLOR"), "#D8D8D8"),
                                     selectInput('selINTERLINK_TYPE', getText("selINTERLINK_TYPE"), choices=                                                c("dotted", "solid", "dashed", "dotdash", "longdash", "twodash")), 
                                     textInputRow('txtINTERLINK_WIDTH', label=getText("txtINTERLINK_WIDTH"), "0.4"),
                                     textInputRow('txtINTERLINK_TRANSP', label=getText("txtINTERLINK_TRANSP"), "0.2"),
@@ -1210,7 +1210,7 @@ conditionalPanel(condition="input.radConnectedComponentsAlgorithm=='CONNECTED_CO
                                     checkboxInput("chkLAYER_SHOW","Show layers",TRUE),
                                     textInputRow('txtLAYER_LABEL_PREFIX', label=getText("txtLAYER_LABEL_PREFIX"), "L"),
                                     helpText(getText("helptxtLAYER_LABEL_PREFIX")),
-                                    shinyjs::colourInput("colLAYER_COLOR", getText("colLAYER_COLOR"), "grey"),
+                                    colourpicker::colourInput("colLAYER_COLOR", getText("colLAYER_COLOR"), "grey"),
                                     helpText(getText("helpcolLAYER_COLOR")),
                                     textInputRow('txtLAYER_TRANSP', label=getText("txtLAYER_TRANSP"), "0.08"),
                                     helpText(getText("txtLAYER_TRANSPb")),
@@ -1231,7 +1231,7 @@ conditionalPanel(condition="input.radConnectedComponentsAlgorithm=='CONNECTED_CO
                                     actionLink("btnWarn6", placeWarn()),
                                     tags$hr(),
                                     textInputRow('txtLAYER_AGGREGATE_LABEL_PREFIX', label=getText("txtLAYER_AGGREGATE_LABEL_PREFIX"), "Aggregate"),
-                                    shinyjs::colourInput("colLAYER_AGGREGATE_COLOR", getText("colLAYER_AGGREGATE_COLOR"), "blue"),
+                                    colourpicker::colourInput("colLAYER_AGGREGATE_COLOR", getText("colLAYER_AGGREGATE_COLOR"), "blue"),
                                     textInputRow('txtLAYER_AGGREGATE_TRANSP', label=getText("txtLAYER_AGGREGATE_TRANSP"), "0.08"),
                                     helpText(getText("txtLAYER_AGGREGATE_TRANSPb"))
                                     )
@@ -1304,7 +1304,7 @@ checkboxInput("chkGEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW", HTML(paste0("<strong>Ag
                                     ),
                                 hr(),
                                 conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_EXTERNAL'",
-                                    shinyjs::colourInput("colNodeColorFileDefaultNodesColor", getText("colNodeColorFileDefaultNodesColor"), "#959595")
+                                    colourpicker::colourInput("colNodeColorFileDefaultNodesColor", getText("colNodeColorFileDefaultNodesColor"), "#959595")
                                     ),
                                 conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_CENTRALITY' && input.btnCalculateCentralityDiagnostics>0",
                                     uiOutput("selVizNodeColorOutputID"),
@@ -1328,15 +1328,15 @@ checkboxInput("chkGEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW", HTML(paste0("<strong>Ag
                                         actionLink("btnMultiplexColorPaletteInfo", placeInfo() )
                                     ),
                                 conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_UNIFORM'",
-                                    shinyjs::colourInput("colNODE_COLOR_UNIFORM_COLOR", getText("colNODE_COLOR_UNIFORM_COLOR"), "#F2F2F2")
+                                    colourpicker::colourInput("colNODE_COLOR_UNIFORM_COLOR", getText("colNODE_COLOR_UNIFORM_COLOR"), "#F2F2F2")
                                     ),
                                 conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_TOPRANK' && input.btnCalculateCentralityDiagnostics>0",
                                     uiOutput("selVizNodeColorTopOutputID"),
                                     textInput('txtNODE_COLOR_TOP', label=getText("txtNODE_COLOR_TOP"), "5"),
-                                    shinyjs::colourInput("colNODE_COLOR_TOP_COLOR_TOP", getText("colNODE_COLOR_TOP_COLOR_TOP"), "#FF0000"),
-                                    shinyjs::colourInput('colNODE_COLOR_TOP_COLOR_OTHERS', getText("colNODE_COLOR_TOP_COLOR_OTHERS"), "#F2F2F2"),         
+                                    colourpicker::colourInput("colNODE_COLOR_TOP_COLOR_TOP", getText("colNODE_COLOR_TOP_COLOR_TOP"), "#FF0000"),
+                                    colourpicker::colourInput('colNODE_COLOR_TOP_COLOR_OTHERS', getText("colNODE_COLOR_TOP_COLOR_OTHERS"), "#F2F2F2"),         
                                     checkboxInput("chkNODE_LABELS_SHOW_ONLY_TOP", getText("chkNODE_LABELS_SHOW_ONLY_TOP"),TRUE),                   
-                                    shinyjs::colourInput('colNODE_COLOR_TOP_LABELS_FONT_COLOR', getText("colNODE_COLOR_TOP_LABELS_FONT_COLOR"), "#000000")
+                                    colourpicker::colourInput('colNODE_COLOR_TOP_LABELS_FONT_COLOR', getText("colNODE_COLOR_TOP_LABELS_FONT_COLOR"), "#000000")
                                     ),
                                 conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_TOPRANK' && input.btnCalculateCentralityDiagnostics==0",
                                     helpText(getText("helpText2"))
@@ -1349,11 +1349,11 @@ checkboxInput("chkGEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW", HTML(paste0("<strong>Ag
                                     actionLink("btnCommunityColorPaletteInfo", placeInfo() )
                                     ),
                                 conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_QUERY' && input.btnQuery>0",
-                                    shinyjs::colourInput('colQUERY_NODES_NODE_COLOR', getText("colQUERY_NODES_NODE_COLOR"), "#FF6246"),
-                                    shinyjs::colourInput('colQUERY_NODES_NODE_NEIGH_COLOR', getText("colQUERY_NODES_NODE_NEIGH_COLOR"), "#669DC1"),
-                                    shinyjs::colourInput('colQUERY_NODES_NODE_OTHER_COLOR', getText("colQUERY_NODES_NODE_OTHER_COLOR"), "#959595"),
+                                    colourpicker::colourInput('colQUERY_NODES_NODE_COLOR', getText("colQUERY_NODES_NODE_COLOR"), "#FF6246"),
+                                    colourpicker::colourInput('colQUERY_NODES_NODE_NEIGH_COLOR', getText("colQUERY_NODES_NODE_NEIGH_COLOR"), "#669DC1"),
+                                    colourpicker::colourInput('colQUERY_NODES_NODE_OTHER_COLOR', getText("colQUERY_NODES_NODE_OTHER_COLOR"), "#959595"),
                                     checkboxInput("chkNODE_LABELS_SHOW_ONLY_QUERY", getText("chkNODE_LABELS_SHOW_ONLY_QUERY"),TRUE),                   
-                                    shinyjs::colourInput('colNODE_COLOR_QUERY_LABELS_FONT_COLOR', getText("colNODE_COLOR_QUERY_LABELS_FONT_COLOR"), "#000000")
+                                    colourpicker::colourInput('colNODE_COLOR_QUERY_LABELS_FONT_COLOR', getText("colNODE_COLOR_QUERY_LABELS_FONT_COLOR"), "#000000")
                                     ),
                                 conditionalPanel(condition="input.radNodeColor=='NODE_COLOR_COMMUNITY' && input.btnCalculateCommunityDiagnostics==0",
                                     helpText(getText("helpText3"))
@@ -1396,7 +1396,7 @@ checkboxInput("chkGEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW", HTML(paste0("<strong>Ag
                                         ),
                                     textInputRow('txtNODE_LABELS_DISTANCE', label=getText("txtNODE_LABELS_DISTANCE"), "1."),
                                     textInputRow('txtNODE_LABELS_FONT_SIZE', label=getText("txtNODE_LABELS_FONT_SIZE"), "0.5"),
-                                    shinyjs::colourInput('colNODE_LABELS_FONT_COLOR', getText("colNODE_LABELS_FONT_COLOR"), "#2F2F2F")
+                                    colourpicker::colourInput('colNODE_LABELS_FONT_COLOR', getText("colNODE_LABELS_FONT_COLOR"), "#2F2F2F")
                                     )
                                 )
                             ),
@@ -1446,7 +1446,7 @@ checkboxInput("chkGEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW", HTML(paste0("<strong>Ag
                                     ),
                                 hr(),
                                 conditionalPanel(condition="input.radEdgeColor=='EDGE_COLOR_EXTERNAL'",
-                                    shinyjs::colourInput("colEdgeColorFileDefaultEdgesColor", getText("colEdgeColorFileDefaultEdgesColor"), "#F2F2F2")
+                                    colourpicker::colourInput("colEdgeColorFileDefaultEdgesColor", getText("colEdgeColorFileDefaultEdgesColor"), "#F2F2F2")
                                     ),
                                 conditionalPanel(condition="input.radEdgeColor=='EDGE_COLOR_RANDOM'",
                                     selectInput("selMultiplexEdgeColorPalette", HTML(getText("ColorPalette")), 
@@ -1454,7 +1454,7 @@ checkboxInput("chkGEOGRAPHIC_BOUNDARIES_AGGREGATE_SHOW", HTML(paste0("<strong>Ag
                                         actionLink("btnMultiplexEdgeColorPaletteInfo", placeInfo() )
                                     ),
                                 conditionalPanel(condition="input.radEdgeColor=='EDGE_COLOR_UNIFORM'",                                    
-                                    shinyjs::colourInput('colEDGE_COLOR', getText("colEDGE_COLOR"), "#F2F2F2")
+                                    colourpicker::colourInput('colEDGE_COLOR', getText("colEDGE_COLOR"), "#F2F2F2")
                                     #helpText(getText("helpText12"))
                                     )
                                 )
@@ -1618,10 +1618,10 @@ c(Jensen_Shannon_Divergence='REDUCIBILITY_METHOD_CORRELATION_JENSEN_SHANNON'),
                     myBox("boxDynamics2", "Graphical Options", "basic",
                         textInput("txtTimelineDefaultNodesSize", label=getText("txtTimelineDefaultNodesSize"), "10"),
                         helpText(getText("helpText17")),
-                        shinyjs::colourInput("colTimelineDefaultNodesColor", getText("colTimelineDefaultNodesColor"), "#959595"),
+                        colourpicker::colourInput("colTimelineDefaultNodesColor", getText("colTimelineDefaultNodesColor"), "#959595"),
                         textInput("txtTimelineDefaultEdgesSize", label=getText("txtTimelineDefaultEdgesSize"), "1"),
                         helpText(getText("helpText18")),
-                        shinyjs::colourInput("colTimelineDefaultEdgesColor", getText("colTimelineDefaultEdgesColor"), "#959595"),
+                        colourpicker::colourInput("colTimelineDefaultEdgesColor", getText("colTimelineDefaultEdgesColor"), "#959595"),
                         helpText(getText("helpText18"))
                         #tags$hr(),
                         #textInput("txtFFMPEG_PATH",label="Full path of your ffmpeg binary to make the video (if not valid, video will not be made):",""),
