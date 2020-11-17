@@ -1,7 +1,7 @@
 muxViz v2.0
 =========
 
-IMPORTANT: muxViz has recently migrated from an Octave core to an R core of algorithms. Although it has been extensively beta-tested, we warmly recommend to carefully check any result. In case of anomalous/unexpected behavior, please report it to the dedicated [Google Group](https://groups.google.com/forum/#!forum/muxviz)
+**IMPORTANT: muxViz has recently migrated from an Octave core to an R core of algorithms.** Although it has been extensively beta-tested, we warmly recommend to carefully check any result. In case of anomalous/unexpected behavior, please report it to the dedicated [Google Group](https://groups.google.com/forum/#!forum/muxviz)
 
 This release will be soon marked as *stable*.
 
@@ -21,6 +21,12 @@ muxViz supports the analysis and visualization of the following multilayer netwo
 
 and the following layer layouts:
 ![Multilayer layouts supported in muxViz](www/img/layout_type.png "Supported multilayer layouts")
+
+### What is a multilayer network?
+
+Multilayer networks are a class of models widely adopted to represent empirical complex system, including biomolecular networks (eg, interactomes, metabolomes), neuronal networks (eg, connectomes), information and communication networks, social/socio-technical/socio-ecological networks, economic and financial networks, urban and transportation networks.
+
+You can read more on the dedicated [Wikipedia page](https://en.wikipedia.org/wiki/Multidimensional_network) or this [short illustrated summary](theory/multilayernets.md).
 
 #### Official Websites and Social Networks
 
@@ -292,7 +298,7 @@ Please, explicitly cite muxViz if you find it useful for your visualizations.
 
 (C) Copyright 2013-2021, Manlio De Domenico (manlio.dedomenico at urv.cat) 
 
-Each file in this folder is part of the muxViz package. 
+Each file in this folder is part of the muxViz package, if not specified otherwise by another license. 
 
 muxViz is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. 
 
