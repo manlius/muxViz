@@ -12,10 +12,8 @@ if(!require(shiny)){
     devtools::install_github("rstudio/shiny-incubator")
 }else{
     #check the version, and in case update to the latest one
-    if(packageDescription("shiny")$Version!="1.0.3"){
-        install.packages("shiny")        
-        #library(devtools)
-        #devtools::install_github("rstudio/shiny")
+    if(packageDescription("shiny")$Version!="1.0.5"){
+        install.packages("shiny")
     }
 }
 if(!require(shinyjs)){
@@ -94,6 +92,9 @@ if(!require(dplyr)){
 }
 if(!require(RSpectra)){
     install.packages("RSpectra")
+}
+if(!require(tidyverse)){
+    install.packages("tidyverse")
 }
 
 library(shiny)

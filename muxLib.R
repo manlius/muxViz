@@ -1,5 +1,6 @@
 library(Matrix)
 library(RSpectra)
+library(tidyverse)
 
 ####################################################
 # MuxNetLib: Library for Multilayer Network Analysis in muxViz

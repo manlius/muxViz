@@ -3,15 +3,18 @@ muxViz v2.x
 
 Topics in this troubleshooting:
 
-- **Very quick installation on Linux**- 
+- **Very quick installation on Linux**
 - **Multimap or FANMOD not found**
 - **Possible errors when using Motifs**
+- **Possible errors with rgdal**
 - **Possible errors when using Correlation**
-- **Possible errors with rjava**
+- **Possible errors with rjava (any OS)**
+- **Possible errors with rjava (latest MacOSs)**
 - **Install muxViz with R 3.3 or higher**
 - **Use existing Linear Algebra Library**
 
 ---
+
 
 ### Very quick installation on Linux
 
@@ -102,7 +105,19 @@ if it does not exist, and set the following parameters:
 
 Restart R and try again to install the dev version of igraph.
 
-### Possible errors with rjava
+### Possible errors with rgdal
+
+To work properly with geographical networks, the GDAL (Geospatial Data Abstraction Library) is required and should be installed before running muxViz for the first time. GDAL should be available as an R package and should be easily installed just by typing
+
+	install.packages("sp")
+	install.packages("rgdal")
+
+within the R environment. However, in a few cases it can be more complicated and some users reported problems for its installation. If this is also your case you might want to take a look at some suggestions on [stackoverflow](http://stackoverflow.com/questions/15248815/rgdal-package-installation) or on [spatial.ly](http://spatial.ly/2010/11/installing-rgdal-on-mac-os-x/). 
+
+In any case, it is highly recommend to visit the GDAL website and follow the hints provided [there](http://trac.osgeo.org/gdal/wiki/BuildHints).
+
+
+### Possible errors with rjava (any OS)
 
 Some users reported that, when using muxVix for the first time, they get the following error:
 
@@ -116,6 +131,119 @@ One possible solution is to open the terminal and type
 to reconfigure java to work correctly within R. You might read about possible solutions for [Linux](https://stackoverflow.com/questions/3311940/r-rjava-package-install-failing) and [Mac OS X](https://github.com/MTFA/CohortEx/wiki/Run-rJava-with-RStudio-under-OSX-10.10,-10.11-(El-Capitan)-or-10.12-(Sierra)).
 
 Thanks Sneha Rajen!
+
+### Possible errors with rjava (latest MacOSs)
+
+It can happen that newest MacOS generate installation issues with rjava. 
+MacOS Users should take a look at the following approaches: [1](http://www.owsiak.org/r-java-rjava-and-macos-adventures/), [2](https://stackoverflow.com/questions/30738974/rjava-load-error-in-rstudio-r-after-upgrading-to-osx-yosemite), [3](http://osxdaily.com/2017/06/29/how-install-java-macos-high-sierra/), [4](https://github.com/MTFA/CohortEx/wiki/Run-rJava-with-RStudio-under-OSX-10.10,-10.11-(El-Capitan)-or-10.12-(Sierra)).
+
+In general try make sure R is configured with full Java support (including JDK). Run
+
+	sudo R CMD javareconf
+
+to add Java support to R. If you still can't install it, read below. 
+
+
+A possible solution for MacOS versions *before* Sierra:
+
+	sudo ln -f -s $(/usr/libexec/java_home)/jre/lib/server/libjvm.dylib /usr/local/lib
+
+But it may happen that your version of MacOS + Java does not have that path. To find the correct path try
+
+	/usr/libexec/java_home
+
+to obtain something like 
+
+	/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home
+
+Look for the dylib file:
+
+	find $(/usr/libexec/java_home) -name "libjvm"
+
+If the result is null, then you might need to install (more) Java. Understand which Java you have installed already and where:
+
+	/usr/libexec/java_home -V
+
+If you see something like this:
+
+    1.8.0_162, x86_64:  "Java SE 8" /Library/Java/JavaVirtualMachines/jdk1.8.0_162.jdk/Contents/Home
+    1.6.0_65-b14-468, x86_64:   "Java SE 6" /Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home
+    1.6.0_65-b14-468, i386: "Java SE 6" /Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home
+
+    /Library/Java/JavaVirtualMachines/jdk1.8.0_162.jdk/Contents/Home
+
+skip the next two paragraphs, otherwise install Java SE 6 and 8. 
+
+#### Install Java SE 6
+
+For Java SE 6 go to Apple support, [download](https://support.apple.com/downloads/DL1572/en_US/javaforosx.dmg) and install.
+
+#### Install Java SE 8
+
+Oracle website is the not the best user-friendly website around. Check instructions [here](https://docs.oracle.com/javase/8/docs/technotes/guides/install/mac_jdk.html) and download Java SE 8 from [here](http://www.oracle.com/technetwork/java/javase/downloads/java-archive-javase8-2177648.html).
+
+You should download and install the file 
+
+	jdk-8u162-macosx-x64.dmg 
+	
+or similar, for Java SE 8. Note that it will ask you to register an account: download is free, but you can't skip the registration phase (2 min required).
+
+#### If Java SE 6 and SE 8 are installed
+
+Run again 
+
+	/usr/libexec/java_home -V
+
+and hope to see 
+
+
+    1.8.0_162, x86_64:  "Java SE 8" /Library/Java/JavaVirtualMachines/jdk1.8.0_162.jdk/Contents/Home
+    1.6.0_65-b14-468, x86_64:   "Java SE 6" /Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home
+    1.6.0_65-b14-468, i386: "Java SE 6" /Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home
+
+    /Library/Java/JavaVirtualMachines/jdk1.8.0_162.jdk/Contents/Home
+    
+so that everything is installed correctly. Then run
+
+	java -version
+
+and hope to see something like
+	
+	java version "1.8.0_162"
+	Java(TM) SE Runtime Environment (build 1.8.0_162-b12)
+	Java HotSpot(TM) 64-Bit Server VM (build 25.162-b12, mixed mode)
+
+Time to tell R how to use our Java: 
+
+	sudo R CMD javareconf
+
+and pray to see at the end of the terminal something like
+
+	JAVA_HOME        : /Library/Java/JavaVirtualMachines/jdk1.8.0_162.jdk/Contents/Home/jre
+	Java library path: $(JAVA_HOME)/lib/server
+	JNI cpp flags    : -I$(JAVA_HOME)/../include -I$(JAVA_HOME)/../include/darwin
+	JNI linker flags : -L$(JAVA_HOME)/lib/server -ljvm
+	Updating Java configuration in /Library/Frameworks/R.framework/Resources
+	Done.
+
+Now, in the terminal, paste the following:
+
+	unset JAVA_HOME
+	R --quiet -e 'install.packages("rJava", type="source", repos="http://cran.us.r-project.org")'
+
+to install rJava from source with Java 8 JDK. 
+If it works without errors, let's check everything is fine:
+
+	R --quiet -e 'library("rJava"); .jinit(); .jcall("java/lang/System", "S", "getProperty", "java.runtime.version")'
+
+and you should get something like 
+
+	1.8.0_162-b12 
+	
+as a result.
+
+
+
 
 ### Install muxViz with R 3.3 or higher
 

@@ -563,14 +563,15 @@ shinyServer(function(input, output, session) {
                 #see http://lists.nongnu.org/archive/html/igraph-help/2013-02/msg00079.html
                 dfNoN <- data.frame()
                 
-                sub.multi <- multilayerEdges #multilayerEdges[ multilayerEdges[,2]!=multilayerEdges[,4], ]
-                sub.multi$V1 <- NULL
-                sub.multi$V3 <- NULL
+                #sub.multi <- multilayerEdges #multilayerEdges[ multilayerEdges[,2]!=multilayerEdges[,4], ]
+                #sub.multi$V1 <- NULL
+                #sub.multi$V3 <- NULL
                 #print(sub.multi)
+                sub.multi <- multilayerEdges[,c(2,4,5)]
                 
                 colnames(sub.multi) <- c("from", "to", "weight")
                 g.non <- graph.data.frame(sub.multi, directed=DIRECTED)
-                g.non <- simplify(g.non, edge.attr.comb="sum")
+                g.non <- simplify(g.non, edge.attr.comb="sum", remove.loops=F)
                 
                 dfNoN <- as.data.frame( cbind( get.edgelist(g.non) , E(g.non)$weight) )
                 colnames(dfNoN) <- c("from", "to", "weight")
@@ -579,9 +580,10 @@ shinyServer(function(input, output, session) {
                 dfNoN$weight <- log(1+as.numeric(dfNoN$weight))
     
                 if(nrow(dfNoN)>0){
-                    comm.non <- as.numeric(membership(multilevel.community(as.undirected(g.non))))
-                    dfNodes <- data.frame(ID=1:LAYERS, name=unlist(layerLabel)[1:LAYERS], group=comm.non)
+                    comm.non <- as.numeric(membership(cluster_louvain(as.undirected(g.non))))
+                    dfNodes <- data.frame(ID=0:(LAYERS-1), name=unlist(layerLabel)[1:LAYERS], group=comm.non)
                     #print(dfNodes)
+                    #print(dfNoN)
                     output$networkOfLayersPlot <- renderPrint({
                         return(d3ForceNetwork(Nodes = dfNodes,
                                         Links = dfNoN,
@@ -2583,9 +2585,9 @@ shinyServer(function(input, output, session) {
                     }
 
                     frobeniusNorm <- matrix(0, ncol=LAYERS, nrow=LAYERS)
-                    for(l1 in 1:LAYERS){
-                        for(l2 in l1:LAYERS){
-                            frobeniusNorm[l1,l2] <- sum((distanceList[[l1]] - distanceList[[l2]])^2)
+                    for(l1 in 1:(LAYERS-1)){
+                        for(l2 in (l1+1):LAYERS){
+                            frobeniusNorm[l1,l2] <- sqrt(sum((distanceList[[l1]] - distanceList[[l2]])^2))
                             frobeniusNorm[l2,l1] <- frobeniusNorm[l1,l2]
                         }
                     }

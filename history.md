@@ -1,3 +1,13 @@
+### 10 Dec 2018
+
+Manlio De Domenico:
+
+Minor in analysis:
+
+- Solved bug in visualization of the network of layers
+- Fixed normalization for clustering calculation in directed/undirected networks
+- Fixed calculation of K-coreness versatility
+
 ### 27 Jan 2018
 
 Manlio De Domenico:
@@ -10,12 +20,9 @@ Other:
 
 - Moved to colourpicker package
 
-
-
 ### 12 June 2017
 
 Manlio De Domenico:
-
 
 
 Major in Analysis:

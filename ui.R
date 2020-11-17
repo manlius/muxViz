@@ -1673,7 +1673,7 @@ c(Jensen_Shannon_Divergence='REDUCIBILITY_METHOD_CORRELATION_JENSEN_SHANNON'),
                     )
                 ),
             HTML("<center>"),
-            HTML("<a href='http://deim.urv.cat/~manlio.dedomenico/data.php' target='_blank'><i class='fa fa-download fa-4x'></i><h1>Go to the download page</h1></a><br>"),
+            HTML("<a href='https://comunelab.fbk.eu/data.php' target='_blank'><i class='fa fa-download fa-4x'></i><h1>Go to the download page</h1></a><br>"),
             HTML("</center>"),
             #tableOutput("dataTable")
             dataTableOutput('dataTable')
