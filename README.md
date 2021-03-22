@@ -75,7 +75,7 @@ muxViz](https://muxviz.wordpress.com), with posts about applications
 ## Documentation
 
 Check the full package documentation (with usage tips and examples) at
-[docs](./docs/index.html)
+[docs](https://manlius.github.io/muxViz/) .
 
 ## News
 

@@ -64,7 +64,7 @@ You might be interested in taking a look at the [official blog about muxViz](htt
 
 ## Documentation
 
-Check the full package documentation (with usage tips and examples) at [docs](./docs/index.html) 
+Check the full package documentation (with usage tips and examples) at [docs](https://manlius.github.io/muxViz/) .
 
 ## News
 
