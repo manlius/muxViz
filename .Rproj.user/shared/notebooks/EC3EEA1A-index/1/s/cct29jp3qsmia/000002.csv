@@ -1,0 +1,4 @@
+"0","# PageRank"
+"0","pr <- GetMultiPageRankCentrality(M, L, N)"
+"0","# Degree versatility"
+"0","deg <- GetMultiDegree(M, L, N, isDirected = F)"

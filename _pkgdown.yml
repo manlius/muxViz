@@ -1,0 +1,123 @@
+template:
+  params:
+    bootswatch: sandstone
+  development:
+    mode: auto
+reference:
+- title: "Building multilayer networks"
+  desc: >
+    Functions for buiding multilayer networks and/or its characterising matrices, 
+    and other basic functions
+- contents: 
+  - GetSampleMultiplex
+  - BuildExtendedEdgelistFromSupraAdjacencyMatrix
+  - BuildLayersTensor
+  - BuildSupraAdjacencyMatrixFromEdgeColoredMatrices
+  - BuildSupraAdjacencyMatrixFromExtendedEdgelist
+  - SupraAdjacencyToBlockTensor
+  - SupraAdjacencyToNetworkList
+  - SupraAdjacencyToNodesTensor
+  - buildMultilayerNetworkFromMuxvizFiles
+  - binarizeMatrix
+- title: "Aggregation functions"
+  desc: "Obtaining aggregated networks from multilayes."
+- contents:
+  - GetAggregateMatrix
+  - GetAggregateMatrixFromNetworkList
+  - GetAggregateMatrixFromSupraAdjacencyMatrix
+  - GetAggregateNetworkFromNetworkList
+  - GetAggregateNetworkFromSupraAdjacencyMatrix
+- title: "Centralities"
+  desc: "Multilayer centralities."
+- contents:
+  - GetMultiAuthCentrality
+  - GetMultiClosenessCentrality
+  - GetMultiDegree
+  - GetMultiDegreeSum
+  - GetMultiEigenvectorCentrality
+  - GetMultiHubCentrality
+  - GetMultiInDegree
+  - GetMultiInDegreeSum
+  - GetMultiInStrength
+  - GetMultiInStrengthSum
+  - GetMultiKCoreCentrality
+  - GetMultiKatzCentrality
+  - GetMultiOutDegree
+  - GetMultiOutDegreeSum
+  - GetMultiOutStrength
+  - GetMultiOutStrengthSum
+  - GetMultiPageRankCentrality
+  - GetMultiPathStatistics
+  - GetMultiRWCentrality
+  - GetMultiStrength
+  - GetMultiStrengthSum
+  - GetMultiplexityCentrality
+  - getVersatilityProfile
+- title: "Mesoscale structures"
+  desc: >
+    Describing and anlysis the mescoscale structure of multilayer networks.
+- contents: 
+  - GetConnectedComponents
+  - GetGiantConnectedComponent
+  - GetGiantIntersectionComponent
+  - GetGiantIntersectionComponentFromNetworkList
+  - GetGiantViableComponent
+  - GetGiantViableComponentFromNetworkList
+  - GetMultilayerCommunities_Infomap
+  - GetMultiplexCommunities_Infomap
+  - GetMultilayerMotifs
+  - GetMultilayerMotifsFromNetworkList
+  - GetMonoplexTriads
+  - GetMultiplexTriads
+  - GetMultiplexTriadsFromNetworkList
+- title: "Global Descriptors"
+  desc: ""
+- contents:
+  - GetGlobalNumberTriangles
+  - GetAverageGlobalClustering
+  - GetAverageGlobalNodeOverlappingMatrix
+  - GetAverageGlobalOverlapping
+  - GetAverageGlobalOverlappingMatrix
+- title: "Dynamics & Co."
+  desc: >
+    Describing, evaluating, and anlysis dynamics on multilayer networks.
+- contents: 
+  - GetLaplacianMatrix
+  - GetNormalizedLaplacianMatrix
+  - BuildSupraTransitionMatrixFromSupraAdjacencyMatrix
+  - BuildTransitionMatrixFromEdgeColoredMatrices
+  - BuildTransitionMatrixFromSingleLayer
+  - BuildDensityMatrixBGS
+- title: "Plotting"
+  desc: >
+    Plotting routines (documentation is poor, sorry).
+- contents:
+  - plot.multiplex
+  - plot.muliplex3D
+  - multiplot
+  - plot.multimotif
+  - plot.multimodules
+- title: "Others"
+  desc: >
+    Other functions for building a Configuration Model, for evaluating entropy, 
+    for solving the eigenvalue problem, for finding shortest paths, etc.
+- contents:
+  - CanonicalVector
+  - GetConfigurationModelTypeIFromNetworkList
+  - GetConfigurationModelTypeIIFromNetworkList
+  - GetCoverageEvolutionMultilayer
+  - GetEigenvaluesOfDensityMatrix
+  - GetEigenvaluesOfDensityMatrixFromAdjacencyMatrix
+  - GetInterAssortativityTensor
+  - GetJensenShannonDivergence
+  - GetLargestEigenv
+  - GetLocalClustering
+  - GetMultilayerReducibility
+  - GetRenyiEntropyFromAdjacencyMatrix
+  - GetRewiredLayerWithOverlappingEdges
+  - GetSPSimilarityMatrix
+  - MultiShortestPathFromNode
+  - ShortestPathFromNode
+  - SolveEigenvalueProblem
+  
+  
