@@ -72,9 +72,10 @@ You might be interested in taking a look at the [official blog about muxViz](htt
 
 ## Usage 
 
-```{r, include=FALSE}
+```{r, warning=FALSE}
 library(ggplot2)
 library(ggraph)
+library(grid)
 library(igraph)
 library(muxViz)
 ```
@@ -149,7 +150,7 @@ dev.off()
 
 ```{r}
 knitr::include_graphics("man/figures/mux_BA_3layers.png")
-<!-- ``` -->
+```
 
 
 ## News

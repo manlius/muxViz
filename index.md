@@ -77,6 +77,14 @@ muxViz](https://muxviz.wordpress.com), with posts about applications
 ## Usage
 
 ``` r
+library(ggplot2)
+library(ggraph)
+library(grid)
+library(igraph)
+library(muxViz)
+```
+
+``` r
 # build edge-colored network by specifying layers
 L <- 3
 N <- 100
