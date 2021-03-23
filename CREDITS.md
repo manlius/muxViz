@@ -24,3 +24,8 @@ I would also like to thank the following people for their unvaluable (voluntary)
 - Hiroki Sayama
 - Tzu-Chi Yen
 - Rafael Pereira
+- Yuriko Yamamoto
+- Rodrigo García
+- Sergio Alcalá-Corona
+- Guillermo de Anda Jáuregui
+- Giulia Bertagnolli

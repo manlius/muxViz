@@ -1,3 +1,10 @@
+### Jan 2021
+
+Manlio De Domenico:
+
+- Version 3.0 T'Challa released!
+- Include standalone R lib to use muxViz from scripts rather than the GUI
+
 ### 10 Dec 2018
 
 Manlio De Domenico:
