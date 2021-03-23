@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 muxViz v3.0 (T'Challa)
 =========
 
@@ -14,7 +14,6 @@ In case of anomalous/unexpected behavior, please report it to the dedicated [Goo
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
 # muxViz v3.1: The R package <img src="man/figures/logo.jpg" align="right" />
->>>>>>> dcd1fd32410789c4b15f9626a1cde482ca2e8395
 
 <!-- badges: start -->
 
