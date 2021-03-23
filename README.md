@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 muxViz v3.0 (T'Challa)
 =========
 
@@ -8,24 +9,29 @@ muxViz v3.0 (T'Challa)
 * **v1.0** is old and no more updated. This version is still based on Octave.
 
 In case of anomalous/unexpected behavior, please report it to the dedicated [Google Group](https://groups.google.com/forum/#!forum/muxviz). Note that emails to personal address might remain unanswered. 
+=======
 
-### Visualization and Analysis of Multilayer Networks
+<!-- README.md is generated from README.Rmd. Please edit that file -->
 
-muxViz is a platform for the visualization and the analysis of interconnected multilayer networks. The current implementation exploits a Graphical User Interface (working with any browser) to provide access to many customizable graphic options to render networks. The great novelty of this version is the support for the analysis of multilayer data:
+# muxViz v3.1: The R package <img src="man/figures/logo.jpg" align="right" />
+>>>>>>> dcd1fd32410789c4b15f9626a1cde482ca2e8395
 
-- Multilayer correlation analysis
-- Multilayer centrality analysis and annular representation
-- Multilayer community structure detection
-- Multilayer structural reducibility
-- Multilayer motifs analysis
-- Animated visualization of dynamical processes and time-varying multilayer networks
+<!-- badges: start -->
 
-muxViz supports the analysis and visualization of the following multilayer networks:
-![Multilayer networks supported in muxViz](www/img/network_type.png "Supported multilayer networks")
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+<!-- badges: end -->
 
-and the following layer layouts:
-![Multilayer layouts supported in muxViz](www/img/layout_type.png "Supported multilayer layouts")
+## Installation
 
+**v3.1** is the latest and is continuously updated. It is an R package
+(still in development, not on CRAN) which can be installed in R by
+
+``` r
+devtools::install_github("manlius/muxViz")
+```
+
+<<<<<<< HEAD
 ### What is a multilayer network?
 
 Multilayer networks are a class of models widely adopted to represent empirical complex system, including biomolecular networks (eg, interactomes, metabolomes), neuronal networks (eg, connectomes), information and communication networks, social/socio-technical/socio-ecological networks, economic and financial networks, urban and transportation networks.
@@ -179,217 +185,191 @@ Here there are a few multilayer networks rendered by muxViz.
 ![Real collaboration network](gallery/muxViz_16Layers_Real2.png "Collaboration network")
 
 Please, also note that after a proper set up it is possible to use muxVizGUI also for the visualization (and basic analysis) of single-layer networks (equivalent to old monoxViz 0.1).
+=======
+## Backgroung
+>>>>>>> dcd1fd32410789c4b15f9626a1cde482ca2e8395
 
-![Network with community structure](gallery/monoxViz_community_example2.png "Network with community structure")
-![London Tube + OpenStreetMap](gallery/monoxViz_london_tube.png "London Tube + OpenStreetMap")
-![Yeast genetic interaction network (GCC)](gallery/monoxViz_yeast_interaction_lcc.png "Yeast genetic interaction network (GCC)")
+The R package **muxViz** enables the visualization and the analysis of
+interconnected multilayer networks. It supports the analysis of
+multilayer data:
 
+-   Multilayer correlation analysis
+-   Multilayer centrality analysis and annular representation
+-   Multilayer community structure detection
+-   Multilayer structural reducibility
+-   Multilayer motifs analysis
+-   Animated visualization of dynamical processes and time-varying
+    multilayer networks
 
+muxViz supports the analysis and visualization of the following
+multilayer networks: ![Multilayer networks supported in
+muxViz](gui-old/www/img/network_type.png "Supported multilayer networks")
 
-### Usage
+and the following layer layouts: ![Multilayer layouts supported in
+muxViz](gui-old/www/img/layout_type.png "Supported multilayer layouts")
 
-##### Format of an input file
+### What is a multilayer network?
 
-###### Edge-colored networks
+Multilayer networks are a class of models widely adopted to represent
+empirical complex system, including biomolecular networks (eg,
+interactomes, metabolomes), neuronal networks (eg, connectomes),
+information and communication networks,
+social/socio-technical/socio-ecological networks, economic and financial
+networks, urban and transportation networks.
 
-The configuration file is a ASCII file including the list of layers to be included in a multiplex, the corresponding labels and the possible layout file to define node properties (e.g., ID, labels, geographic coordinates, etc).
+You can read more on the dedicated [Wikipedia
+page](https://en.wikipedia.org/wiki/Multidimensional_network) or this
+[short illustrated summary](theory/multilayernets.md).
 
-Format of a configuration file:
+#### Official Websites and Social Networks
 
-	path_layer_X;label_layer_X;layout_layer_X
+Please, visit the official website (<http://muxviz.net>) of muxViz for
+further information.
 
-where 
+You might also want to take a look at muxViz in action: see the [Youtube
+channel](https://www.youtube.com/channel/UCinHX7m-8_EFFJo2A8huoUA)
 
-- path_layer_X: [mandatory] specify the path and the filename to the edges list to be used as layer
-- label_layer_X: [optional] specify the label to be used in the rendering for that layer
-- layout_layer_X: [optional] specify the path and the filename to the file containing information about nodes
+Visit the dedicated [Google
+Group](https://groups.google.com/forum/#!forum/muxviz) if you have
+questions or to report bugs.
 
-Each line in the configuration file indicates one layer, and the network format for each layer will be "standard edges list" (see below).
+Instead, if you create amazing visualizations using muxViz and you want
+to tweet them, remember to include the “\#muxviz” hashtag: we will be
+happy to retweet.
 
-###### Non-edge-colored networks
+You might be interested in taking a look at the [official blog about
+muxViz](https://muxviz.wordpress.com), with posts about applications
+(analysis, visualization or both) to cool datasets.
 
-If the multilayer is not edge-colored (i.e., inter-links are allowed), only one line is specified in the configuration file, with format:
+## Documentation
 
-	path_multilayer;path_to_layers_info;path_to_layers_layout
+Check the full package documentation (with usage tips and examples) at
+[docs](https://manlius.github.io/muxViz/) .
 
-where 
+## News
 
-- path_multilayer: [mandatory] specify the path and the filename to the extended edges list to be used
-- path_to_layers_info: [mandatory] specify the path and the filename to the file containing information about layers
-- path_to_layers_layout: [mandatory] specify the path and the filename to the file containing information about nodes
+Check the [release news](./NEWS.md).
 
-In this case the network format will be "extended edges list" (see below).
+## Citation
 
+If you use muxViz (or any part of muxViz, or images available in the
+gallery) for your multilayer analysis and visualization, you should cite
+the paper
 
-##### Standard edges list
+Manlio De Domenico, Mason A. Porter, Alex Arenas, Multilayer Analysis
+and Visualization of Networks, published in [Journal of Complex Networks
+3, 159-176 (2015)](http://comnet.oxfordjournals.org/content/3/2/159)
+(Open Access)
 
-A typical edges list is expected to be a file with at most three columns, giving the list of edges from a node (first column) to other nodes (second column), possibly weighted by an integer or floating number (third column). For instance:
+Please, note that muxViz is based on some algorithms developed in other
+studies. You should cite the original paper(s) every time that you use
+those algorithms.
 
-	1 2 0.5
-	1 3 1.4
-	...
-	18 124 0.1
+## The Graphical User Interface
 
-is a typical weighted edges list.
+The previous implementation exploits a Graphical User Interface (working
+with any browser) to provide access to many customizable graphic options
+to render networks.
 
-IDs of nodes are expected to be sequential integers (starting from 0 or 1, up to the number of nodes in the network). Nevertheless, it is possible to import label-based edges list, where the IDs of nodes are labels (arbitrary integers or strings): in this case, one should check the appropriate box before importing the networks, to let muxViz know how to interpret the format. The edges list could look like
+![muxViz GUI](gui-old/gallery/gui1.png "muxViz GUI")
 
-	alice bob 0.5
-	alice charlie 1.4
-	...
-	john david 0.1
+![muxViz data](gui-old/gallery/guiData.png "muxViz data")
 
-In this specific case, it is mandatory to provide a layout file (see next section) reporting each node label (field nodeLabel). This would look like
+More details on the GUI (requirements, installation and usage) can be
+found in the [GUI README](gui-old/gui-old/README.md).
 
-	nodeLabel
-	alice
-	bob
-	john
-	david
-	...
-
-##### Extended edges list
-
-An extended edges list is a new format that allows to specify all possible types of links, intra- and inter-layer. Each line specifies the source node (first column) and the source layer (second column), the destination node (third column) and the destination layer (fourth column), possibly weighted by an integer or floating number (fifth column). For instance:
-
-	1 1 2 1 0.5
-	1 1 3 1 1.4
-	...
-	18 2 124 2 0.1
-
-is a typical weighted extended edges list. For label-based extended edges lists, the same rules of the standard edges lists apply
-
-
-##### Format of a layout file
-
-
-The first line of the file must specify the name of the corresponding node attributes. Allowed attributes:
-
-- nodeID:      [mandatory] numerical integer id to identify each node
-- nodeLabel: [optional] string specifying the label attribute
-- nodeX:       [optional] float value specifying the Cartesian coordinate x for the layout
-- nodeY:       [optional] float value specifying the Cartesian coordinate x for the layout
-- nodeLat:    [optional] float value specifying the latitude for the geographic layout
-- nodeLong: [optional] float value specifying the longitude for the geographic layout
-
-The order of the columns should not be relevant.
-If nodeLat and nodeLong are specified, they will be automatically converted to Cartesian coordinates (through Mercator projection).
-
-The properties of each node in the multilayer must be specified or default values will be used (i.e., automatic labeling and layouting). If the number of nodes in the network is different from the number of nodes provided in the layout file, it will be assumed that something is wrong with the layout file and default values will be used.
-
-##### Format of a layer-info file
-
-
-The first line of the file must specify the name of the correponding layer attributes. Allowed attributes:
-
-- layerID:      [mandatory] numerical integer id to identify each layer
-- layerLabel: [optional] string specifying the label attribute
-
-The order of the columns should not be relevant.
-
-##### Format of a timeline file
-
-This module allows to build nice animated visualizations corresponding to dynamical processes on the top of a multilayer network. For instance, one can visualize the movements of one (or more) random walker(s) in the network, or the spreading of an epidemics or of a meme in a social network, the traffic (and possible congestions) in a transport/communication network, etc.
-
-The idea is to feed the module with a 'timeline' file where the change of the state of nodes and edges in the multilayer network are specified at each time step. The 'state' of an object can be altered by changing its color and/or its size. For instance, in the case of an epidemics spreading in a country, the size of each node (e.g., a metapopulation describing a city) can be proportional to the population and the color can encode the amount of infected people. This description allows a wide variety of dynamics to be represented and visualized: for instance, setting the size of nodes and edges to zero when required, it is possible to visualize a time-varying multilayer network where nodes and edges appear or disappear over time.
-
-The first line of the file must specify the name of the correponding timeline attributes. Allowed attributes:
-
-- timeStep: [mandatory] numerical integer id to identify time steps
-- labelStep: [mandatory] string specifying the snapshot label
-- entity: [mandatory] string specifying if the object to modify is 'node' or 'edge'
-- layerID: [mandatory] numerical integer id to identify each layer
-- nodeID: [mandatory] numerical integer id if entity is 'node' and string (e.g., '3-7', corresponding to the link from node 3 to node 7) if entity is 'edge'.
-- color: [mandatory] Hex color string (e.g. 11DADA) specifying the color to be assigned
-- sizeFactor: [mandatory] float value specifying the relative size of the entity, scaling with respect to the default size
-
-The order of the columns is not relevant. If the network has L layers and you want to include the aggregate network in the visualization, then use L+1 in the layerID field for it.
-
-To keep users with the freedom to use their favorite video making software, the output of muxViz consists of png files representing the temporal snapshots of the dynamics. Snapshots are saved in the folder 'export/timeline/project_name'. Successively, users can use their favorite software to merge the sequence of snapshots into a single video. We recommend to use FFmpeg with the following parameters:
-
-	ffmpeg -r 1  -i /path/xyz_%05d.png -c:v libx264 -pix_fmt yuv420p -r 25 output_file.mp4
-
-
-
-Other scripts included
-======================
-
-### muxViz v0.1 (CLI)
-
-Usage from shell command line (no support to GUI and no longer developed):
-
-	R CMD BATCH muxViz_CLI.R
-
-If used with the default options for the first time, muxViz will plot a multiplex with 100 nodes and 4 layers with community-like topology. The output should be a file 'muxViz.png' in the same folder, similar to 'muxViz_example.png' provided with the package.
-
-Please, explicitly cite muxViz if you find it useful for your visualizations.
-
-If you use muxVizGUI for your data analysis, please, cite the relevant papers where all descriptors and diagnostics are defined: you will find a quick help with references to relevant papers in all pages dedicated to data analysis.
-
-
-### monoxViz v0.1 (CLI)
-
-
-Support the visualization of classical single-layer networks (no longer developed).
-
-The muxViz package now includes a script for the visualization of standard networks. It supports both 2D and 3D layouting with openGL, it is fully integrated with OpenStreetMap and preserves all the features developed to customize visualizations with muxViz.
-
-
- 
-Copyright
-=========
+## Copyright
 
 ##### (C) Copyright 2013-2021, Manlio De Domenico.
 
-This code has no warranty whatsoever and any kind of support is provided.
-You are free to do what you like with this code as long as you leave this copyright in place.
-Please, explicitly cite muxViz if you find it useful for your visualizations.
+This code has no warranty whatsoever and any kind of support is
+provided. You are free to do what you like with this code as long as you
+leave this copyright in place. Please, explicitly cite muxViz if you
+find it useful for your visualizations.
 
-(C) Copyright 2013-2021, Manlio De Domenico (manlio.dedomenico at urv.cat) 
+3.  Copyright 2013-2021, Manlio De Domenico (manlio.dedomenico at
+    urv.cat)
 
-Each file in this folder is part of the muxViz package, if not specified otherwise by another license. 
+Each file in this folder is part of the muxViz package, if not specified
+otherwise by another license.
 
-muxViz is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. 
+muxViz is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your
+option) any later version.
 
-muxViz is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. 
+muxViz is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+more details.
 
-You should have received a copy of the GNU General Public License along with the package. If not, see <http://www.gnu.org/licenses/>. 
+You should have received a copy of the GNU General Public License along
+with the package. If not, see <http://www.gnu.org/licenses/>.
 
+## Credits
 
-Credits
-=========
+This work has been partially supported by European Commission
+FET-Proactive project PLEXMATH (Grant No. 317614)
+(<http://www.plexmath.eu/>), the European project devoted to the
+investigation of multi-level complex systems and has been developed at
+the Alephsys Lab (<http://deim.urv.cat/~alephsys/>),
 
-This work has been partially supported by European Commission FET-Proactive project PLEXMATH (Grant No. 317614) (<http://www.plexmath.eu/>), the European project devoted to the investigation of multi-level complex systems and has been developed at the Alephsys Lab (<http://deim.urv.cat/~alephsys/>),
+I am in debt with Alex Arenas for proposing this project, with Mason A.
+Porter and the members of the Alephsys Lab for invaluable suggestions
+and feedbacks.
 
-I am in debt with Alex Arenas for proposing this project, with Mason A. Porter and the members of the Alephsys Lab for invaluable suggestions and feedbacks. 
+I would like to thank Inderjit S. Jutla, Lucas G. S. Jeub, and Peter J.
+Mucha for making their code about multislice community detection
+available.
 
-I would like to thank Inderjit S. Jutla, Lucas G. S. Jeub, and Peter J. Mucha for making their code about multislice community detection available. 
+I would like to thank Martin Rosvall for allowing to distribute his C++
+code for Multiplex Infomap under the AGPLv3 license.
 
-I would like to thank Martin Rosvall for allowing to distribute his C++ code for Multiplex Infomap under the AGPLv3 license.
+I would also like to thank the following people for their unvaluable
+(voluntary) support to muxViz and parts of its development:
 
-The development of muxViz has been funded, or is currently funded, by the following entities and institutions:
+-   Lucio Agostinho Rocha
+-   Francesc Font
+-   Patricia Gonçalves
+-   Kim Klark
+-   Sneha Rajen
+-   Maria Pereda
+-   Hiroki Sayama
+-   Tzu-Chi Yen
+-   Rafael Pereira
+-   Yuriko Yamamoto
+-   Rodrigo García
+-   Sergio Alcalá-Corona
+-   Guillermo de Anda Jáuregui
+-   Giulia Bertagnolli
 
-![muxViz funding](www/img/funding.png "muxViz funding")
+The development of muxViz has been funded, or is currently funded, by
+the following entities and institutions:
 
-Donation
-=========
+![muxViz funding](gui-old/www/img/funding.png "muxViz funding")
 
-**muxViz** is a free and open-source platform that has been used for scientific purposes in a variety of disciplines, including computational social science, computational neuroscience, computational biology, computational psycholinguistics, multi-modal transportation engineering and physics. 
+## Donation
 
-Since January 2016, **muxViz** is periodically updated and maintained for free by its developer and its enthusiastic community of users (the *muxVizers*).
+**muxViz** is a free and open-source platform that has been used for
+scientific purposes in a variety of disciplines, including computational
+social science, computational neuroscience, computational biology,
+computational psycholinguistics, multi-modal transportation engineering
+and physics.
 
-If **muxViz** helps you with your research and reduces your time to develop, you can give us a cup of good coffee :)
+Since January 2016, **muxViz** is periodically updated and maintained
+for free by its developer and its enthusiastic community of users (the
+*muxVizers*).
+
+If **muxViz** helps you with your research and reduces your time to
+develop, you can give us a cup of good coffee :)
 
 **BTC**: 19RGUCZjSzvbjY5xEWz3GNg7MnMiPyEgbB
 
 **ETH**: 0xe5027b44782a4b832a23773ffdb57658aff62e31
 
-**XMR**: 49pQ1B2m2UHaKotqF8h1E89um9rnMPvAHEfGUET1icQUaxBV1KFhuTNVpsF6Kf4bf5dZwWvmdzYn4D7rKcL4v2ee3tH4E2L
+**XMR**:
+49pQ1B2m2UHaKotqF8h1E89um9rnMPvAHEfGUET1icQUaxBV1KFhuTNVpsF6Kf4bf5dZwWvmdzYn4D7rKcL4v2ee3tH4E2L
 
-**Paypal**: 
+**Paypal**:
 
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=manlio.dedomenico@gmail.com&item_name=muxViz&item_number=muxViz+development&currency_code=USD)
-
-
-
-
