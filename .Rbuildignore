@@ -1,5 +1,13 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^README\.Rmd$
+^README\.html$
 ^gui-old$
 ^LICENSE$
+^index\.html$
+^index\.Rmd$
+^index\.md$
+^docs$
+^\_pkgdown\.yml$
+^scr$
+^\vignettes$

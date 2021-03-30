@@ -1,0 +1,135 @@
+---
+title: "Multilayer motifs"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Multilayer motifs}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "../man/figures/"
+)
+```
+
+```{r  load-libs}
+library(muxViz)
+library(igraph)
+library(RColorBrewer)
+library(ggraph)
+```
+
+```{r setup}
+set.seed(1)
+# Network setup
+Layers <- 3
+Nodes <- 20
+layerCouplingStrength <- 1
+networkOfLayersType <- "categorical"
+layer.colors <- brewer.pal(8, "Set2")
+```
+
+Setup `fanmod`, see [setup fanmod vignette](./docs/articles/setup_infomap_fanmod.html)
+
+```{r infomap-setup}
+pathFanmod <- "../src/fanmod_linux"
+```
+
+## Multilayer motifs
+
+Generate an edge-colored network
+
+```{r}
+nodeTensor <- list()
+g.list <- list()
+for (l in 1:Layers) {
+  # Generate the layers
+  g.list[[l]] <-
+    igraph::erdos.renyi.game(Nodes, runif(1, 1.5, 2) * log(Nodes) / Nodes,
+                             directed = F)
+  
+  # Get the list of adjacency matrices which build the multiplex
+  nodeTensor[[l]] <- igraph::get.adjacency(g.list[[l]])
+}
+```
+
+
+```{r}
+motifsTable <- GetMultilayerMotifsFromNetworkList(
+  g.list,
+  bin.path = pathFanmod,
+  motifSize = 3,
+  motifSamples = 100000,
+  isDirected = FALSE,
+  motifNullModel = "Local const",
+  randomNetworks = 1000,
+  randomExchangePerEdges =
+    3,
+  randomExchangeAttempts =
+    3
+)
+```
+
+Process the results
+
+```{r}
+cutAbsZscore <- 3
+cutPvalue <- 1e-3
+cutFrequency <- 0.01
+sortMotifsBy <- "Frequency"
+```
+
+sorting
+
+```{r}
+print("Sorting results from motifs analysis...")
+if (sortMotifsBy == "Frequency") {
+  motifsTable <- motifsTable[order(-motifsTable$Frequency), ]
+} else if (sortMotifsBy == "Z-score") {
+  motifsTable <- motifsTable[order(-motifsTable$Z.Score), ]
+} else if (sortMotifsBy == "p-value") {
+  motifsTable <- motifsTable[order(motifsTable$p.Value), ]
+}
+```
+
+cutting
+
+```{r}
+print("Applying cuts to motifs table...")
+motifsTable.cut <- motifsTable
+motifsTable.cut <-
+  motifsTable.cut[abs(motifsTable.cut$Z.Score) > cutAbsZscore,]
+motifsTable.cut <-
+  motifsTable.cut[motifsTable.cut$p.Value < cutPvalue,]
+motifsTable.cut <-
+  motifsTable.cut[motifsTable.cut$Frequency > cutFrequency,]
+```
+
+### Plots
+
+```{r plot, include=FALSE}
+png("../man/figures/multi_er.png", width = 1024, height = 728 / 2,
+    res = 100)
+plot_multiplex(g.list, layer.colors = layer.colors, show.legend = F)
+dev.off()
+png("../man/figures/multi_er_fanmod.png", width = 1024, height = 728 / 2,
+    res = 100)
+plot_multimotif(
+  motifsTable,
+  motifID = 1,
+  layer.colors,
+  edge.colors = "auto",
+  node.colors = "auto",
+  node.size = 5
+)
+dev.off()
+```
+
+```{r echo=FALSE} 
+knitr::include_graphics("../man/figures/multi_er.png")
+knitr::include_graphics("../man/figures/multi_er_fanmod.png")
+```
+

@@ -92,11 +92,12 @@ reference:
   desc: >
     Plotting routines (documentation is poor, sorry).
 - contents:
-  - plot.multiplex
-  - plot.muliplex3D
+  - plot_multiplex
+  - plot_multiplex3D
   - multiplot
-  - plot.multimotif
-  - plot.multimodules
+  - layoutMultiplex
+  - plot_multimotif
+  - plot_multimodules
 - title: "Others"
   desc: >
     Other functions for building a Configuration Model, for evaluating entropy, 
@@ -119,5 +120,14 @@ reference:
   - MultiShortestPathFromNode
   - ShortestPathFromNode
   - SolveEigenvalueProblem
-  
-  
+- title: "Auxiliary functions"
+  desc: >
+      MATLAB-like functions that help building multilayers from diagonal, blockdiagonal... 
+      matrices.
+- contents:
+  - blkdiag
+  - reshapeR
+  - diagR
+  - traceR
+  - modR
+  - sumR

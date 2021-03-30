@@ -119,7 +119,7 @@ BuildExtendedEdgelistFromSupraAdjacencyMatrix <-
     }
     
     #Convert the supra-adjacency to a data.frame
-    dfM <- summary(SupraAdjacencyMatrix)
+    dfM <- Matrix::summary(SupraAdjacencyMatrix)
     
     #transform to layers and nodes
     node.from <- (dfM$i - 1) %% Nodes + 1
@@ -3901,27 +3901,27 @@ GetMultiplexCommunities_Infomap <-
     }
     
     if (is.na(multilayerRelaxRate) && is.na(multilayerJSRelaxRate)) {
-      stop("ERROR! You must specify a non-negative value for the relax rate or the JS relax rate.")
-    }
-    if (is.na(multilayerRelaxRate)) {
-      #then multilayerJSRelaxRate must be non-negative
+      stop("ERROR! You must specify a non-negative value for the relax rate or the JS relax 
+           rate.")
+    } else if (is.na(multilayerRelaxRate)) {
+      # then multilayerJSRelaxRate must be non-negative
       if (multilayerJSRelaxRate >= 0) {
-        exeFlags <-
-          paste(exeFlags,
-                "--multilayer-js-relax-rate",
-                multilayerJSRelaxRate)
+        exeFlags <- paste(
+          exeFlags,
+          "--multilayer-js-relax-rate",
+          multilayerJSRelaxRate
+        )
       }
-    }
-    if (is.na(multilayerJSRelaxRate)) {
-      #then multilayerRelaxRate must be non-negative
+    } else if (is.na(multilayerJSRelaxRate)) {
+      # then multilayerRelaxRate must be non-negative
       if (multilayerRelaxRate >= 0) {
-        exeFlags <-
-          paste(exeFlags,
-                "--multilayer-relax-rate",
-                multilayerRelaxRate)
+        exeFlags <- paste(
+          exeFlags,
+          "--multilayer-relax-rate",
+          multilayerRelaxRate
+        )
       }
-    }
-    if (!is.na(multilayerRelaxRate) && !is.na(multilayerJSRelaxRate)) {
+    } else if (!is.na(multilayerRelaxRate) && !is.na(multilayerJSRelaxRate)) {
       if (multilayerRelaxRate >= 0 && multilayerJSRelaxRate >= 0) {
         stop("ERROR! You must specify either the relax rate or the JS relax rate, not both.")
       }
@@ -3953,7 +3953,7 @@ GetMultiplexCommunities_Infomap <-
     
     exeFlags <- paste(exeFlags, "--out-name", outname)
     
-    #call infomap
+    # call infomap
     system(paste(exePath, exeFlags), intern = T)
     
     
@@ -4054,8 +4054,6 @@ GetMultiplexCommunities_Infomap <-
 #' @param hardPartitions logical
 #' @param verbose logical
 #' @param addAggregateAnalysis logical
-#' @param multilayerRelaxRate Float, between 0 and 1
-#' @param multilayerJSRelaxRate Float, between 0 and 1
 #' @param outputPrefix String
 #' @return
 #' Community List
@@ -4084,7 +4082,12 @@ GetMultilayerCommunities_Infomap <-
     
     if (is.na(bin.path) || !file.exists(bin.path)) {
       stop(
-        "Error! You must provide a valid path to the INFOMAP bin. Likely you will find it in the bin/ folder of muxviz, or you must compile it from source in src/ folder. If this is the case, just unzip the infomap archive and run  make  that will generate executable Infomap. Feel free to move the file where you prefer and provide the full path as an argument to this function."
+        "Error! You must provide a valid path to the INFOMAP bin. 
+        Likely you will find it in the bin/ folder of muxviz, or you must compile it from 
+        source in src/ folder. If this is the case, just unzip the infomap archive and 
+        run make that will generate executable Infomap. 
+        Feel free to move the file where you prefer and provide the full path as an 
+        argument to this function."
       )
     }
     
@@ -4096,12 +4099,17 @@ GetMultilayerCommunities_Infomap <-
     
     cat('1/2 Setting up the algorithms...\n')
     
-    #obtain an extended edgelist representation in format: node.from layer.from node.to layer.to weight
-    multilayerEdges <-
-      BuildExtendedEdgelistFromSupraAdjacencyMatrix(SupraAdjacencyMatrix, Layers, Nodes, FALSE)
+    # obtain an extended edgelist representation in format: 
+    # node.from layer.from node.to layer.to weight
+    multilayerEdges <- BuildExtendedEdgelistFromSupraAdjacencyMatrix(
+                         SupraAdjacencyMatrix, 
+                         Layers, 
+                         Nodes, 
+                         FALSE
+                       )
     
-    #write in the Infomap multilayer format for general multilayer networks
-    #this part is different from the one in GetMultiplexCommunities_Infomap
+    # write in the Infomap multilayer format for general multilayer networks
+    # this part is different from the one in GetMultiplexCommunities_Infomap
     
     writeLines(c("*Intra", "#layer node node weight"), fileConn)
     mergedEdgelist <- data.frame()

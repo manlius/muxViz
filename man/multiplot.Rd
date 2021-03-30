@@ -2,9 +2,15 @@
 % Please edit documentation in R/muxLib_plot_functions.R
 \name{multiplot}
 \alias{multiplot}
+\alias{multiplot.col}
+\alias{multiplot.row}
 \title{Multiplot}
 \usage{
 multiplot(..., plotlist = NULL, file, cols = 1, layout = NULL)
+
+multiplot.col(..., plotlist = NULL, file, cols = 1, layout = NULL)
+
+multiplot.row(..., plotlist = NULL, file, cols = 1, layout = NULL)
 }
 \arguments{
 \item{...}{plots to to be arranged in the multiplot, alternatively provide a list \code{plotlist}}
@@ -23,3 +29,10 @@ a plot
 \description{
 Multiplot
 }
+\section{Functions}{
+\itemize{
+\item \code{multiplot.col}: Multiplot
+
+\item \code{multiplot.row}: Multiplot
+}}
+

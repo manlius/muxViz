@@ -1,10 +1,10 @@
 ###################################################################
 ## PLOT FUNCTIONS
 ###################################################################
-library(graphics)
-library(grid)
-library(rgl)
-library(ggplot2)
+requireNamespace("graphics", quietly = TRUE)
+requireNamespace("grid", quietly = TRUE)
+requireNamespace("rgl", quietly = TRUE)
+requireNamespace("ggplot2", quietly = TRUE)
 
 #' Multiplot
 #'
@@ -14,6 +14,7 @@ library(ggplot2)
 #' @param cols number of columns
 #' @param layout an igraph layout
 #' @return a plot
+#' @importFrom grid grid.newpage grid.layout pushViewport viewport
 #' @export
 multiplot <-
   function(...,
@@ -59,6 +60,7 @@ multiplot <-
     }
   }
 
+#' @describeIn multiplot Multiplot
 multiplot.col <-
   function(...,
            plotlist = NULL,
@@ -102,7 +104,7 @@ multiplot.col <-
       }
     }
   }
-
+#' @describeIn multiplot Multiplot
 multiplot.row <-
   function(...,
            plotlist = NULL,
@@ -148,6 +150,16 @@ multiplot.row <-
     }
   }
 
+#' layoutMultiplex
+#'
+#' @param g.list list of networks
+#' @param layout layout, as for \link[igraph]{layout_}. 
+#'  Default "fr" for \link[igraph]{layout_with_fr}; other options are: 
+#'  "drl", "auto", "kk", "comp", "dh".
+#' @param ggplot.format default FALSE
+#' @param box default TRUE
+#' @return a layout, i.e. a matrix of coordinates.
+#' @export
 layoutMultiplex <-
   function(g.list,
            layout = "fr",
@@ -212,8 +224,9 @@ layoutMultiplex <-
 #' @param layout default "fr", see \link[igraph]{layout_with_fr} for other options.
 #' @param show.legend default TRUE
 #' @return a plot
+#' @importFrom ggplot2 ggplot aes theme theme_void ggtitle element_text scale_color_manual
 #' @export
-plot.multiplex <-
+plot_multiplex <-
   function(g.list,
            layer.colors,
            edge.colors = "auto",
@@ -222,7 +235,7 @@ plot.multiplex <-
            node.alpha = 1,
            edge.alpha = 1,
            layout = "fr",
-           show.legend = T
+           show.legend = TRUE
            ) {
     # Generate the coordinates for layouting our networks.
     mypal <- layer.colors
@@ -233,7 +246,7 @@ plot.multiplex <-
     
     for (l in 1:Layers) {
       if (node.size.values == "auto") {
-        igraph::V(g.list[[l]])$size <- sqrt(strength(g.list[[l]]))
+        igraph::V(g.list[[l]])$size <- sqrt(igraph::strength(g.list[[l]]))
       } else {
         igraph::V(g.list[[l]])$size <- node.size.values
       }
@@ -257,11 +270,10 @@ plot.multiplex <-
         edge.col <- edge.colors
       }
       
-      p[[l]] <- ggraph(layout) + theme_void() +
-        geom_edge_link(colour = edge.col,
-                       show.legend = FALSE,
-                       alpha = edge.alpha) +
-        geom_node_point(aes(size = size), colour = node.col, alpha = node.alpha) +
+      p[[l]] <- ggraph::ggraph(layout) + 
+        theme_void() +
+        ggraph::geom_edge_link(colour = edge.col, show.legend = FALSE, alpha = edge.alpha) +
+        ggraph::geom_node_point(aes(size = size), colour = node.col, alpha = node.alpha) +
         theme(
           legend.position = "bottom",
           plot.title = element_text(
@@ -283,6 +295,27 @@ plot.multiplex <-
     
     return(do.call(multiplot.col, args = p))
   }
+
+#' @describeIn plot_multiplex Old name
+#' @usage plot.multiplex(g.list, layer.colors, edge.colors = "auto", node.colors = "auto",
+#'    node.size.values = 0.5, node.alpha = 1, edge.alpha = 1, layout = "fr", show.legend = T)
+#' @export plot.multiplex 
+plot.multiplex <- function(g.list,
+                           layer.colors,
+                           edge.colors = "auto",
+                           node.colors = "auto",
+                           node.size.values = 0.5,
+                           node.alpha = 1,
+                           edge.alpha = 1,
+                           layout = "fr",
+                           show.legend = T
+                           ) {
+  .Deprecated("plot_multiplex")
+  return(
+    plot_multiplex(g.list, layer.colors, edge.colors, node.colors, node.size.values, 
+                   node.alpha, edge.alpha, layout,show.legend)
+    )
+}
 
 #' 3D plot of a multiplex
 #'
@@ -313,8 +346,9 @@ plot.multiplex <-
 #' @param layer.space default 1.5,
 #' @param FOV default 30
 #' @return a plot
-#' @export
-plot.multiplex3D <-
+#' @importFrom rgl rgl.clear bg3d quads3d text3d par3d
+#' @export 
+plot_multiplex3D <-
   function(g.list,
            layer.colors,
            as.undirected = T,
@@ -341,9 +375,9 @@ plot.multiplex3D <-
            layer.shift.y = 0,
            layer.space = 1.5,
            FOV = 30) {
-    #Generate a 3D visualization of the multiplex network
+    # Generate a 3D visualization of the multiplex network
     
-    #Arguments can be either "auto" or NA in most cases
+    # Arguments can be either "auto" or NA in most cases
     
     #If node.colors is a matrix Nodes x Layers, the color of each node can be assigned
     #If node.size.scale is a vector of size Layers, each layer will be scaled independently
@@ -407,7 +441,7 @@ plot.multiplex3D <-
       
       if (node.size.values == "auto") {
         igraph::V(g.list[[l]])$size <-
-          3 * node.size.scale[l] * sqrt(strength(g.list[[l]]))
+          3 * node.size.scale[l] * sqrt(igraph::strength(g.list[[l]]))
       } else {
         igraph::V(g.list[[l]])$size <- node.size.values * node.size.scale[l]
       }
@@ -470,8 +504,8 @@ plot.multiplex3D <-
               alpha = layer.alpha[[l]],
               col = layer.colors[[l]],
               add = T)
-      
-      rglplot(g.list[[l]], layout = layout.layer,
+    
+      igraph::rglplot(g.list[[l]], layout = layout.layer,
               rescale = F)
       
       if (!is.na(layer.labels) && !is.null(layer.labels)) {
@@ -492,7 +526,7 @@ plot.multiplex3D <-
       g.aggr <- GetAggregateNetworkFromNetworkList(g.list)
       
       if (node.size.values == "auto") {
-        igraph::V(g.aggr)$size <- 3 * node.size.scale[l] * sqrt(strength(g.aggr))
+        igraph::V(g.aggr)$size <- 3 * node.size.scale[l] * sqrt(igraph::strength(g.aggr))
       } else {
         igraph::V(g.aggr)$size <- node.size.values * node.size.scale[l]
       }
@@ -542,7 +576,7 @@ plot.multiplex3D <-
                 add = T)
       }
       
-      rglplot(g.aggr, layout = layout.layer,
+      igraph::rglplot(g.aggr, layout = layout.layer,
               rescale = F)
       
       if (!is.na(layer.labels) && !is.null(layer.labels)) {
@@ -570,28 +604,73 @@ plot.multiplex3D <-
     par3d(FOV = PLOT_FOV, userMatrix = M)
   }
 
-###
-# Plot multilayer motifs
-### 
+#' @describeIn plot_multiplex3D Old name
+#' @usage plot.multiplex3D(g.list, layer.colors, as.undirected, layer.layout, layer.labels, 
+#'                         layer.labels.cex, edge.colors, edge.normalize, edge.size.scale, 
+#'                         node.colors, node.size.values, node.size.scale, node.alpha, 
+#'                         edge.alpha, layer.alpha, layout, show.nodeLabels, show.aggregate, 
+#'                         aggr.alpha, aggr.color, node.colors.aggr, layer.scale, 
+#'                         layer.shift.x, layer.shift.y, layer.space, FOV)
+#' @export plot.multiplex3D
+plot.multiplex3D <-
+  function(g.list,
+           layer.colors,
+           as.undirected = T,
+           layer.layout = "auto",
+           layer.labels = "auto",
+           layer.labels.cex = 2,
+           edge.colors = "auto",
+           edge.normalize = F,
+           edge.size.scale = 1,
+           node.colors = "auto",
+           node.size.values = 0.5,
+           node.size.scale = 1,
+           node.alpha = 1,
+           edge.alpha = 1,
+           layer.alpha = "auto",
+           layout = "fr",
+           show.nodeLabels = F,
+           show.aggregate = F,
+           aggr.alpha = "auto",
+           aggr.color = "#dadada",
+           node.colors.aggr = "#dadada",
+           layer.scale = 2,
+           layer.shift.x = 0,
+           layer.shift.y = 0,
+           layer.space = 1.5,
+           FOV = 30) {
+    .Deprecated("plot_multiplex3D")
+    return(
+      plot_multiplex3D(g.list, layer.colors, as.undirected, layer.layout, layer.labels, 
+                       layer.labels.cex, edge.colors, edge.normalize, edge.size.scale, 
+                       node.colors, node.size.values, node.size.scale, node.alpha, edge.alpha, 
+                       layer.alpha, layout, show.nodeLabels, show.aggregate, aggr.alpha, 
+                       aggr.color, node.colors.aggr, layer.scale, layer.shift.x, layer.shift.y, 
+                       layer.space, FOV)
+      )
+  }
 
-#' Plot multilayer motifs
+#' @title Plot multilayer motifs
 #' 
 #' Plot a motif from a motifs table returned by \code{\link{GetMultilayerMotifs}}.
-#' @param motifsTable a tabel as returned from \code{\link{GetMultilayerMotifs}}
+#' 
+#' @param motifsTable a table as returned from \code{\link{GetMultilayerMotifs}}
 #' @param motifID ID of the motif following the classification of \code{\link{GetMultilayerMotifs}}
 #' @param layer.colors colors for edges/layers
 #' @param edge.colors default "auto",
 #' @param node.colors default "auto",
 #' @param node.size default 5
 #' @return an igraph plotting object
+#' @importFrom graphics par
 #' @export
-plot.multimotif <-
-  function(motifsTable,
-           motifID,
-           layer.colors,
-           edge.colors = "auto",
-           node.colors = "auto",
-           node.size = 5) {
+plot_multimotif <- function(
+                     motifsTable,
+                     motifID,
+                     layer.colors,
+                     edge.colors = "auto",
+                     node.colors = "auto",
+                     node.size = 5
+                    ) {
     
     if (node.colors == "auto") {
       node.col <- "#A0A0A0"
@@ -612,7 +691,7 @@ plot.multimotif <-
     
     g.motif <-
       igraph::graph.adjacency(t(matrix(
-        as.numeric(strsplit(motif_name, "")[[1]]), ncol = sqrt(str_length(motif_name))
+        as.numeric(strsplit(motif_name, "")[[1]]), ncol = sqrt(stringr::str_length(motif_name))
       )))
     igraph::E(g.motif)$color <- 1
     g.motif <-
@@ -651,30 +730,54 @@ plot.multimotif <-
       rescale = F
     )
     
-  }
+}
 
-#' Plot modules obtained from GetMultiplexCommunities_Infomap/GetMultilayerCommunities_Infomap
+#' @describeIn plot_multimotif Old name
+#' @usage plot.multimotif(motifsTable, motifID, layer.colors, edge.colors = "auto", 
+#'          node.colors = "auto", node.size = 5)
+#' @export plot.multimotif
+plot.multimotif <- function(
+  motifsTable,
+  motifID,
+  layer.colors,
+  edge.colors = "auto",
+  node.colors = "auto",
+  node.size = 5
+  ) {
+  .Deprecated("plot_multimotif")
+  return(
+    plot_multimotif(motifsTable, motifID, layer.colors, edge.colors, node.colors, node.size)
+    )
+}
+
+#' Plot modules 
+#' 
+#' Plot modules obtained from 
+#' GetMultiplexCommunities_Infomap/GetMultilayerCommunities_Infomap
 #'
 #'
 #' @param communityList list of modules
 #' @param module.colors String
 #' @param show.aggregate logical, default TRUE
 #' @return a ggplot object
-#' @export
-plot.multimodules <-
+#' @importFrom ggplot2 ggplot aes geom_tile labs guides guide_legend theme theme_minimal ggtitle 
+#'   scale_fill_viridis_d scale_fill_manual scale_color_manual element_blank
+#' @importFrom rgl rgl.clear bg3d quads3d text3d par3d
+#' @export 
+plot_multimodules <-
   function(communityList,
            module.colors = "auto",
            show.aggregate = TRUE) {
-    # library(ggplot2)
     
     if (length(module.colors) == 1 && module.colors == "auto") {
       pp <-
         ggplot(communityList$membership.multi,
                aes(node, as.factor(layer), fill = as.factor(module))) +
-        theme_minimal() + geom_tile() +
+        theme_minimal() + 
+        geom_tile() +
         scale_fill_viridis_d(name = "Module") +
         theme(panel.grid = element_blank(), legend.position = "bottom") +
-        xlab("Node") + ylab("Layer") +
+        labs(x = "Node", y = "Layer") +
         guides(fill = guide_legend(nrow = 2, byrow = TRUE))
       
       if (show.aggregate) {
@@ -685,17 +788,18 @@ plot.multimodules <-
           theme_minimal() + geom_tile() +
           scale_fill_viridis_d(name = "Module") +
           theme(panel.grid = element_blank(), legend.position = "bottom") +
-          xlab("Node") + ylab("Aggregate") +
+          labs(x = "Node", y = "Aggregate") +
           guides(fill = guide_legend(nrow = 2, byrow = TRUE))
       }
     } else {
       pp <-
         ggplot(communityList$membership.multi,
                aes(node, as.factor(layer), fill = as.factor(module))) +
-        theme_minimal() + geom_tile() +
+        theme_minimal() + 
+        geom_tile() +
         scale_fill_manual(name = "Module", values = module.colors) +
         theme(panel.grid = element_blank(), legend.position = "bottom") +
-        xlab("Node") + ylab("Layer") +
+        labs(x = "Node", y = "Layer") +
         guides(fill = guide_legend(nrow = 2, byrow = TRUE))
       
       if (show.aggregate) {
@@ -703,10 +807,11 @@ plot.multimodules <-
         pp.agg <-
           ggplot(communityList$membership.aggr,
                  aes(node, as.factor(layer), fill = as.factor(module))) +
-          theme_minimal() + geom_tile() +
+          theme_minimal() + 
+          geom_tile() +
           scale_fill_manual(name = "Module", values = module.colors) +
           theme(panel.grid = element_blank(), legend.position = "bottom") +
-          xlab("Node") + ylab("Aggregate") +
+          labs(x = "Node", y = "Aggregate") +
           guides(fill = guide_legend(nrow = 2, byrow = TRUE))
       }
     }
@@ -717,3 +822,14 @@ plot.multimodules <-
       return(pp)
     }
   }
+
+#' @describeIn plot_multimodules Old name
+#' @usage plot.multimodules(communityList, module.colors = "auto", show.aggregate = TRUE)
+#' @export plot.multimodules
+plot.multimodules <- function(communityList,
+                              module.colors = "auto",
+                              show.aggregate = TRUE) {
+  .Deprecated("plot_multimodules")
+  return(plot_multimodules(communityList, module.colors, show.aggregate))
+}
+  

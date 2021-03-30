@@ -1,11 +1,11 @@
 Package: muxViz
-Title: MuxViz - Visualization and Analysis of Multilayer Networks.
-Version: 0.0.1
+Title: MuxViz - Visualization and Analysis of Multilayer Networks
+Version: 3.1
 Authors@R: c(
-    person(given = "Manlio", 
-           family = "De Domenico", 
-           role = c("cre", "aut"), 
-           email = "mdedomenico@fbk.eu", 
+    person(given = "Manlio",
+           family = "De Domenico",
+           role = c("cre", "aut"),
+           email = "mdedomenico@fbk.eu",
            comment = c(ORCID = "0000-0001-5158-8594")),
     person(given = "Giulia",
            family = "Bertagnolli",
@@ -16,21 +16,26 @@ Authors@R: c(
 Description: Visualization and Analysis of Multilayer Networks.
 URL: https://github.com/manlius/muxViz
 BugReports: https://github.com/manlius/muxViz
-License: GPL (>=2)
+License: GPL (>=3)
 Encoding: UTF-8
 LazyData: true
-Imports: 
+Imports:
     compiler,
     dplyr,
     ggplot2,
     ggraph,
     graphics,
     grid,
-    igraph, 
+    igraph,
     Matrix,
     rgl,
     RSpectra,
     stats,
+    stringr,
     utils
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

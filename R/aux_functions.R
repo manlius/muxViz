@@ -6,20 +6,29 @@
 #'
 #'
 #' @param A a matrix
-#' @param B another matrix
 #' @return The inverse matrix of A, \eqn{A^{-1}}
 #' @noRd
 inv <- function(A) {
   return(solve(A))
 }
 
-#' Return the kronecker product between two matrices
-#'
+#' Return the kronecker product between two matrices 
+#' 
+#' Kronecker product between two matrices A and B. If A is \eqn{n\times m} and
+#' B is \eqn{p \times q}, their Kronecker product is the \eqn{mp \times nq} matrix
+#' \deqn{
+#' \mathbf{A} \otimes \mathbf{B}=\left[\begin{array}{ccc}
+#' a_{11} \mathbf{B} & \cdots & a_{1 n} \mathbf{B} \\
+#' \vdots & \ddots & \vdots \\
+#' a_{m 1} \mathbf{B} & \cdots & a_{m n} \mathbf{B}
+#' \end{array}\right]
+#' }
+#' 
 #'
 #' @param A a matrix
 #' @param B another matrix
 #' @return
-#' Kronecker product of A and B
+#' Kronecker product of A and B 
 #' @noRd
 kron <- function(A, B) {
   return(Matrix::kronecker(A, B))
@@ -93,7 +102,11 @@ rand <- function(n, m) {
 
 #' Return a list of matrices in block diagonal form
 #'
-#' @noRd
+#'  This function is a wrapper for \link[Matrix]{bdiag}
+#'
+#' @param ... individual matrices or a list of matrices
+#' @seealso \link[Matrix]{bdiag}
+#' @export
 blkdiag <- function(...) {
   return(Matrix::bdiag(...))
 }
@@ -107,7 +120,7 @@ blkdiag <- function(...) {
 #' @param m desired height
 #' @return
 #' Input matrix A with shape n x m
-#' @noRd
+#' @export
 reshapeR <- function(A, n, m) {
   # cannot call this function just "reshape", because it's an R builtin command
   dim(A) <- c(n, m)
@@ -123,7 +136,7 @@ reshapeR <- function(A, n, m) {
 #' @param offset start position of diagonal, default: 0 = main diagonal
 #' @return A diagonal matrix with \code{x} on its diagonal 
 #'   (main or offset diagonal). 
-#' @noRd
+#' @export
 diagR <- function(x, n, offset = 0) {
   # cannot call this function just "diag", because it's an R builtin command
   # (to-do) add check on the length of x for offset != 0
@@ -139,7 +152,7 @@ diagR <- function(x, n, offset = 0) {
 #' @param A input matrix
 #' @return
 #' Trace of input matrix
-#' @noRd
+#' @export
 traceR <- function(A) {
   return(sum(diag(A)))
 }
@@ -151,7 +164,7 @@ traceR <- function(A) {
 #' @param y non-zero denominator
 #' @return
 #' modulo of x/y
-#' @noRd
+#' @export
 modR <- function(x, y) {
   return(unlist(lapply(x, function(z)
     z %% y)))
@@ -164,7 +177,7 @@ modR <- function(x, y) {
 #' @param n if n=1 sum rows, if n=2 sum columns
 #' @return
 #' sum of rows or columns
-#' @noRd
+#' @export
 sumR <- function(A, n) {
   if (n == 1) {
     return(rbind(Matrix::colSums(A)))
