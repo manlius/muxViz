@@ -1,4 +1,4 @@
-source("muxLib.R")
+library("muxViz")
 library(igraph)
 
 #Or build by specifying layers

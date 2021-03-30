@@ -1,4 +1,4 @@
-source("muxLib.R")
+library("muxViz")
 
 #This dataset is provided with the "standalone" library
 config.file <- "data/StarWars/StarWars_config.txt"

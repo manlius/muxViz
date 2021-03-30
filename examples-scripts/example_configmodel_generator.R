@@ -1,4 +1,4 @@
-source("muxLib.R")
+library("muxViz")
 library(reshape2)
 library(RColorBrewer)
 

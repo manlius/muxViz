@@ -1,4 +1,4 @@
-source("muxLib.R")
+library("muxViz")
 
 #Comment this line to generate different networks
 set.seed(12345)

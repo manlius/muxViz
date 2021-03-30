@@ -1,4 +1,4 @@
-source("muxLib.R")
+library("muxViz")
 
 #Or build by specifying layers
 Layers <- 5

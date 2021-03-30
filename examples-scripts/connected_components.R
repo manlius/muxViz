@@ -1,4 +1,4 @@
-source("muxLib.R")
+library("muxViz")
 library(igraph)
 library(RColorBrewer)
 library(ggraph)

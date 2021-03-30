@@ -1,4 +1,4 @@
-source("muxLib.R")
+library("muxViz")
 
 #Remind to comment this line to have different results
 set.seed(123456)
