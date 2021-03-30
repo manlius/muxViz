@@ -71,7 +71,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">muxViz</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">3.1</span>
       </span>
     </div>
 
@@ -86,12 +86,35 @@
 <li>
   <a href="../reference/index.html">Reference</a>
 </li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Articles
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="../articles/ml_community.html">Multilayer community detection</a>
+    </li>
+    <li>
+      <a href="../articles/ml_motifs.html">Multilayer motifs</a>
+    </li>
+    <li>
+      <a href="../articles/setup_infomap_fanmod.html">Setup Infomap Fanmod executables</a>
+    </li>
+  </ul>
+</li>
 <li>
   <a href="../news/index.html">Changelog</a>
 </li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
-        
+        <li>
+  <a href="https://github.com/manlius/muxViz/">
+    <span class="fab fa-github fa-lg"></span>
+     
+  </a>
+</li>
       </ul>
       
     </div><!--/.nav-collapse -->
@@ -584,27 +607,41 @@ the function builds the supra transition matrix for a discrete time RW.</p></td>
       <tr>
         
         <td>
-          <p><code><a href="plot.multiplex.html">plot(<i>&lt;multiplex&gt;</i>)</a></code> </p>
+          <p><code><a href="plot_multiplex.html">plot_multiplex()</a></code> <code><a href="plot_multiplex.html">plot.multiplex()</a></code> </p>
         </td>
         <td><p>Plot a multiplex</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="multiplot.html">multiplot()</a></code> </p>
+          <p><code><a href="plot_multiplex3D.html">plot_multiplex3D()</a></code> <code><a href="plot_multiplex3D.html">plot.multiplex3D()</a></code> </p>
+        </td>
+        <td><p>3D plot of a multiplex</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="multiplot.html">multiplot()</a></code> <code><a href="multiplot.html">multiplot.col()</a></code> <code><a href="multiplot.html">multiplot.row()</a></code> </p>
         </td>
         <td><p>Multiplot</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="plot.multimotif.html">plot(<i>&lt;multimotif&gt;</i>)</a></code> </p>
+          <p><code><a href="layoutMultiplex.html">layoutMultiplex()</a></code> </p>
         </td>
-        <td><p>Plot multilayer motifs</p></td>
+        <td><p>layoutMultiplex</p></td>
       </tr><tr>
         
         <td>
-          <p><code><a href="plot.multimodules.html">plot(<i>&lt;multimodules&gt;</i>)</a></code> </p>
+          <p><code><a href="plot_multimotif.html">plot_multimotif()</a></code> <code><a href="plot_multimotif.html">plot.multimotif()</a></code> </p>
         </td>
-        <td><p>Plot modules obtained from GetMultiplexCommunities_Infomap/GetMultilayerCommunities_Infomap</p></td>
+        <td><p>Plot multilayer motifs
+
+Plot a motif from a motifs table returned by <code><a href='https://rdrr.io/pkg/muxViz/man/GetMultilayerMotifs.html'>GetMultilayerMotifs</a></code>.</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="plot_multimodules.html">plot_multimodules()</a></code> <code><a href="plot_multimodules.html">plot.multimodules()</a></code> </p>
+        </td>
+        <td><p>Plot modules</p></td>
       </tr>
     </tbody><tbody>
       <tr>
@@ -720,6 +757,55 @@ the function builds the supra transition matrix for a discrete time RW.</p></td>
           <p><code><a href="SolveEigenvalueProblem.html">SolveEigenvalueProblem()</a></code> </p>
         </td>
         <td><p>Return the matrix of eigenvectors (Q) and the diagonal matrix of eigenvalues (L) as well as a vector with ordered eigenvalues (E)</p></td>
+      </tr>
+    </tbody><tbody>
+      <tr>
+        <th colspan="2">
+          <h2 id="section-auxiliary-functions" class="hasAnchor"><a href="#section-auxiliary-functions" class="anchor"></a>Auxiliary functions</h2>
+          <p class="section-desc"><p>MATLAB-like functions that help building multilayers from diagonal, blockdiagonal… matrices.</p></p>
+        </th>
+      </tr>
+      
+      
+    </tbody><tbody>
+      
+      
+      <tr>
+        
+        <td>
+          <p><code><a href="blkdiag.html">blkdiag()</a></code> </p>
+        </td>
+        <td><p>Return a list of matrices in block diagonal form</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="reshapeR.html">reshapeR()</a></code> </p>
+        </td>
+        <td><p>Return a matrix reshaped according to dimension n and m</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="diagR.html">diagR()</a></code> </p>
+        </td>
+        <td><p>Return a matrix with elements on a diagonal specified by offset</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="traceR.html">traceR()</a></code> </p>
+        </td>
+        <td><p>Return the trace of input matrix</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="modR.html">modR()</a></code> </p>
+        </td>
+        <td><p>Return the remainder of x divided by y</p></td>
+      </tr><tr>
+        
+        <td>
+          <p><code><a href="sumR.html">sumR()</a></code> </p>
+        </td>
+        <td><p>Return the sum across rows (n=1) or columns (n=2) of a matrix</p></td>
       </tr>
     </tbody>
     </table>

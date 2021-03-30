@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">muxViz</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">3.1</span>
       </span>
     </div>
 
@@ -87,12 +87,35 @@
 <li>
   <a href="../reference/index.html">Reference</a>
 </li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Articles
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="../articles/ml_community.html">Multilayer community detection</a>
+    </li>
+    <li>
+      <a href="../articles/ml_motifs.html">Multilayer motifs</a>
+    </li>
+    <li>
+      <a href="../articles/setup_infomap_fanmod.html">Setup Infomap Fanmod executables</a>
+    </li>
+  </ul>
+</li>
 <li>
   <a href="../news/index.html">Changelog</a>
 </li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
-        
+        <li>
+  <a href="https://github.com/manlius/muxViz/">
+    <span class="fab fa-github fa-lg"></span>
+     
+  </a>
+</li>
       </ul>
       
     </div><!--/.nav-collapse -->
@@ -107,7 +130,7 @@
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Multiplot</h1>
-    
+    <small class="dont-index">Source: <a href='https://github.com/manlius/muxViz/blob/master/R/muxLib_plot_functions.R'><code>R/muxLib_plot_functions.R</code></a></small>
     <div class="hidden name"><code>multiplot.Rd</code></div>
     </div>
 
@@ -115,7 +138,11 @@
     <p>Multiplot</p>
     </div>
 
-    <pre class="usage"><span class='fu'>multiplot</span><span class='op'>(</span><span class='va'>...</span>, plotlist <span class='op'>=</span> <span class='cn'>NULL</span>, <span class='va'>file</span>, cols <span class='op'>=</span> <span class='fl'>1</span>, layout <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span></pre>
+    <pre class="usage"><span class='fu'>multiplot</span><span class='op'>(</span><span class='va'>...</span>, plotlist <span class='op'>=</span> <span class='cn'>NULL</span>, <span class='va'>file</span>, cols <span class='op'>=</span> <span class='fl'>1</span>, layout <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span>
+
+<span class='fu'>multiplot.col</span><span class='op'>(</span><span class='va'>...</span>, plotlist <span class='op'>=</span> <span class='cn'>NULL</span>, <span class='va'>file</span>, cols <span class='op'>=</span> <span class='fl'>1</span>, layout <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span>
+
+<span class='fu'>multiplot.row</span><span class='op'>(</span><span class='va'>...</span>, plotlist <span class='op'>=</span> <span class='cn'>NULL</span>, <span class='va'>file</span>, cols <span class='op'>=</span> <span class='fl'>1</span>, layout <span class='op'>=</span> <span class='cn'>NULL</span><span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -145,6 +172,13 @@
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>a plot</p>
+    <h2 class="hasAnchor" id="functions"><a class="anchor" href="#functions"></a>Functions</h2>
+
+    
+<ul>
+<li><p><code>multiplot.col</code>: Multiplot</p></li>
+<li><p><code>multiplot.row</code>: Multiplot</p></li>
+</ul>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

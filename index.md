@@ -7,6 +7,8 @@
 
 [![Lifecycle:
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![CRAN\_Status\_Badge](https://www.r-pkg.org/badges/version/muxViz)](https://cran.r-project.org/package=muxViz)
+[![Last-changedate](https://img.shields.io/badge/last%20change-2021--03--30-yellowgreen.svg)](/commits/master)
 <!-- badges: end -->
 
 ## Installation
@@ -52,19 +54,18 @@ networks, urban and transportation networks.
 
 You can read more on the dedicated [Wikipedia
 page](https://en.wikipedia.org/wiki/Multidimensional_network) or this
-[short illustrated summary](theory/multilayernets.md).
+[short illustrated
+summary](https://github.com/manlius/muxViz/blob/master/gui-old/theory/README.md).
 
-#### Official Websites and Social Networks
+## Official Websites and Social Networks
 
-Please, visit the official website (<http://muxviz.net>) of muxViz for
-further information.
+**QUESTION/BUGS/COMMUNITY**: muxViz can count on a community with more
+than 600 members. Visit the dedicated [Google
+Group](https://groups.google.com/forum/#!forum/muxviz). Requests via
+Github will be considered more slowly
 
 You might also want to take a look at muxViz in action: see the [Youtube
 channel](https://www.youtube.com/channel/UCinHX7m-8_EFFJo2A8huoUA)
-
-Visit the dedicated [Google
-Group](https://groups.google.com/forum/#!forum/muxviz) if you have
-questions or to report bugs.
 
 Instead, if you create amazing visualizations using muxViz and you want
 to tweet them, remember to include the “\#muxviz” hashtag: we will be
@@ -72,7 +73,8 @@ happy to retweet.
 
 You might be interested in taking a look at the [official blog about
 muxViz](https://muxviz.wordpress.com), with posts about applications
-(analysis, visualization or both) to cool datasets.
+(analysis, visualization or both) to cool datasets (*updated not too
+frequently*).
 
 ## Usage
 
@@ -103,7 +105,7 @@ Let’s consider a chain of layers, *aka* an ordinal network of layers and
 build the multilayer adjacency tensor
 
 ``` r
-layer_tensor <- muxViz:::diagR(c(1, 1), 3, 1) + muxViz:::diagR(c(1, 1), 3, -1)
+layer_tensor <- diagR(c(1, 1), 3, 1) + diagR(c(1, 1), 3, -1)
 M <- BuildSupraAdjacencyMatrixFromEdgeColoredMatrices(node_tensor, layer_tensor, L, N)
 ```
 
@@ -118,10 +120,6 @@ deg <- GetMultiDegree(M, L, N, isDirected = F)
 
 and do some plotting
 
-``` r
-knitr::include_graphics("man/figures/mux_BA_3layers.png")
-```
-
 <img src="man/figures/mux_BA_3layers.png" width="1024" />
 
 ## News
@@ -130,14 +128,17 @@ Check the [changelog](./news/index.html) for the release news.
 
 ## Citation
 
-If you use muxViz (or any part of muxViz, or images available in the
+If you use `muxViz` (or any part of `muxViz`, or images available in the
 gallery) for your multilayer analysis and visualization, you should cite
-the paper
+the paper:
 
 Manlio De Domenico, Mason A. Porter, Alex Arenas, Multilayer Analysis
 and Visualization of Networks, published in [Journal of Complex Networks
 3, 159-176 (2015)](http://comnet.oxfordjournals.org/content/3/2/159)
 (Open Access)
+
+Manlio De Domenico, Multilayer Networks: Analysis and Visualization.
+Introduction to muxViz with R. To be published by Springer-Verlag (2021)
 
 Please, note that muxViz is based on some algorithms developed in other
 studies. You should cite the original paper(s) every time that you use

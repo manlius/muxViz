@@ -1,0 +1,44 @@
+---
+title: "Setup Infomap Fanmod executables"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Setup Infomap Fanmod executables}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+In order to run multilayer community detection, we will need the Infomap (old version). The source can be downloaded from [mapequation.org](https://www.mapequation.org/code_old.html#Installation), where you can find also the installation (download and compile) guidelines.
+
+Once you compiled the code, save the `path/to/Infomap` in the `infomap-setup` chunk in the vignettes or into your code/notebook.
+
+In the `src/` folder there is already the linux executable for the Infomap. See [Multilayer community detection](./ml_community.html) for the vignette.
+
+```{r infomap-setup, eval = FALSE}
+pathInfomap <- "path/to/Infomap"
+# or
+pathInfomap <- "src/infomap-0.x/Infomap"
+```
+
+The same applies for the multilayer network motifs: the executables for fanmod (downloaded from [here](https://github.com/gtremper/Network-Motif/tree/master/fanmod)) are already placed in the `src/` folder. See [Multilayer network motifs](./ml_motifs.html)  for the vignette.
+
+```{r fanmod-setup, eval = FALSE}
+pathFanmod <- "path/to/fanmod"
+# or
+pathFanmod <- "../src/fanmod_linux"
+```
+
+#### References
+
+Manlio De Domenico, Andrea Lancichinetti, Alex Arenas, and Martin Rosvall, Physical Review X 5, 011027 (2015) [doi: 10.1103/PhysRevX.5.011027](https://doi.org/10.1103/PhysRevX.5.011027)
+[Source: mapequation.org](http://www.mapequation.org/code.html)
+
+Sebastian Wernicke and Florian Rasche, Bioinformatics 22, 1152 (2006)
+Version implemented by Tomer Benyamini, Yoav Teboulle, Tel-Aviv University
+[github/gtremper/Network-Motif](https://github.com/gtremper/Network-Motif/tree/master/fanmod/FANMOD-command_line-source)
