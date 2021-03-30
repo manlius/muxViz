@@ -35,7 +35,7 @@ isDirected <- F
 layer.colors <- brewer.pal(8, "Set2")
 ```
 
-Setup Infomap, see [setup Infomap vignette](./docs/articles/setup_infomap_fanmod.html)
+Setup Infomap, see [setup Infomap vignette](./setup_infomap_fanmod.html)
 
 ```{r infomap-setup}
 pathInfomap <- "../src/infomap-0.x/Infomap"
