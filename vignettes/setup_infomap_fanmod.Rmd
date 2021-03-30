@@ -18,7 +18,7 @@ In order to run multilayer community detection, we will need the Infomap (old ve
 
 Once you compiled the code, save the `path/to/Infomap` in the `infomap-setup` chunk in the vignettes or into your code/notebook.
 
-In the `src/` folder there is already the linux executable for the Infomap. See [Multilayer community detection](./ml_community.html) for the vignette.
+In the `src/` folder there is already the linux executable for the Infomap. See [Multilayer community detection](/docs/articles/ml_community.html) for the vignette.
 
 ```{r infomap-setup, eval = FALSE}
 pathInfomap <- "path/to/Infomap"
@@ -26,7 +26,7 @@ pathInfomap <- "path/to/Infomap"
 pathInfomap <- "src/infomap-0.x/Infomap"
 ```
 
-The same applies for the multilayer network motifs: the executables for fanmod (downloaded from [here](https://github.com/gtremper/Network-Motif/tree/master/fanmod)) are already placed in the `src/` folder. See [Multilayer network motifs](./ml_motifs.html)  for the vignette.
+The same applies for the multilayer network motifs: the executables for fanmod (downloaded from [here](https://github.com/gtremper/Network-Motif/tree/master/fanmod)) are already placed in the `src/` folder. See [Multilayer network motifs](./docs/articles/ml_motifs.html)  for the vignette.
 
 ```{r fanmod-setup, eval = FALSE}
 pathFanmod <- "path/to/fanmod"

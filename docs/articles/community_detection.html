@@ -54,10 +54,7 @@
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
-      <a href="../articles/ml_community.html">Multilayer community detection</a>
-    </li>
-    <li>
-      <a href="../articles/ml_motifs.html">Multilayer motifs</a>
+      <a href="../articles/community_detection.html">Multilayer community detection</a>
     </li>
     <li>
       <a href="../articles/setup_infomap_fanmod.html">Setup Infomap Fanmod executables</a>
@@ -85,14 +82,14 @@
 
       
 
-      </header><script src="ml_community_files/header-attrs-2.7/header-attrs.js"></script><div class="row">
+      </header><script src="community_detection_files/header-attrs-2.7/header-attrs.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Multilayer community detection</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/manlius/muxViz/blob/master/vignettes/ml_community.Rmd"><code>vignettes/ml_community.Rmd</code></a></small>
-      <div class="hidden name"><code>ml_community.Rmd</code></div>
+      <small class="dont-index">Source: <a href="https://github.com/manlius/muxViz/blob/master/vignettes/community_detection.Rmd"><code>vignettes/community_detection.Rmd</code></a></small>
+      <div class="hidden name"><code>community_detection.Rmd</code></div>
 
     </div>
 
@@ -100,6 +97,7 @@
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/manlius/muxViz">muxViz</a></span><span class="op">)</span>
+<span class="co"># source("muxLib.R")</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://igraph.org">igraph</a></span><span class="op">)</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Attaching package: 'igraph'</span>
@@ -122,12 +120,12 @@
 <span class="va">networkOfLayersType</span> <span class="op">&lt;-</span> <span class="st">"categorical"</span>
 <span class="va">isDirected</span> <span class="op">&lt;-</span> <span class="cn">F</span>
 <span class="va">layer.colors</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/RColorBrewer/man/ColorBrewer.html">brewer.pal</a></span><span class="op">(</span><span class="fl">8</span>, <span class="st">"Set2"</span><span class="op">)</span></code></pre></div>
-<p>Setup Infomap, see <a href="./docs/articles/setup_infomap_fanmod.html">setup Infomap vignette</a></p>
+<p>Setup Infomap, see LINK HERE</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">pathInfomap</span> <span class="op">&lt;-</span> <span class="st">"../src/infomap-0.x/Infomap"</span></code></pre></div>
-<div id="multiplex-modules" class="section level2">
-<h2 class="hasAnchor">
-<a href="#multiplex-modules" class="anchor"></a>Multiplex modules</h2>
+<code class="sourceCode R"><span class="va">pathInfomap</span> <span class="op">&lt;-</span> <span class="st">"../scr/infomap-0.x/Infomap"</span></code></pre></div>
+<div id="multiplex-modules" class="section level3">
+<h3 class="hasAnchor">
+<a href="#multiplex-modules" class="anchor"></a>Multiplex modules</h3>
 <p>Generate an edge-colored network and layers with 4 modules</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">nodeTensor</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span><span class="op">(</span><span class="op">)</span>
@@ -159,7 +157,7 @@
                          show.aggregate<span class="op">=</span><span class="cn">T</span><span class="op">)</span>
 <span class="co"># save the plot:</span>
 <span class="fu"><a href="https://rdrr.io/pkg/rgl/man/snapshot.html">rgl.snapshot</a></span><span class="op">(</span><span class="st">"../man/figures/multi_sbm.png"</span>, fmt <span class="op">=</span> <span class="st">"png"</span><span class="op">)</span></code></pre></div>
-<p><img src="../man/figures/multi_sbm.png" width="128"> Find modules without imposing hard partitions</p>
+<p>Find modules without imposing hard partitions</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">commResult</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/GetMultiplexCommunities_Infomap.html">GetMultiplexCommunities_Infomap</a></span><span class="op">(</span><span class="va">g.list</span>,
                                               bin.path<span class="op">=</span><span class="va">pathInfomap</span>,
@@ -254,7 +252,6 @@
 <span class="fu"><a href="https://rdrr.io/r/grDevices/dev.html">dev.off</a></span><span class="op">(</span><span class="op">)</span>
 <span class="co">#&gt; agg_png </span>
 <span class="co">#&gt;       2</span></code></pre></div>
-<p><img src="../man/figures/multi_sbm_infomap_table.png" width="512"><img src="../man/figures/multi_sbm_infomap_hp_table.png" width="512"></p>
 <p>Case with inter-layer connections and no hard partitions</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># coloring state nodes</span>
@@ -302,13 +299,17 @@
                          node.colors<span class="op">=</span><span class="va">node.colors.matrix</span>, edge.colors<span class="op">=</span><span class="st">"#dadada"</span>,
                          node.colors.aggr<span class="op">=</span><span class="va">node.colors.aggr</span>,
                          show.aggregate<span class="op">=</span><span class="cn">T</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/pkg/rgl/man/snapshot.html">rgl.snapshot</a></span><span class="op">(</span><span class="st">"../man/figures/multi_sbm_infomap_hp.png"</span>, fmt<span class="op">=</span><span class="st">"png"</span><span class="op">)</span></code></pre></div>
-<p><img src="../man/figures/multi_sbm_infomap_hp.png" width="128"></p>
+<span class="fu"><a href="https://rdrr.io/pkg/rgl/man/snapshot.html">rgl.snapshot</a></span><span class="op">(</span><span class="st">"man/figures/multi_sbm_infomap_hp.png"</span>, fmt<span class="op">=</span><span class="st">"png"</span><span class="op">)</span>
+<span class="co">#&gt; Warning in rgl.snapshot("man/figures/multi_sbm_infomap_hp.png", fmt = "png"):</span>
+<span class="co">#&gt; RGL: Pixmap save: unable to open file 'man/figures/multi_sbm_infomap_hp.png' for</span>
+<span class="co">#&gt; writing</span>
+<span class="co">#&gt; Warning in rgl.snapshot("man/figures/multi_sbm_infomap_hp.png", fmt = "png"):</span>
+<span class="co">#&gt; 'rgl.snapshot' failed</span></code></pre></div>
 </div>
 </div>
-<div id="multilayer-modules" class="section level2">
-<h2 class="hasAnchor">
-<a href="#multilayer-modules" class="anchor"></a>Multilayer modules</h2>
+<div id="multilayer-modules" class="section level3">
+<h3 class="hasAnchor">
+<a href="#multilayer-modules" class="anchor"></a>Multilayer modules</h3>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># Define the network of layers</span>
 <span class="va">layerTensor</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/BuildLayersTensor.html">BuildLayersTensor</a></span><span class="op">(</span>Layers<span class="op">=</span><span class="va">Layers</span>, OmegaParameter<span class="op">=</span><span class="va">layerCouplingStrength</span>,
@@ -366,8 +367,12 @@
                          node.colors<span class="op">=</span><span class="va">node.colors.matrix2</span>, edge.colors<span class="op">=</span><span class="st">"#dadada"</span>,
                          node.colors.aggr<span class="op">=</span><span class="va">node.colors.aggr2</span>,
                          show.aggregate<span class="op">=</span><span class="cn">T</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/pkg/rgl/man/snapshot.html">rgl.snapshot</a></span><span class="op">(</span><span class="st">"../man/figures/multi_sbm_infomap2.png"</span>, fmt<span class="op">=</span><span class="st">"png"</span><span class="op">)</span></code></pre></div>
-<p><img src="../man/figures/multi_sbm_infomap2.png" width="128"></p>
+<span class="fu"><a href="https://rdrr.io/pkg/rgl/man/snapshot.html">rgl.snapshot</a></span><span class="op">(</span><span class="st">"man/figures/multi_sbm_infomap2.png"</span>, fmt<span class="op">=</span><span class="st">"png"</span><span class="op">)</span>
+<span class="co">#&gt; Warning in rgl.snapshot("man/figures/multi_sbm_infomap2.png", fmt = "png"):</span>
+<span class="co">#&gt; RGL: Pixmap save: unable to open file 'man/figures/multi_sbm_infomap2.png' for</span>
+<span class="co">#&gt; writing</span>
+<span class="co">#&gt; Warning in rgl.snapshot("man/figures/multi_sbm_infomap2.png", fmt = "png"):</span>
+<span class="co">#&gt; 'rgl.snapshot' failed</span></code></pre></div>
 <p>Look at the size of all communities:</p>
 <ul>
 <li>Multilayer: module size distribution (no hard partitions) 150, 147, 150, 150, 1, 1, 1</li>
@@ -378,9 +383,7 @@
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
 
-        <nav id="toc" data-toggle="toc"><h2 data-toc-skip>Contents</h2>
-    </nav>
-</div>
+      </div>
 
 </div>
 
