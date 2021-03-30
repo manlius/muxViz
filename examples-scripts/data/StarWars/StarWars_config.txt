@@ -1,0 +1,6 @@
+data/StarWars/StarWars_episode1.edges;Episode1;data/StarWars/StarWars_layout.txt
+data/StarWars/StarWars_episode2.edges;Episode2;data/StarWars/StarWars_layout.txt
+data/StarWars/StarWars_episode3.edges;Episode3;data/StarWars/StarWars_layout.txt
+data/StarWars/StarWars_episode4.edges;Episode4;data/StarWars/StarWars_layout.txt
+data/StarWars/StarWars_episode5.edges;Episode5;data/StarWars/StarWars_layout.txt
+data/StarWars/StarWars_episode6.edges;Episode6;data/StarWars/StarWars_layout.txt

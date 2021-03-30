@@ -9,5 +9,5 @@
 ^index\.md$
 ^docs$
 ^\_pkgdown\.yml$
-^scr$
-^\vignettes$
+^src$
+^examples-scripts$

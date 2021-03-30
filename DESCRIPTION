@@ -28,11 +28,13 @@ Imports:
     grid,
     igraph,
     Matrix,
+    RColorBrewer,
     rgl,
     RSpectra,
     stats,
     stringr,
-    utils
+    utils,
+    viridis
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 Suggests: 
