@@ -56,7 +56,13 @@ page](https://en.wikipedia.org/wiki/Multidimensional_network) or this
 ## Documentation
 
 Check the full package documentation (with usage tips and examples) at
-[docs](https://manlius.github.io/muxViz/) .
+[docs](https://manlius.github.io/muxViz/), where you can also find a couple of 
+`vignettes` on 
+[multilayer community detection](http://manlius.github.io/muxViz/articles/ml_community.html) ,
+on [multilayer network motifs](http://manlius.github.io/muxViz/articles/ml_motifs.html) 
+and on how to setup the `Infomap` and `fanmod` routines.
+
+Check out also these [examples](examples-scripts/README.md).
 
 ## News
 
