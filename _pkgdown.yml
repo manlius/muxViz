@@ -1,4 +1,16 @@
+home:
+  title: MuxViz - Visualization and Analysis of Multilayer Networks
+  description: Visualization and Analysis of Multilayer Networks.
+
 template:
+  opengraph:
+  image:
+    src: man/figures/logo.jpg
+    alt: "MuxViz - Visualization and Analysis of Multilayer Networks"
+  twitter:
+    creator: "@manlius84"
+    site: "@ComuneLab"
+    card: summary
   params:
     bootswatch: sandstone
   development:
@@ -6,9 +18,9 @@ template:
 reference:
 - title: "Building multilayer networks"
   desc: >
-    Functions for buiding multilayer networks and/or its characterising matrices, 
+    Functions for buiding multilayer networks and/or its characterising matrices,
     and other basic functions
-- contents: 
+- contents:
   - GetSampleMultiplex
   - BuildExtendedEdgelistFromSupraAdjacencyMatrix
   - BuildLayersTensor
@@ -56,7 +68,7 @@ reference:
 - title: "Mesoscale structures"
   desc: >
     Describing and anlysis the mescoscale structure of multilayer networks.
-- contents: 
+- contents:
   - GetConnectedComponents
   - GetGiantConnectedComponent
   - GetGiantIntersectionComponent
@@ -81,7 +93,7 @@ reference:
 - title: "Dynamics & Co."
   desc: >
     Describing, evaluating, and anlysis dynamics on multilayer networks.
-- contents: 
+- contents:
   - GetLaplacianMatrix
   - GetNormalizedLaplacianMatrix
   - BuildSupraTransitionMatrixFromSupraAdjacencyMatrix
@@ -100,7 +112,7 @@ reference:
   - plot_multimodules
 - title: "Others"
   desc: >
-    Other functions for building a Configuration Model, for evaluating entropy, 
+    Other functions for building a Configuration Model, for evaluating entropy,
     for solving the eigenvalue problem, for finding shortest paths, etc.
 - contents:
   - CanonicalVector
@@ -122,7 +134,7 @@ reference:
   - SolveEigenvalueProblem
 - title: "Auxiliary functions"
   desc: >
-      MATLAB-like functions that help building multilayers from diagonal, blockdiagonal... 
+      MATLAB-like functions that help building multilayers from diagonal, blockdiagonal...
       matrices.
 - contents:
   - blkdiag
