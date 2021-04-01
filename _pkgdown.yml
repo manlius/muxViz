@@ -5,12 +5,12 @@ home:
 template:
   opengraph:
     image:
-      src: man/figures/logo.jpg
+      src: man/figures/home.png
       alt: "MuxViz - Visualization and Analysis of Multilayer Networks"
     twitter:
       creator: "@manlius84"
       site: "@ComuneLab"
-      card: summary
+      card: summary_large_image
   params:
     bootswatch: sandstone
   development:

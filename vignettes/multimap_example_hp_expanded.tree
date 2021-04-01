@@ -1,4 +1,4 @@
-# 'multimap_example_hp_infomap.edges /home/giulia/Documents/github/muxViz/vignettes --input-format multilayer --clu --map --tree --expanded --seed 12345 --num-trials 100 -u --multilayer-relax-rate 0.5 --two-level --hard-partitions -vvv --out-name multimap_example_hp' -> 552 nodes and 4405 links partitioned in 1s from codelength 8.934314614 in one level to codelength 5.802439935 in 3 levels.
+# 'multimap_example_hp_infomap.edges /home/giulia/Documents/github/muxViz/vignettes --input-format multilayer --clu --map --tree --expanded --seed 12345 --num-trials 100 -u --multilayer-relax-rate 0.5 --two-level --hard-partitions -vvv --out-name multimap_example_hp' -> 552 nodes and 4405 links partitioned in 0s from codelength 8.934314614 in one level to codelength 5.802439935 in 3 levels.
 # path flow name layer node:
 1:1:1 0.00395494 "81 | 1" 1 81
 1:1:2 0.00391838 "81 | 3" 3 81
