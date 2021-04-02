@@ -101,7 +101,9 @@ reference:
   - BuildSupraTransitionMatrixFromSupraAdjacencyMatrix
   - BuildTransitionMatrixFromEdgeColoredMatrices
   - BuildTransitionMatrixFromSingleLayer
-  - BuildDensityMatrixBGS
+  - GetCoverageEvolutionMultilayer
+  - GetCoverageEvolutionEdgeColored
+  - GetCoverageEvolutionSingleLayer
 - title: "Plotting"
   desc: >
     Plotting routines (documentation is poor, sorry).
@@ -120,8 +122,7 @@ reference:
   - CanonicalVector
   - GetConfigurationModelTypeIFromNetworkList
   - GetConfigurationModelTypeIIFromNetworkList
-  - GetCoverageEvolutionMultilayer
-  - GetCoverageEvolutionEdgeColored
+  - BuildDensityMatrixBGS
   - GetEigenvaluesOfDensityMatrix
   - GetEigenvaluesOfDensityMatrixFromAdjacencyMatrix
   - GetInterAssortativityTensor

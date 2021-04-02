@@ -4547,6 +4547,17 @@ GetCoverageEvolutionEdgeColored <-
     )
   }
 
+#' Get the Coverage Evolution of a single-layer network
+#'
+#' This function calls \link{GetCoverageEvolutionMultilayer} with \code{Layers = 1}.
+#'
+#' @param TransitionMatrix the transition matrix
+#' @param Nodes Layers
+#' @param TimeSequence Time sequence
+#' @param Approximate logical, use approximate method. Default FALSE
+#' @param Approximate.disconnected Numeric for approximate method. Default 0
+#' @return data frame coverage \code{rho} across time \code{tau}
+#' @export
 GetCoverageEvolutionSingleLayer <-
   function(TransitionMatrix,
            Nodes,
