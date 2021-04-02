@@ -23,7 +23,7 @@ In the `src/` folder there is already the linux executable for the Infomap. See 
 ```{r infomap-setup, eval = FALSE}
 pathInfomap <- "path/to/Infomap"
 # or
-pathInfomap <- "src/infomap-0.x/Infomap"
+pathInfomap <- "src-exe/infomap-0.x/Infomap"
 ```
 
 The same applies for the multilayer network motifs: the executables for fanmod (downloaded from [here](https://github.com/gtremper/Network-Motif/tree/master/fanmod)) are already placed in the `src/` folder. See [Multilayer network motifs](./ml_motifs.html)  for the vignette.
@@ -31,7 +31,7 @@ The same applies for the multilayer network motifs: the executables for fanmod (
 ```{r fanmod-setup, eval = FALSE}
 pathFanmod <- "path/to/fanmod"
 # or
-pathFanmod <- "../src/fanmod_linux"
+pathFanmod <- "src-exe/fanmod_linux"
 ```
 
 #### References

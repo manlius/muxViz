@@ -19,7 +19,7 @@
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
 <script src="../pkgdown.js"></script><meta property="og:title" content="Multilayer community detection">
 <meta property="og:description" content="muxViz">
-<meta property="og:image" content="/reference/figures/logo.png">
+<meta property="og:image" content="https://manlius.github.io/muxViz/reference/figures/logo.png">
 <meta property="og:image:alt" content="MuxViz - Visualization and Analysis of Multilayer Networks">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:creator" content="@manlius84">
@@ -135,7 +135,7 @@
 <span class="va">layer.colors</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/RColorBrewer/man/ColorBrewer.html">brewer.pal</a></span><span class="op">(</span><span class="fl">8</span>, <span class="st">"Set2"</span><span class="op">)</span></code></pre></div>
 <p>Setup Infomap, see <a href="./setup_infomap_fanmod.html">setup Infomap vignette</a></p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">pathInfomap</span> <span class="op">&lt;-</span> <span class="st">"../src/infomap-0.x/Infomap"</span></code></pre></div>
+<code class="sourceCode R"><span class="va">pathInfomap</span> <span class="op">&lt;-</span> <span class="st">"../src-exe/infomap-0.x/Infomap"</span></code></pre></div>
 <div id="multiplex-modules" class="section level2">
 <h2 class="hasAnchor">
 <a href="#multiplex-modules" class="anchor"></a>Multiplex modules</h2>
@@ -169,8 +169,12 @@
                          node.size.values<span class="op">=</span><span class="st">"auto"</span>, node.size.scale<span class="op">=</span><span class="fl">0.8</span>,
                          show.aggregate<span class="op">=</span><span class="cn">T</span><span class="op">)</span>
 <span class="co"># save the plot:</span>
-<span class="fu"><a href="https://rdrr.io/pkg/rgl/man/snapshot.html">rgl.snapshot</a></span><span class="op">(</span><span class="st">"../man/figures/multi_sbm.png"</span>, fmt <span class="op">=</span> <span class="st">"png"</span><span class="op">)</span></code></pre></div>
-<p><img src="../man/figures/multi_sbm.png" width="128"> Find modules without imposing hard partitions</p>
+<span class="fu"><a href="https://rdrr.io/pkg/rgl/man/snapshot.html">snapshot3d</a></span><span class="op">(</span><span class="st">"../man/figures/multi_sbm.png"</span>, fmt <span class="op">=</span> <span class="st">"png"</span>, width <span class="op">=</span> <span class="fl">1024</span>, height <span class="op">=</span> <span class="fl">1024</span><span class="op">)</span>
+<span class="co">#&gt; Warning in snapshot3d("../man/figures/multi_sbm.png", fmt = "png", width =</span>
+<span class="co">#&gt; 1024, : webshot = TRUE requires the webshot2 package; using rgl.snapshot()</span>
+<span class="co">#&gt; instead</span></code></pre></div>
+<p><img src="../man/figures/multi_sbm.png" width="512"></p>
+<p>Find modules without imposing hard partitions</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">commResult</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/GetMultiplexCommunities_Infomap.html">GetMultiplexCommunities_Infomap</a></span><span class="op">(</span><span class="va">g.list</span>,
                                               bin.path<span class="op">=</span><span class="va">pathInfomap</span>,
@@ -287,11 +291,12 @@
                          node.colors<span class="op">=</span><span class="va">node.colors.matrix</span>, edge.colors<span class="op">=</span><span class="st">"#dadada"</span>,
                          node.colors.aggr<span class="op">=</span><span class="va">node.colors.aggr</span>,
                          show.aggregate<span class="op">=</span><span class="cn">T</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/pkg/rgl/man/snapshot.html">rgl.snapshot</a></span><span class="op">(</span><span class="st">"man/figures/multi_sbm_infomap.png"</span>, fmt <span class="op">=</span> <span class="st">"png"</span><span class="op">)</span>
-<span class="co">#&gt; Warning in rgl.snapshot("man/figures/multi_sbm_infomap.png", fmt = "png"): RGL:</span>
-<span class="co">#&gt; Pixmap save: unable to open file 'man/figures/multi_sbm_infomap.png' for writing</span>
-<span class="co">#&gt; Warning in rgl.snapshot("man/figures/multi_sbm_infomap.png", fmt = "png"):</span>
-<span class="co">#&gt; 'rgl.snapshot' failed</span></code></pre></div>
+<span class="fu"><a href="https://rdrr.io/pkg/rgl/man/snapshot.html">snapshot3d</a></span><span class="op">(</span><span class="st">"man/figures/multi_sbm_infomap.png"</span>, fmt <span class="op">=</span> <span class="st">"png"</span>, width <span class="op">=</span> <span class="fl">1024</span>, height <span class="op">=</span> <span class="fl">1024</span><span class="op">)</span>
+<span class="co">#&gt; Warning in snapshot3d("man/figures/multi_sbm_infomap.png", fmt = "png", :</span>
+<span class="co">#&gt; webshot = TRUE requires the webshot2 package; using rgl.snapshot() instead</span>
+<span class="co">#&gt; Warning in rgl.snapshot(filename, fmt, top): RGL: Pixmap save: unable to open</span>
+<span class="co">#&gt; file 'man/figures/multi_sbm_infomap.png' for writing</span>
+<span class="co">#&gt; Warning in rgl.snapshot(filename, fmt, top): 'rgl.snapshot' failed</span></code></pre></div>
 <p>Case with hard partitions</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># coloring state nodes</span>
@@ -313,8 +318,10 @@
                          node.colors<span class="op">=</span><span class="va">node.colors.matrix</span>, edge.colors<span class="op">=</span><span class="st">"#dadada"</span>,
                          node.colors.aggr<span class="op">=</span><span class="va">node.colors.aggr</span>,
                          show.aggregate<span class="op">=</span><span class="cn">T</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/pkg/rgl/man/snapshot.html">rgl.snapshot</a></span><span class="op">(</span><span class="st">"../man/figures/multi_sbm_infomap_hp.png"</span>, fmt<span class="op">=</span><span class="st">"png"</span><span class="op">)</span></code></pre></div>
-<p><img src="../man/figures/multi_sbm_infomap_hp.png" width="128"></p>
+<span class="fu"><a href="https://rdrr.io/pkg/rgl/man/snapshot.html">snapshot3d</a></span><span class="op">(</span><span class="st">"../man/figures/multi_sbm_infomap_hp.png"</span>, fmt<span class="op">=</span><span class="st">"png"</span>, width <span class="op">=</span> <span class="fl">1024</span>, height <span class="op">=</span> <span class="fl">1024</span><span class="op">)</span>
+<span class="co">#&gt; Warning in snapshot3d("../man/figures/multi_sbm_infomap_hp.png", fmt = "png", :</span>
+<span class="co">#&gt; webshot = TRUE requires the webshot2 package; using rgl.snapshot() instead</span></code></pre></div>
+<p><img src="../man/figures/multi_sbm_infomap_hp.png" width="512"></p>
 </div>
 </div>
 <div id="multilayer-modules" class="section level2">
@@ -377,8 +384,10 @@
                          node.colors<span class="op">=</span><span class="va">node.colors.matrix2</span>, edge.colors<span class="op">=</span><span class="st">"#dadada"</span>,
                          node.colors.aggr<span class="op">=</span><span class="va">node.colors.aggr2</span>,
                          show.aggregate<span class="op">=</span><span class="cn">T</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/pkg/rgl/man/snapshot.html">rgl.snapshot</a></span><span class="op">(</span><span class="st">"../man/figures/multi_sbm_infomap2.png"</span>, fmt<span class="op">=</span><span class="st">"png"</span><span class="op">)</span></code></pre></div>
-<p><img src="../man/figures/multi_sbm_infomap2.png" width="128"></p>
+<span class="fu"><a href="https://rdrr.io/pkg/rgl/man/snapshot.html">snapshot3d</a></span><span class="op">(</span><span class="st">"../man/figures/multi_sbm_infomap2.png"</span>, fmt<span class="op">=</span><span class="st">"png"</span>, width <span class="op">=</span> <span class="fl">1024</span>, height <span class="op">=</span> <span class="fl">1024</span><span class="op">)</span>
+<span class="co">#&gt; Warning in snapshot3d("../man/figures/multi_sbm_infomap2.png", fmt = "png", :</span>
+<span class="co">#&gt; webshot = TRUE requires the webshot2 package; using rgl.snapshot() instead</span></code></pre></div>
+<p><img src="../man/figures/multi_sbm_infomap2.png" width="512"></p>
 <p>Look at the size of all communities:</p>
 <ul>
 <li>Multilayer: module size distribution (no hard partitions) 150, 147, 150, 150, 1, 1, 1</li>

@@ -154,7 +154,7 @@ diagR <- function(x, n, offset = 0) {
 #' Trace of input matrix
 #' @export
 traceR <- function(A) {
-  return(sum(diag(A)))
+  return(sum(Matrix::diag(A)))
 }
 
 #' Return the remainder of x divided by y

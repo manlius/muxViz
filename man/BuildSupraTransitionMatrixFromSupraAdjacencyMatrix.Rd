@@ -8,13 +8,14 @@ BuildSupraTransitionMatrixFromSupraAdjacencyMatrix(
   SupraAdjacencyMatrix,
   Layers,
   Nodes,
-  Type = "pagerank"
+  Type = "pagerank",
+  r = NULL
 )
 }
 \arguments{
 \item{SupraAdjacencyMatrix}{the supra-adjacency matrix, which contains
 the information in intra-layer connectivity \eqn{\{W^{\alpha}_{ij}\}} and
-on inter-layer coupilng \eqn{D^{\alpha \beta}_{i}\}_i}.}
+on inter-layer coupling \eqn{D^{\alpha \beta}_{i}\}_i}.}
 
 \item{Layers}{integer, number of layers}
 
@@ -24,6 +25,10 @@ on inter-layer coupilng \eqn{D^{\alpha \beta}_{i}\}_i}.}
 Other types:
 \code{c("classical", "diffusive", "maxent", "physical", "relaxed-physical")}.
 For details on the transition rules see Refs.2-3.}
+
+\item{r}{relaxation parameter, should be a float in the range \eqn{[0, 1]}.
+Default is NULL, which implies \eqn{r=0.5} for the physical random
+walk with relaxation (\code{Type = "relaxed-physical"}).}
 }
 \value{
 the supra-transition matrix of probabilities for a

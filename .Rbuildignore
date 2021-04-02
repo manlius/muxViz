@@ -9,5 +9,7 @@
 ^index\.md$
 ^docs$
 ^\_pkgdown\.yml$
-^src$
+^src-exe$
 ^examples-scripts$
+^_pkgdown\.yml$
+^pkgdown$

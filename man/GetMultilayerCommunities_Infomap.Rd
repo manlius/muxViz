@@ -19,8 +19,6 @@ GetMultilayerCommunities_Infomap(
   hardPartitions = F,
   verbose = T,
   addAggregateAnalysis = T,
-  multilayerRelaxRate = NA,
-  multilayerJSRelaxRate = NA,
   outputPrefix = "multimap"
 )
 }
@@ -52,10 +50,6 @@ GetMultilayerCommunities_Infomap(
 \item{verbose}{logical}
 
 \item{addAggregateAnalysis}{logical}
-
-\item{multilayerRelaxRate}{Float, between 0 and 1}
-
-\item{multilayerJSRelaxRate}{Float, between 0 and 1}
 
 \item{outputPrefix}{String}
 }

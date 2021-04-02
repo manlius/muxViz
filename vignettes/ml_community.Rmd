@@ -38,7 +38,7 @@ layer.colors <- brewer.pal(8, "Set2")
 Setup Infomap, see [setup Infomap vignette](./setup_infomap_fanmod.html)
 
 ```{r infomap-setup}
-pathInfomap <- "../src/infomap-0.x/Infomap"
+pathInfomap <- "../src-exe/infomap-0.x/Infomap"
 ```
 
 ## Multiplex modules
@@ -77,12 +77,13 @@ plot_multiplex3D(g.list, layer.layout=lay, layer.colors=layer.colors,
                          node.size.values="auto", node.size.scale=0.8,
                          show.aggregate=T)
 # save the plot:
-rgl.snapshot("../man/figures/multi_sbm.png", fmt = "png")
+snapshot3d("../man/figures/multi_sbm.png", fmt = "png", width = 1024, height = 1024)
 ```
 
 ```{r echo=FALSE} 
 knitr::include_graphics("../man/figures/multi_sbm.png")
 ```
+
 Find modules without imposing hard partitions
 
 ```{r modules}
@@ -190,7 +191,7 @@ plot_multiplex3D(g.list, layer.layout=lay, layer.colors=layer.colors,
                          node.colors=node.colors.matrix, edge.colors="#dadada",
                          node.colors.aggr=node.colors.aggr,
                          show.aggregate=T)
-rgl.snapshot("man/figures/multi_sbm_infomap.png", fmt = "png")
+snapshot3d("man/figures/multi_sbm_infomap.png", fmt = "png", width = 1024, height = 1024)
 ```
 
 Case with hard partitions
@@ -215,7 +216,7 @@ plot_multiplex3D(g.list, layer.layout=lay, layer.colors=layer.colors,
                          node.colors=node.colors.matrix, edge.colors="#dadada",
                          node.colors.aggr=node.colors.aggr,
                          show.aggregate=T)
-rgl.snapshot("../man/figures/multi_sbm_infomap_hp.png", fmt="png")
+snapshot3d("../man/figures/multi_sbm_infomap_hp.png", fmt="png", width = 1024, height = 1024)
 ```
 
 ```{r, echo=FALSE}
@@ -277,7 +278,7 @@ plot_multiplex3D(g.list, layer.layout=lay, layer.colors=layer.colors,
                          node.colors=node.colors.matrix2, edge.colors="#dadada",
                          node.colors.aggr=node.colors.aggr2,
                          show.aggregate=T)
-rgl.snapshot("../man/figures/multi_sbm_infomap2.png", fmt="png")
+snapshot3d("../man/figures/multi_sbm_infomap2.png", fmt="png", width = 1024, height = 1024)
 ```
 
 ```{r, echo=FALSE}

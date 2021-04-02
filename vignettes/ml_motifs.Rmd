@@ -35,7 +35,7 @@ layer.colors <- brewer.pal(8, "Set2")
 Setup `fanmod`, see [setup fanmod vignette](./setup_infomap_fanmod.html)
 
 ```{r infomap-setup}
-pathFanmod <- "../src/fanmod_linux"
+pathFanmod <- "../src-exe/fanmod_linux"
 ```
 
 ## Multilayer motifs

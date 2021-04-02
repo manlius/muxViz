@@ -58,7 +58,7 @@ same length with equal probability.
 Let \(\lambda_N, \phi\) be the leading eigenvalue and
 corresponding right eigenvector of the adjacency matrix \(A\). Then
 \(T_{ij} = \frac{A_{ij}}{\lambda_N}\frac{\phi_j}{\phi_i}.\)" />
-<meta property="og:image" content="/reference/figures/logo.png" />
+<meta property="og:image" content="https://manlius.github.io/muxViz/reference/figures/logo.png" />
 <meta property="og:image:alt" content="MuxViz - Visualization and Analysis of Multilayer Networks" />
 <meta name="twitter:card" content="summary" />
 <meta name="twitter:creator" content="@manlius84" />
@@ -174,7 +174,8 @@ corresponding right eigenvector of the adjacency matrix \(A\). Then
   <span class='va'>SupraAdjacencyMatrix</span>,
   <span class='va'>Layers</span>,
   <span class='va'>Nodes</span>,
-  Type <span class='op'>=</span> <span class='st'>"pagerank"</span>
+  Type <span class='op'>=</span> <span class='st'>"pagerank"</span>,
+  r <span class='op'>=</span> <span class='cn'>NULL</span>
 <span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
@@ -184,7 +185,7 @@ corresponding right eigenvector of the adjacency matrix \(A\). Then
       <th>SupraAdjacencyMatrix</th>
       <td><p>the supra-adjacency matrix, which contains
 the information in intra-layer connectivity \(\{W^{\alpha}_{ij}\}\) and
-on inter-layer coupilng \(D^{\alpha \beta}_{i}\}_i\).</p></td>
+on inter-layer coupling \(D^{\alpha \beta}_{i}\}_i\).</p></td>
     </tr>
     <tr>
       <th>Layers</th>
@@ -200,6 +201,12 @@ on inter-layer coupilng \(D^{\alpha \beta}_{i}\}_i\).</p></td>
 Other types:
 <code><a href='https://rdrr.io/r/base/c.html'>c("classical", "diffusive", "maxent", "physical", "relaxed-physical")</a></code>.
 For details on the transition rules see Refs.2-3.</p></td>
+    </tr>
+    <tr>
+      <th>r</th>
+      <td><p>relaxation parameter, should be a float in the range \([0, 1]\).
+Default is NULL, which implies \(r=0.5\) for the physical random
+walk with relaxation (<code>Type = "relaxed-physical"</code>).</p></td>
     </tr>
     </table>
 

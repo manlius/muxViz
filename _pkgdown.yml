@@ -1,3 +1,5 @@
+url: https://manlius.github.io/muxViz
+
 home:
   title: MuxViz - Visualization and Analysis of Multilayer Networks
   description: Visualization and Analysis of Multilayer Networks.
@@ -119,6 +121,7 @@ reference:
   - GetConfigurationModelTypeIFromNetworkList
   - GetConfigurationModelTypeIIFromNetworkList
   - GetCoverageEvolutionMultilayer
+  - GetCoverageEvolutionEdgeColored
   - GetEigenvaluesOfDensityMatrix
   - GetEigenvaluesOfDensityMatrixFromAdjacencyMatrix
   - GetInterAssortativityTensor
