@@ -1,4 +1,4 @@
-# 'multimap_example_infomap.edges /home/giulia/Documents/github/muxViz/vignettes --input-format multilayer --clu --map --tree --expanded --seed 12345 --num-trials 100 -u --multilayer-relax-rate 0.5 --two-level -vvv --out-name multimap_example' -> 552 nodes and 4405 links partitioned in 2s from codelength 8.934314614 in one level to codelength 5.797194389 in 2 levels.
+# 'multimap_example_infomap.edges /home/giulia/Documents/github/muxViz/vignettes --input-format multilayer --clu --map --tree --expanded --seed 12345 --num-trials 100 -u --multilayer-relax-rate 0.5 --two-level -vvv --out-name multimap_example' -> 552 nodes and 4405 links partitioned in 0s from codelength 8.934314614 in one level to codelength 5.797194389 in 2 levels.
 # layer node cluster flow:
 2 57 1 0.00469174
 3 78 1 0.00435186
