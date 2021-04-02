@@ -25,7 +25,7 @@ nodeTensor <- SupraAdjacencyToNodesTensor(M, Layers, Nodes)
     
 #Build the aggregate representation of the multiplex
 A <- GetAggregateMatrix(nodeTensor, Layers, Nodes)
-A <- binarizeMatrix(A)
+A <- muxViz:::binarizeMatrix(A)
 
 #Get a visual taste of the flattened supra-adjacecy tensor
 image(M)
