@@ -96,7 +96,7 @@
 
       
 
-      </header><script src="ml_community_files/header-attrs-2.7/header-attrs.js"></script><div class="row">
+      </header><script src="ml_community_files/header-attrs-2.11/header-attrs.js"></script><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Multilayer community detection</h1>
@@ -121,7 +121,7 @@
 <span class="co">#&gt; </span>
 <span class="co">#&gt;     union</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va">RColorBrewer</span><span class="op">)</span>
-<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/sjmgarnier/viridis">viridis</a></span><span class="op">)</span>
+<span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://sjmgarnier.github.io/viridis/">viridis</a></span><span class="op">)</span>
 <span class="co">#&gt; Loading required package: viridisLite</span>
 <span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/dmurdoch/rgl">rgl</a></span><span class="op">)</span></code></pre></div>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
@@ -169,7 +169,7 @@
                          node.size.values<span class="op">=</span><span class="st">"auto"</span>, node.size.scale<span class="op">=</span><span class="fl">0.8</span>,
                          show.aggregate<span class="op">=</span><span class="cn">T</span><span class="op">)</span>
 <span class="co"># save the plot:</span>
-<span class="fu"><a href="https://rdrr.io/pkg/rgl/man/snapshot.html">snapshot3d</a></span><span class="op">(</span><span class="st">"../man/figures/multi_sbm.png"</span>, fmt <span class="op">=</span> <span class="st">"png"</span>, width <span class="op">=</span> <span class="fl">1024</span>, height <span class="op">=</span> <span class="fl">1024</span><span class="op">)</span>
+<span class="fu"><a href="https://dmurdoch.github.io/rgl/dev/reference/snapshot.html">snapshot3d</a></span><span class="op">(</span><span class="st">"../man/figures/multi_sbm.png"</span>, fmt <span class="op">=</span> <span class="st">"png"</span>, width <span class="op">=</span> <span class="fl">1024</span>, height <span class="op">=</span> <span class="fl">1024</span><span class="op">)</span>
 <span class="co">#&gt; Warning in snapshot3d("../man/figures/multi_sbm.png", fmt = "png", width =</span>
 <span class="co">#&gt; 1024, : webshot = TRUE requires the webshot2 package; using rgl.snapshot()</span>
 <span class="co">#&gt; instead</span></code></pre></div>
@@ -251,8 +251,8 @@
 <a href="#plots" class="anchor"></a>Plots</h4>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="co"># make palettes according to identified modules</span>
-<span class="va">pal.mux</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/viridisLite/man/viridis.html">viridis</a></span><span class="op">(</span><span class="va">commResult</span><span class="op">$</span><span class="va">modules.multi</span><span class="op">)</span><span class="op">)</span>
-<span class="va">pal.aggr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/viridisLite/man/viridis.html">viridis</a></span><span class="op">(</span><span class="va">commResult</span><span class="op">$</span><span class="va">modules.aggr</span><span class="op">)</span><span class="op">)</span>
+<span class="va">pal.mux</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="https://sjmgarnier.github.io/viridisLite/reference/viridis.html">viridis</a></span><span class="op">(</span><span class="va">commResult</span><span class="op">$</span><span class="va">modules.multi</span><span class="op">)</span><span class="op">)</span>
+<span class="va">pal.aggr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html">sample</a></span><span class="op">(</span><span class="fu"><a href="https://sjmgarnier.github.io/viridisLite/reference/viridis.html">viridis</a></span><span class="op">(</span><span class="va">commResult</span><span class="op">$</span><span class="va">modules.aggr</span><span class="op">)</span><span class="op">)</span>
 
 <span class="fu"><a href="https://rdrr.io/r/grDevices/png.html">png</a></span><span class="op">(</span><span class="st">"../man/figures/multi_sbm_infomap_table.png"</span>, width <span class="op">=</span> <span class="fl">1024</span>, height <span class="op">=</span> <span class="fl">728</span> <span class="op">/</span> <span class="fl">2</span>,
     res <span class="op">=</span> <span class="fl">100</span><span class="op">)</span>
@@ -261,7 +261,6 @@
 <span class="fu"><a href="https://rdrr.io/r/grDevices/dev.html">dev.off</a></span><span class="op">(</span><span class="op">)</span>
 <span class="co">#&gt; agg_png </span>
 <span class="co">#&gt;       2</span>
-
 <span class="fu"><a href="https://rdrr.io/r/grDevices/png.html">png</a></span><span class="op">(</span><span class="st">"../man/figures/multi_sbm_infomap_hp_table.png"</span>, width <span class="op">=</span> <span class="fl">1024</span>,
     height <span class="op">=</span> <span class="fl">728</span> <span class="op">/</span> <span class="fl">2</span>, res <span class="op">=</span> <span class="fl">100</span><span class="op">)</span>
 <span class="va">gplt.hp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_multimodules.html">plot_multimodules</a></span><span class="op">(</span><span class="va">commResult.hp</span>, module.colors <span class="op">=</span> <span class="va">pal.mux</span>,
@@ -291,7 +290,7 @@
                          node.colors<span class="op">=</span><span class="va">node.colors.matrix</span>, edge.colors<span class="op">=</span><span class="st">"#dadada"</span>,
                          node.colors.aggr<span class="op">=</span><span class="va">node.colors.aggr</span>,
                          show.aggregate<span class="op">=</span><span class="cn">T</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/pkg/rgl/man/snapshot.html">snapshot3d</a></span><span class="op">(</span><span class="st">"man/figures/multi_sbm_infomap.png"</span>, fmt <span class="op">=</span> <span class="st">"png"</span>, width <span class="op">=</span> <span class="fl">1024</span>, height <span class="op">=</span> <span class="fl">1024</span><span class="op">)</span>
+<span class="fu"><a href="https://dmurdoch.github.io/rgl/dev/reference/snapshot.html">snapshot3d</a></span><span class="op">(</span><span class="st">"man/figures/multi_sbm_infomap.png"</span>, fmt <span class="op">=</span> <span class="st">"png"</span>, width <span class="op">=</span> <span class="fl">1024</span>, height <span class="op">=</span> <span class="fl">1024</span><span class="op">)</span>
 <span class="co">#&gt; Warning in snapshot3d("man/figures/multi_sbm_infomap.png", fmt = "png", :</span>
 <span class="co">#&gt; webshot = TRUE requires the webshot2 package; using rgl.snapshot() instead</span>
 <span class="co">#&gt; Warning in rgl.snapshot(filename, fmt, top): RGL: Pixmap save: unable to open</span>
@@ -318,7 +317,7 @@
                          node.colors<span class="op">=</span><span class="va">node.colors.matrix</span>, edge.colors<span class="op">=</span><span class="st">"#dadada"</span>,
                          node.colors.aggr<span class="op">=</span><span class="va">node.colors.aggr</span>,
                          show.aggregate<span class="op">=</span><span class="cn">T</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/pkg/rgl/man/snapshot.html">snapshot3d</a></span><span class="op">(</span><span class="st">"../man/figures/multi_sbm_infomap_hp.png"</span>, fmt<span class="op">=</span><span class="st">"png"</span>, width <span class="op">=</span> <span class="fl">1024</span>, height <span class="op">=</span> <span class="fl">1024</span><span class="op">)</span>
+<span class="fu"><a href="https://dmurdoch.github.io/rgl/dev/reference/snapshot.html">snapshot3d</a></span><span class="op">(</span><span class="st">"../man/figures/multi_sbm_infomap_hp.png"</span>, fmt<span class="op">=</span><span class="st">"png"</span>, width <span class="op">=</span> <span class="fl">1024</span>, height <span class="op">=</span> <span class="fl">1024</span><span class="op">)</span>
 <span class="co">#&gt; Warning in snapshot3d("../man/figures/multi_sbm_infomap_hp.png", fmt = "png", :</span>
 <span class="co">#&gt; webshot = TRUE requires the webshot2 package; using rgl.snapshot() instead</span></code></pre></div>
 <p><img src="../man/figures/multi_sbm_infomap_hp.png" width="512"></p>
@@ -384,7 +383,7 @@
                          node.colors<span class="op">=</span><span class="va">node.colors.matrix2</span>, edge.colors<span class="op">=</span><span class="st">"#dadada"</span>,
                          node.colors.aggr<span class="op">=</span><span class="va">node.colors.aggr2</span>,
                          show.aggregate<span class="op">=</span><span class="cn">T</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/pkg/rgl/man/snapshot.html">snapshot3d</a></span><span class="op">(</span><span class="st">"../man/figures/multi_sbm_infomap2.png"</span>, fmt<span class="op">=</span><span class="st">"png"</span>, width <span class="op">=</span> <span class="fl">1024</span>, height <span class="op">=</span> <span class="fl">1024</span><span class="op">)</span>
+<span class="fu"><a href="https://dmurdoch.github.io/rgl/dev/reference/snapshot.html">snapshot3d</a></span><span class="op">(</span><span class="st">"../man/figures/multi_sbm_infomap2.png"</span>, fmt<span class="op">=</span><span class="st">"png"</span>, width <span class="op">=</span> <span class="fl">1024</span>, height <span class="op">=</span> <span class="fl">1024</span><span class="op">)</span>
 <span class="co">#&gt; Warning in snapshot3d("../man/figures/multi_sbm_infomap2.png", fmt = "png", :</span>
 <span class="co">#&gt; webshot = TRUE requires the webshot2 package; using rgl.snapshot() instead</span></code></pre></div>
 <p><img src="../man/figures/multi_sbm_infomap2.png" width="512"></p>

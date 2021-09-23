@@ -2,7 +2,7 @@
 % Please edit documentation in R/muxLib_annotated.R
 \name{binarizeMatrix}
 \alias{binarizeMatrix}
-\title{Gets a binarized version (only 0s and 1s) of a Matrix, which is assumed to be sparse}
+\title{Binarize a matrix}
 \usage{
 binarizeMatrix(A)
 }
@@ -13,5 +13,6 @@ binarizeMatrix(A)
 Matrix binarized
 }
 \description{
-Gets a binarized version (only 0s and 1s) of a Matrix, which is assumed to be sparse
+Get a binarized version (only 0s and 1s) of a Matrix, which is assumed to be
+sparse. Matrix entries which are different from zero are set to one.
 }

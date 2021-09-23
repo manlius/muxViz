@@ -406,12 +406,14 @@ GetLargestEigenv <- function(Matrix) {
   # remind to return a column vector result.. check always that returned result is compatible with original octave result
 }
 
-
-#' Gets a binarized version (only 0s and 1s) of a Matrix, which is assumed to be sparse
-#'
+#' Binarize a matrix
+#' 
+#' Get a binarized version (only 0s and 1s) of a Matrix, which is assumed to be 
+#' sparse. Matrix entries which are different from zero are set to one.
 #'
 #' @param A matrix
 #' @return Matrix binarized
+#' @export
 binarizeMatrix <- function(A) {
   #A is assumed to be sparse
   A[Matrix::which(A != 0)] <- 1

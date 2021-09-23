@@ -12,8 +12,8 @@ inv <- function(A) {
   return(solve(A))
 }
 
-#' Return the kronecker product between two matrices 
-#' 
+#' Return the kronecker product between two matrices
+#'
 #' Kronecker product between two matrices A and B. If A is \eqn{n\times m} and
 #' B is \eqn{p \times q}, their Kronecker product is the \eqn{mp \times nq} matrix
 #' \deqn{
@@ -23,12 +23,12 @@ inv <- function(A) {
 #' a_{m 1} \mathbf{B} & \cdots & a_{m n} \mathbf{B}
 #' \end{array}\right]
 #' }
-#' 
+#'
 #'
 #' @param A a matrix
 #' @param B another matrix
 #' @return
-#' Kronecker product of A and B 
+#' Kronecker product of A and B
 #' @noRd
 kron <- function(A, B) {
   return(Matrix::kronecker(A, B))
@@ -40,7 +40,7 @@ kron <- function(A, B) {
 #' @param n input matrix
 #' @return
 #' Identity matrix in sparse format
-#' @noRd
+#' @export
 speye <- function(n) {
   return(Matrix::Diagonal(n, 1))
 }
@@ -71,13 +71,13 @@ ones <- function(n, m) {
 
 #' Return a canonical matrix
 #'
-#' A canonical matrix is a square matrix with entries, except for the 
+#' A canonical matrix is a square matrix with entries, except for the
 #'   entry \eqn{A_{ij} = 1}.
 #' @param n matrix size
 #' @param i row index
 #' @param j column index
 #' @return
-#' A matrix of size n with only the component in i,j set to one, while all 
+#' A matrix of size n with only the component in i,j set to one, while all
 #'   others are zeros.
 #' @noRd
 spcan <- function(n, i, j) {
@@ -93,7 +93,7 @@ spcan <- function(n, i, j) {
 #' @param n desired width
 #' @param m desired height
 #' @return
-#' A matrix of size n x m full of random numbers uniformly distributed 
+#' A matrix of size n x m full of random numbers uniformly distributed
 #'   in \eqn{[0, 1]}.
 #' @noRd
 rand <- function(n, m) {
@@ -134,8 +134,8 @@ reshapeR <- function(A, n, m) {
 #' @param x fill diagonal with this value
 #' @param n matrix size
 #' @param offset start position of diagonal, default: 0 = main diagonal
-#' @return A diagonal matrix with \code{x} on its diagonal 
-#'   (main or offset diagonal). 
+#' @return A diagonal matrix with \code{x} on its diagonal
+#'   (main or offset diagonal).
 #' @export
 diagR <- function(x, n, offset = 0) {
   # cannot call this function just "diag", because it's an R builtin command
