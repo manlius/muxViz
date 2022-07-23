@@ -22,7 +22,7 @@ If you want to use v3.1 you should:
 
 <https://mran.microsoft.com/download/>
 
-* TODO: compile [infomap]() e [fanmod]() and save the paths of their exectuables.
+* TODO: compile [infomap]() e [fanmod]() and save the paths of their executables.
 
 * install (if you do not have it yet) `devtools`, i.e., `install.packages("devtools")`
 
