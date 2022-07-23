@@ -88,10 +88,10 @@ those algorithms.
 ## Official Websites and Social Networks
 
 **QUESTION/BUGS/COMMUNITY**: muxViz can count on a community with more than 600 members. Visit the dedicated [Google
-Group](https://groups.google.com/forum/#!forum/muxviz). Requests via Github will be considered more slowly
+Group](https://groups.google.com/forum/#!forum/muxviz). Requests via Github will be considered more slowly.
 
 You might also want to take a look at muxViz in action: see the [Youtube
-channel](https://www.youtube.com/channel/UCinHX7m-8_EFFJo2A8huoUA)
+channel](https://www.youtube.com/channel/UCinHX7m-8_EFFJo2A8huoUA).
 
 Instead, if you create amazing visualizations using muxViz and you want
 to tweet them, remember to include the “\#muxviz” hashtag: we will be
