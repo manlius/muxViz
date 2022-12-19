@@ -3256,7 +3256,7 @@ buildMultilayerNetworkFromMuxvizFiles <-
       for (input.file in as.character(df.config$layer.file)) {
         if (verbose)
           cat(paste("  Reading layer from file", input.file, "...\n"))
-        edges <- utils::read.table(input.file, header = T)
+        edges <- utils::read.table(input.file, header = F)
         if (ncol(edges) == 3) {
           colnames(edges) <- c("from", "to", "weight")
           if (!isWeighted) {
