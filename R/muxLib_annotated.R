@@ -97,7 +97,7 @@ BuildSupraAdjacencyMatrixFromExtendedEdgelist <-
 #' Builds extended edgelist from supra-adjacency matrix
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param isDirected logical
@@ -165,7 +165,7 @@ BuildSupraAdjacencyMatrixFromEdgeColoredMatrices <-
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
-#' The diagonal blocks from a supra-adajcency matrix.
+#' The diagonal blocks from a supra-adjacency matrix.
 #' @export
 SupraAdjacencyToNodesTensor <-
   function(SupraAdjacencyMatrix, Layers, Nodes) {
@@ -425,7 +425,7 @@ binarizeMatrix <- function(A) {
 #}
 
 
-#' Return the ith canonical vector of a N-dimesnion basis
+#' Return the ith canonical vector of a N-dimension basis
 #'
 #'
 #' @param N sacalar, dimension of the basis
@@ -444,7 +444,7 @@ CanonicalVector <- function(N, i) {
 ###################################################################
 
 
-#Warning: this should be made comaptible with code in SpectralEntropyLib and SpectralGeometryLib
+#Warning: this should be made compatible with code in SpectralEntropyLib and SpectralGeometryLib
 
 #' Network combinatorial Laplacian
 #'
@@ -452,7 +452,7 @@ CanonicalVector <- function(N, i) {
 #'    combinatorial Laplacian \eqn{D - A} for a single-layer network.
 #'
 #' @param AdjacencyMatrix the adjacency matrix characterising the network
-#' @return The network combinatorial Lapalacian Matrix
+#' @return The network combinatorial Laplacian Matrix
 #' @export
 GetLaplacianMatrix <- function(AdjacencyMatrix) {
   #Calculate the laplacian matrix from an adjacency matrix
@@ -486,7 +486,7 @@ GetLaplacianMatrix <- function(AdjacencyMatrix) {
 #'    Consequently we can extend the definition of the RW normalised Laplacian
 #'    setting \eqn{L_{ij} = 0} if \eqn{k_i = 0} for all \eqn{j}.
 #' @param AdjacencyMatrix the adjacency matrix characterising the network
-#' @return Normalized Lapalacian Matrix
+#' @return Normalized Laplacian Matrix
 #' @export
 GetNormalizedLaplacianMatrix <- function(AdjacencyMatrix) {
   #Calculate the laplacian matrix from an adjacency matrix
@@ -518,7 +518,7 @@ GetNormalizedLaplacianMatrix <- function(AdjacencyMatrix) {
   # TO 0, THAT CHECK CAN AVOID TO SUBTRACT DisconnectedNodes
   # igraph with normalized=T gives the symmetric Laplacian, therefore this must be done
   # internally and ad hoc here.
-  # TRHOWING A STOP
+  # THROWING A STOP
 
   invD <- 1 / degs
   invD[Matrix::which(is.infinite(invD))] <- 0
@@ -546,7 +546,7 @@ GetNormalizedLaplacianMatrix <- function(AdjacencyMatrix) {
 }
 
 
-# Warning: this should be made comaptible with code in SpectralEntropyLib
+# Warning: this should be made compatible with code in SpectralEntropyLib
 # Functions below should allow to choose for the type of density matrix (BGS/DDB) and laplacian
 
 #' Calculate the density matrix from an adjacency matrix
@@ -687,7 +687,7 @@ GetJensenShannonDivergence <-
 #' Calculate the global number of triangles
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -716,7 +716,7 @@ GetGlobalNumberTriangles <-
 #' Calculate Global Clustering Coefficient
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -744,7 +744,7 @@ GetAverageGlobalClustering <-
 #' Calculate Local Clustering Coefficient
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -790,7 +790,7 @@ GetLocalClustering <- function(SupraAdjacencyMatrix, Layers, Nodes) {
 #' Gets the average global edge overlap on the multilayer
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param fastBinary logical, optimization for undirected, unweighted, networks
@@ -850,7 +850,7 @@ GetAverageGlobalOverlapping <-
 #' Calculates the average global node overlap Matrix
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -901,7 +901,7 @@ GetAverageGlobalNodeOverlappingMatrix <-
 #' Calculates the average global edge overlap Matrix
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param fastBinary logical, optimization for undirected, unweighted, networks
@@ -951,7 +951,7 @@ GetAverageGlobalOverlappingMatrix <-
 #' Returns pairwise similarity based on Frobenius norm
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -991,7 +991,7 @@ GetSPSimilarityMatrix <-
 #' Return the multi-out-degree, not accounting for interlinks
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param isDirected logical
@@ -1020,7 +1020,7 @@ GetMultiOutDegree <-
 #' Return the multi-in-degree, not accounting for interlinks
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param isDirected logical
@@ -1050,7 +1050,7 @@ GetMultiInDegree <-
 #' Return total multi-degree, not accounting for interlinks
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param isDirected logical
@@ -1086,7 +1086,7 @@ GetMultiDegree <-
 #' Return Assortativity Inter-layer values
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param isDirected logical
@@ -1184,7 +1184,7 @@ GetInterAssortativityTensor <-
 #' Return the Sum of multi-out-degree, include multiple times the interlinks
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param isDirected logical
@@ -1210,7 +1210,7 @@ GetMultiOutDegreeSum <-
 #' Return the Sum of multi-in-degree, include multiple times the interlinks
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param isDirected logical
@@ -1236,7 +1236,7 @@ GetMultiInDegreeSum <-
 #' Return the Sum of total multi-degree, include multiple times the interlinks
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param isDirected logical
@@ -1270,7 +1270,7 @@ GetMultiDegreeSum <-
 #' Return the multi-out-Strength, not accounting for interlinks
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param isDirected logical
@@ -1298,7 +1298,7 @@ GetMultiOutStrength <-
 #' Return the multi-in-Strength, not accounting for interlinks
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param isDirected logical
@@ -1327,7 +1327,7 @@ GetMultiInStrength <-
 #' Return total multi-strength
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param isDirected logical
@@ -1363,7 +1363,7 @@ GetMultiStrength <-
 #' Return the Sum of multi-out-Strength, include multiple times the interlinks
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param isDirected logical
@@ -1390,7 +1390,7 @@ GetMultiOutStrengthSum <-
 #' Return the Sum of multi-in-Strength, include multiple times the interlinks
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param isDirected logical
@@ -1417,7 +1417,7 @@ GetMultiInStrengthSum <-
 #' Return the Sum of total multi-Strength, include multiple times the interlinks
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param isDirected logical
@@ -1453,7 +1453,7 @@ GetMultiStrengthSum <-
 #' Calculates Multi-Katz Centrality
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -1490,7 +1490,7 @@ GetMultiKatzCentrality <-
 #' Calculates Multi-Eigenvector-Centrality
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -1517,7 +1517,7 @@ GetMultiEigenvectorCentrality <-
 #' Calculates Multi-Hub-Centrality
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -1550,7 +1550,7 @@ GetMultiHubCentrality <-
 #' Calculates Multi-Authority-Centrality
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -1584,7 +1584,7 @@ GetMultiAuthCentrality <-
 #' Calculates Multi-KCore Centrality. Computes centrality in each layer separately and then get the max per node.
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -1611,7 +1611,7 @@ GetMultiKCoreCentrality <-
 #' Calculates Multiplexity Centrality.
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -1649,7 +1649,7 @@ GetMultiplexityCentrality <-
 #'
 #' @description Given a supra-adjacency matrix, build supra-transition the
 #'   matrix corresponding to different type of random walks (discrete time
-#'   Markov chians).
+#'   Markov chains).
 #'   The types of RW considered here are the same as in Ref.2-Supplementary Material: classical, diffusive, PageRank, physical, physical with relaxation
 #'   and maximum-entropy.
 #'
@@ -2154,7 +2154,7 @@ BuildTransitionMatrixFromSingleLayer <-
 #' Returns Multi Random Walk Centrality
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param Type string,  "classical", "pagerank", or "diffusive"
@@ -2207,7 +2207,7 @@ GetMultiRWCentrality <-
 #' Calculates Multi-PageRank-Centrality (based on Multi-RandomWalk-Centrality)
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -2232,7 +2232,7 @@ GetMultiPageRankCentrality <-
 #' Return the component assignment for each node
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -2313,7 +2313,7 @@ GetConnectedComponents <-
 #' Return the largest connected component
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -2340,7 +2340,7 @@ GetGiantConnectedComponent <-
 #' Calculate the Reducibility of a multilayer network
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param Method string
@@ -2626,7 +2626,7 @@ GetMultiplexTriadsFromNetworkList <-
 #' Return a list of igraph objects corresponding to layers
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency sparse matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency sparse matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -2668,7 +2668,7 @@ SupraAdjacencyToNetworkList <-
 #' Return the closed triangles in single layers, aggregate and multilayer network, but working directly with tensors
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency sparse matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency sparse matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -2755,7 +2755,7 @@ MultiShortestPathFromNode <-
 #' Return statistics based on multilayer paths
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency sparse matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency sparse matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -2832,7 +2832,7 @@ GetMultiPathStatistics <-
 #' Returns Multi Closeness Centrality
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -3129,7 +3129,7 @@ GetGiantViableComponentFromNetworkList <- function(g.list) {
 #' Return the largest viable cluster
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -3177,7 +3177,7 @@ GetGiantIntersectionComponentFromNetworkList <- function(g.list) {
 #' Return the largest connected component obtained by intersecting LCC of each layer. Assumption: the network is an edge-colored multigraph
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @return
@@ -3743,7 +3743,7 @@ GetMultilayerMotifsFromNetworkList <-
 #' Note that even if inter-links are present, they will be neglected and the network treated as an edge-colored multigraph
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param bin.path path, full path where the FANMOD binary executable is located
@@ -4053,7 +4053,7 @@ GetMultiplexCommunities_Infomap <-
 #' Return multilayer communities for interconnected multilayer networks
 #'
 #'
-#' @param SupraAdjacencyMatrix the supra-adajcency matrix
+#' @param SupraAdjacencyMatrix the supra-adjacency matrix
 #' @param Layers scalar, number of layers
 #' @param Nodes scalar, number of nodes
 #' @param bin.path path, full path where the INFOMAP binary executable is located
