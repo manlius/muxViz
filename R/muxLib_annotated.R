@@ -1501,11 +1501,23 @@ GetMultiKatzCentrality <-
 #'   \href{https://doi.org/10.1038/ncomms7868}{doi 10.1038/ncomms7868}
 #' @export
 GetMultiEigenvectorCentrality <-
-  function(SupraAdjacencyMatrix, Layers, Nodes) {
-    #we pass the transpose of the transition matrix to get the left eigenvectors
-    tmp <- GetLargestEigenv(Matrix::t(SupraAdjacencyMatrix))
-    LeadingEigenvector <- tmp$QMatrix
-
+  function(SupraAdjacencyMatrix, Layers, Nodes, EigenMethod = "alg") {
+    
+    if (EigenMethod == "alg") {
+      #we pass the transpose of the transition matrix to get the left eigenvectors
+      tmp <- GetLargestEigenv(Matrix::t(SupraAdjacencyMatrix))
+      LeadingEigenvector <- tmp$QMatrix
+      
+    } else if (EigenMethod == "power") {
+      # Initial guess
+      LeadingEigenvector <- rep(1, Nodes * Layers)/(Nodes * Layers)
+      
+      for (i in 1:100) {
+        # Update with power iteration
+        LeadingEigenvector <- (LeadingEigenvector %*% SupraAdjacencyMatrix)
+      }
+      
+    }
     CentralityVector <-
       sumR(reshapeR(LeadingEigenvector, Nodes, Layers), 2)
     CentralityVector <- CentralityVector / max(CentralityVector)
@@ -2218,9 +2230,33 @@ GetMultiRWCentrality <-
 #'   \href{https://doi.org/10.1038/ncomms7868}{doi 10.1038/ncomms7868}
 #' @export
 GetMultiPageRankCentrality <-
-  function(SupraAdjacencyMatrix, Layers, Nodes) {
-    return(GetMultiRWCentrality(SupraAdjacencyMatrix, Layers, Nodes, Type =
-                                  "pagerank"))
+  function(SupraAdjacencyMatrix, Layers, Nodes, EigenMethod = "alg") {
+    if (EigenMethod == "alg") {
+      return(GetMultiRWCentrality(SupraAdjacencyMatrix, Layers, Nodes, 
+                                  Type = "pagerank"))
+    } else if (EigenMethod == "power") {
+      degree <- sumR(SupraAdjacencyMatrix, 1)
+      D = Diagonal(x = 1/degree)
+      M_hat <- D %*% SupraAdjacencyMatrix
+      M_hat_add <- Matrix(0.85 * M_hat, sparse = TRUE)
+      extra <- rep(0.15, Nodes * Layers)/(Nodes * Layers)
+      # Initial guess
+      LeadingEigenvector <- rep(1, Nodes * Layers)/(Nodes * Layers)
+      
+      for (i in 1:100) {
+        # Update guess with power iteration
+        LeadingEigenvector <-  
+          (LeadingEigenvector %*% M_hat_add) + (LeadingEigenvector %*% extra)[1,1]
+      }
+      
+      CentralityVector <- LeadingEigenvector/sum(LeadingEigenvector)
+      
+      CentralityVector <- sumR(reshapeR(CentralityVector, Nodes, Layers), 2)
+      
+      CentralityVector <- CentralityVector/max(CentralityVector)
+      
+      return(CentralityVector)
+    }
   }
 
 
