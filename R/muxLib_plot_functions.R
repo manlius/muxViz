@@ -403,15 +403,14 @@ plot_multiplex3D <-
     if (layer.alpha == "auto") {
       layer.alpha <- rep(0.5, Layers)
     }
-    if (is.na(layer.labels) || is.null(layer.labels)) {
-      layer.labels <- NA
+    if (any(is.na(layer.labels) | sapply(layer.labels, function(x) is.null(x)))) {
+    layer.labels <- NA
     } else {
-      if (layer.labels == "auto" || length(layer.labels) != Layers) {
-        layer.labels <- paste("Layer", 1:Layers)
-      }
-      if (show.aggregate &&
-          (!is.na(layer.labels) && !is.null(layer.labels))) {
-        layer.labels <- c(layer.labels, "Aggregate")
+    if (identical(layer.labels, "auto") || length(layer.labels) != Layers) {
+      layer.labels <- paste("Layer", 1:Layers)
+    }
+    if (show.aggregate && any(!is.na(layer.labels) & !is.null(layer.labels))) {
+      layer.labels <- c(layer.labels, "Aggregate")
       }
     }
     
@@ -508,7 +507,7 @@ plot_multiplex3D <-
       igraph::rglplot(g.list[[l]], layout = layout.layer,
               rescale = F)
       
-      if (!is.na(layer.labels) && !is.null(layer.labels)) {
+      if (any(!is.na(layer.labels) & !is.null(layer.labels))) {
         text3d(
           -1 + (l - 1) * LAYER_SHIFT_X,
           -1 + (l - 1) * LAYER_SHIFT_Y,
@@ -579,7 +578,7 @@ plot_multiplex3D <-
       igraph::rglplot(g.aggr, layout = layout.layer,
               rescale = F)
       
-      if (!is.na(layer.labels) && !is.null(layer.labels)) {
+      if (any(!is.na(layer.labels) & !is.null(layer.labels))) {
         text3d(
           -1 + (l - 1) * LAYER_SHIFT_X,
           -1 + (l - 1) * LAYER_SHIFT_Y,
