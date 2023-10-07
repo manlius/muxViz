@@ -403,8 +403,8 @@ plot_multiplex3D <-
     if (layer.alpha == "auto") {
       layer.alpha <- rep(0.5, Layers)
     }
-    if (is.na(layer.labels) | any(sapply(layer.labels, function(x) is.null(x)))) {
-        layer.labels <- NA
+    if (any(is.na(layer.labels) | sapply(layer.labels, function(x) is.null(x)))) {
+      layer.labels <- NA
     } else {
       if (layer.labels == "auto" || length(layer.labels) != Layers) {
         layer.labels <- paste("Layer", 1:Layers)
