@@ -410,7 +410,7 @@ plot_multiplex3D <-
         layer.labels <- paste("Layer", 1:Layers)
       }
       if (show.aggregate &&
-          (!is.na(layer.labels) && !is.null(layer.labels))) {
+        any(!is.na(layer.labels) & !is.null(layer.labels))) {
         layer.labels <- c(layer.labels, "Aggregate")
       }
     }
