@@ -404,14 +404,13 @@ plot_multiplex3D <-
       layer.alpha <- rep(0.5, Layers)
     }
     if (any(is.na(layer.labels) | sapply(layer.labels, function(x) is.null(x)))) {
-      layer.labels <- NA
+    layer.labels <- NA
     } else {
-      if (identical(layer.labels, "auto") || length(layer.labels) != Layers){
-        layer.labels <- paste("Layer", 1:Layers)
-      }
-      if (show.aggregate &&
-        any(!is.na(layer.labels) & !is.null(layer.labels))) {
-        layer.labels <- c(layer.labels, "Aggregate")
+    if (identical(layer.labels, "auto") || length(layer.labels) != Layers) {
+      layer.labels <- paste("Layer", 1:Layers)
+    }
+    if (show.aggregate && any(!is.na(layer.labels) & !is.null(layer.labels))) {
+      layer.labels <- c(layer.labels, "Aggregate")
       }
     }
     
