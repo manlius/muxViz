@@ -507,7 +507,7 @@ plot_multiplex3D <-
       igraph::rglplot(g.list[[l]], layout = layout.layer,
               rescale = F)
       
-      if (any(!is.na(layer.labels) && !is.null(layer.labels))) {
+      if (any(!is.na(layer.labels) & !is.null(layer.labels))) {
         text3d(
           -1 + (l - 1) * LAYER_SHIFT_X,
           -1 + (l - 1) * LAYER_SHIFT_Y,
@@ -578,7 +578,7 @@ plot_multiplex3D <-
       igraph::rglplot(g.aggr, layout = layout.layer,
               rescale = F)
       
-      if (!is.na(layer.labels) && !is.null(layer.labels)) {
+      if (any(!is.na(layer.labels) & !is.null(layer.labels))) {
         text3d(
           -1 + (l - 1) * LAYER_SHIFT_X,
           -1 + (l - 1) * LAYER_SHIFT_Y,
